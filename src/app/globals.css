@@ -1,0 +1,233 @@
+@import "tailwindcss";
+
+/* ============================================
+   PITLANE DESIGN TOKENS — Tailwind v4
+   F1-inspired dark theme
+   ============================================ */
+
+@theme inline {
+  /* Backgrounds */
+  --color-pit-bg: #15151E;
+  --color-pit-bg-secondary: #1E1E2D;
+  --color-pit-bg-tertiary: #272738;
+  --color-pit-bg-surface: #2A2A3C;
+
+  /* F1 Red — CTAs, featured borders, live indicators */
+  --color-pit-red: #E10600;
+  --color-pit-red-hover: #FF1801;
+  --color-pit-red-muted: #E1060020;
+
+  /* Pitlane Teal — identity color, AI features, secondary CTAs */
+  --color-pit-teal: #00D2BE;
+  --color-pit-teal-hover: #00E8D1;
+  --color-pit-teal-muted: #00D2BE15;
+
+  /* Text */
+  --color-pit-text: #FFFFFF;
+  --color-pit-text-secondary: #B8B8CC;
+  --color-pit-text-tertiary: #6E6E82;
+  --color-pit-text-muted: #4A4A5C;
+
+  /* Borders */
+  --color-pit-border: #2A2A3C;
+  --color-pit-border-medium: #3A3A4C;
+
+  /* Experience Category Colors */
+  --color-pit-cat-food: #FF6B35;
+  --color-pit-cat-culture: #A855F7;
+  --color-pit-cat-adventure: #22C55E;
+  --color-pit-cat-daytrip: #3B82F6;
+  --color-pit-cat-nightlife: #EC4899;
+
+  /* Partner */
+  --color-pit-gyg: #FF5533;
+
+  /* Session Status */
+  --color-pit-session-live: #E10600;
+  --color-pit-session-upcoming: #FFB800;
+  --color-pit-session-completed: #6E6E82;
+
+  /* Fonts */
+  --font-display: var(--font-titillium-web), sans-serif;
+  --font-body: var(--font-inter), -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), "Fira Code", monospace;
+
+  /* Border Radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-full: 100px;
+
+  /* Animations */
+  --animate-card-enter: card-enter 250ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-pulse-red: pulse-red 2s ease-in-out infinite;
+  --animate-shimmer: shimmer 1.5s ease-in-out infinite;
+
+  /* Timing */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+/* ============================================
+   KEYFRAMES
+   ============================================ */
+
+@keyframes card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-red {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(225, 6, 0, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(225, 6, 0, 0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes digit-flip {
+  0% { transform: translateY(0); opacity: 1; }
+  50% { transform: translateY(-8px); opacity: 0; }
+  51% { transform: translateY(8px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+/* ============================================
+   CSS CUSTOM PROPERTIES (non-Tailwind usage)
+   ============================================ */
+
+:root {
+  /* Backgrounds */
+  --bg-primary: #15151E;
+  --bg-secondary: #1E1E2D;
+  --bg-tertiary: #272738;
+  --bg-surface: #2A2A3C;
+
+  /* Accents */
+  --accent-red: #E10600;
+  --accent-red-hover: #FF1801;
+  --accent-red-muted: #E1060020;
+  --accent-teal: #00D2BE;
+  --accent-teal-hover: #00E8D1;
+  --accent-teal-muted: #00D2BE15;
+
+  /* Text */
+  --text-primary: #FFFFFF;
+  --text-secondary: #B8B8CC;
+  --text-tertiary: #6E6E82;
+  --text-muted: #4A4A5C;
+
+  /* Borders */
+  --border-subtle: #2A2A3C;
+  --border-medium: #3A3A4C;
+  --border-strong: #E10600;
+
+  /* Session Status */
+  --session-live: #E10600;
+  --session-upcoming: #FFB800;
+  --session-completed: #6E6E82;
+
+  /* Categories */
+  --cat-food: #FF6B35;
+  --cat-culture: #A855F7;
+  --cat-adventure: #22C55E;
+  --cat-daytrip: #3B82F6;
+  --cat-nightlife: #EC4899;
+
+  /* Partner */
+  --partner-gyg: #FF5533;
+
+  /* Spacing */
+  --section-gap: 4rem;
+  --section-gap-mobile: 2.5rem;
+
+  /* Transitions */
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-slow: 400ms;
+}
+
+/* ============================================
+   BASE STYLES
+   ============================================ */
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+}
+
+/* Carbon fiber texture — use on hero sections */
+.carbon-texture {
+  background-image:
+    linear-gradient(45deg, rgba(255,255,255,0.02) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(255,255,255,0.02) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(255,255,255,0.02) 75%),
+    linear-gradient(-45deg, transparent 75%, rgba(255,255,255,0.02) 75%);
+  background-size: 4px 4px;
+}
+
+/* Racing stripe divider */
+.racing-stripe {
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--accent-red) 15%,
+    var(--accent-red) 85%,
+    transparent 100%
+  );
+}
+
+/* Hero gradient overlay */
+.hero-gradient {
+  background: linear-gradient(
+    180deg,
+    rgba(21, 21, 30, 0) 0%,
+    rgba(21, 21, 30, 0.6) 50%,
+    rgba(21, 21, 30, 1) 100%
+  );
+}
+
+/* Typography helpers */
+.uppercase-heading { letter-spacing: 0.05em; }
+.uppercase-label { letter-spacing: 0.08em; }
+.uppercase-badge { letter-spacing: 0.1em; }
+.mono-data { letter-spacing: 0.02em; }
+
+/* Shimmer loading effect */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--bg-secondary) 25%,
+    var(--bg-tertiary) 50%,
+    var(--bg-secondary) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

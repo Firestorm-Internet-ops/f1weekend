@@ -1,0 +1,44 @@
+{
+  "name": "pitlane",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --webpack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "db:init": "tsx scripts/init-db.ts",
+    "db:push": "drizzle-kit push --force",
+    "db:seed-experiences": "tsx src/data/seed-experiences.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.78.0",
+    "@qdrant/js-client-rest": "^1.17.0",
+    "date-fns": "^4.1.0",
+    "date-fns-tz": "^3.2.0",
+    "dotenv": "^17.3.1",
+    "drizzle-orm": "^0.45.1",
+    "ioredis": "^5.9.3",
+    "mysql2": "^3.17.4",
+    "nanoid": "^5.1.6",
+    "next": "16.1.6",
+    "ollama": "^0.6.3",
+    "postcss": "^8.5.6",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.2.0",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "babel-plugin-react-compiler": "1.0.0",
+    "drizzle-kit": "^0.31.9",
+    "eslint": "^9",
+    "eslint-config-next": "16.1.6",
+    "tailwindcss": "^4.2.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5"
+  }
+}
