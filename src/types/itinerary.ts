@@ -1,12 +1,28 @@
-export type SlotType = 'session' | 'experience' | 'free'
+export interface ManualItineraryInput {
+    raceSlug: string
+    arrivalDay: 'Wednesday' | 'Thursday' | 'Friday'
+    departureDay: 'Sunday' | 'Monday' | 'Tuesday'
+    sessionIds: number[]
+}
 
-export interface ItinerarySlot {
-    type: SlotType
-    experienceId?: number
+export interface SessionSlot {
+    type: 'session'
     startTime: string
     endTime: string
-    note: string
+    name: string        // "Free Practice 1"
+    shortName: string   // "FP1"
+    series: string      // "Formula 1"
 }
+
+export interface GapSlot {
+    type: 'gap'
+    startTime: string
+    endTime: string
+    windowLabel: string
+    suggestionIds: number[]
+}
+
+export type ItinerarySlot = SessionSlot | GapSlot
 
 export interface ItineraryDay {
     date: string
@@ -17,15 +33,6 @@ export interface ItineraryDay {
 export interface Itinerary {
     id: string
     title: string
-    summary: string
+    summary?: string
     days: ItineraryDay[]
-}
-
-export interface ItineraryInput {
-    raceSlug: string
-    arrivalDay: 'Wednesday' | 'Thursday' | 'Friday'
-    departureDay: 'Sunday' | 'Monday' | 'Tuesday'
-    interests: string[]
-    freeText?: string
-    groupSize?: number
 }

@@ -9,6 +9,17 @@ import SortSelector, { type SortOption } from './SortSelector';
 
 const SESSION_KEY = 'pitlane-session';
 
+const WINDOW_LABELS: Record<string, string> = {
+  'thu-full':    'Thursday — Full Day',
+  'fri-morning': 'Friday Morning — Before FP1',
+  'fri-gap':     'Friday Afternoon — Between Sessions',
+  'fri-evening': 'Friday Evening — After FP2',
+  'sat-morning': 'Saturday Morning — Before FP3',
+  'sat-evening': 'Saturday Evening — After Qualifying',
+  'sun-morning': 'Sunday Morning — Race Day',
+  'sun-evening': 'Sunday Evening — Post-Race',
+};
+
 function getSessionId(): string {
   if (typeof window === 'undefined') return '';
   let id = localStorage.getItem(SESSION_KEY);
@@ -103,7 +114,7 @@ export default function ExperiencesClient() {
       {windowLabel && (
         <div className="mb-6 flex items-center gap-3 flex-wrap">
           <span className="text-sm px-3 py-1 rounded-full bg-[var(--accent-teal-muted)] text-[var(--accent-teal)] border border-[var(--accent-teal)]/30">
-            {windowLabel}
+            {WINDOW_LABELS[windowLabel] ?? windowLabel}
             {!loading && ` · ${experiences.length} experience${experiences.length !== 1 ? 's' : ''}`}
           </span>
           <button

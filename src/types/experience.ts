@@ -1,5 +1,12 @@
 export type Category = 'food' | 'culture' | 'adventure' | 'daytrip' | 'nightlife'
 
+export interface ReviewSnapshot {
+    author: string
+    rating: number
+    text: string
+    date: string
+}
+
 export interface Experience {
     id: number
     raceId: number
@@ -22,6 +29,15 @@ export interface Experience {
     isFeatured: boolean
     tag: string | null
     sortOrder: number
+    // Enrichment fields (populated by enrich-from-gyg.ts)
+    highlights: string[] | null
+    includes: string[] | null
+    excludes: string[] | null
+    importantInfo: string | null
+    photos: string[] | null
+    reviewsSnapshot: ReviewSnapshot[] | null
+    f1Context: string | null
+    meetingPoint: string | null
 }
 
 export interface ExperienceFilter {
@@ -29,4 +45,10 @@ export interface ExperienceFilter {
     category?: Category
     windowSlug?: string
     sort?: 'popular' | 'price-low' | 'price-high' | 'duration-short' | 'rating'
+}
+
+export interface ExperiencePreview {
+    title: string;
+    imageEmoji: string;
+    durationLabel: string;
 }

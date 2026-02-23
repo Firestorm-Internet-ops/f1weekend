@@ -49,6 +49,14 @@ function mapExperience(r: typeof experiences.$inferSelect): Experience {
     isFeatured: r.is_featured ?? false,
     tag: r.tag ?? null,
     sortOrder: r.sort_order ?? 0,
+    highlights: (r.highlights as string[] | null) ?? null,
+    includes: (r.includes as string[] | null) ?? null,
+    excludes: (r.excludes as string[] | null) ?? null,
+    importantInfo: r.important_info ?? null,
+    photos: (r.photos as string[] | null) ?? null,
+    reviewsSnapshot: (r.reviews_snapshot as import('@/types/experience').ReviewSnapshot[] | null) ?? null,
+    f1Context: r.f1_context ?? null,
+    meetingPoint: r.meeting_point ?? null,
   };
 }
 
@@ -104,6 +112,17 @@ export async function getExperienceById(id: number): Promise<Experience | null> 
       .select()
       .from(experiences)
       .where(and(eq(experiences.id, id), eq(experiences.is_active, true)))
+      .limit(1)
+  );
+  return rows[0] ? mapExperience(rows[0]) : null;
+}
+
+export async function getExperienceBySlug(slug: string): Promise<Experience | null> {
+  const rows = await cached(`exp:slug:${slug}`, () =>
+    db
+      .select()
+      .from(experiences)
+      .where(and(eq(experiences.slug, slug), eq(experiences.is_active, true)))
       .limit(1)
   );
   return rows[0] ? mapExperience(rows[0]) : null;

@@ -20,11 +20,19 @@ export default async function HomePage() {
     getWindowsByRace(race.id),
   ]);
 
-  const windowCounts = await Promise.all(
-    windows.map(async (w) => ({
-      slug: w.slug,
-      count: (await getExperiencesByWindow(w.slug, race.id)).length,
-    }))
+  const windowData = await Promise.all(
+    windows.map(async (w) => {
+      const exps = await getExperiencesByWindow(w.slug, race.id);
+      return {
+        slug: w.slug,
+        count: exps.length,
+        experiences: exps.slice(0, 4).map((e) => ({
+          title: e.title,
+          imageEmoji: e.imageEmoji,
+          durationLabel: e.durationLabel,
+        })),
+      };
+    })
   );
 
   return (
@@ -89,7 +97,7 @@ export default async function HomePage() {
       {/* ── Race schedule + gap cards ── */}
       <section className="max-w-3xl mx-auto px-4 pb-24">
         <div className="racing-stripe mb-8" />
-        <RaceSchedule sessions={sessions} windows={windows} windowCounts={windowCounts} />
+        <RaceSchedule sessions={sessions} windows={windows} windowData={windowData} />
       </section>
     </div>
   );

@@ -1,19 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createItinerary } from '@/services/itinerary.service';
-import type { ItineraryInput } from '@/types/itinerary';
+import { buildManualItinerary } from '@/services/itinerary.service';
+import type { ManualItineraryInput } from '@/types/itinerary';
 
 export async function POST(req: NextRequest) {
-  try {
-    const body = (await req.json()) as ItineraryInput;
+    try {
+        const body = (await req.json()) as ManualItineraryInput;
 
-    if (!body.raceSlug || !body.arrivalDay || !body.departureDay || !body.interests?.length) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+        if (
+            !body.raceSlug ||
+            !body.arrivalDay ||
+            !body.departureDay ||
+            !Array.isArray(body.sessionIds) ||
+            body.sessionIds.length === 0
+        ) {
+            return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+        }
+
+        const itinerary = await buildManualItinerary(body);
+        return NextResponse.json({ id: itinerary.id });
+    } catch (error) {
+        console.error('[itinerary] POST error:', error);
+        return NextResponse.json({ error: 'Failed to build itinerary' }, { status: 500 });
     }
-
-    const itinerary = await createItinerary(body);
-    return NextResponse.json({ id: itinerary.id });
-  } catch (error) {
-    console.error('[itinerary] POST error:', error);
-    return NextResponse.json({ error: 'Failed to generate itinerary' }, { status: 500 });
-  }
 }

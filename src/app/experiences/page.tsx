@@ -1,9 +1,34 @@
+import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import ExperiencesClient from '@/components/experiences/ExperiencesClient';
 
-export const metadata = {
-  title: 'Experiences | Pitlane',
-  description: 'Curated Melbourne activities for the 2026 Australian Grand Prix weekend.',
+export const metadata: Metadata = {
+  title: 'Melbourne Experiences for F1 Race Weekend 2026 | Pitlane',
+  description:
+    '35 curated Melbourne activities, tours, and dining experiences handpicked for the 2026 Australian Grand Prix weekend at Albert Park. Filter by category and session gap.',
+  alternates: { canonical: 'https://pitlane.app/experiences' },
+  keywords: [
+    'Melbourne experiences F1',
+    'Australian Grand Prix 2026 activities',
+    'Melbourne Grand Prix weekend',
+    'Albert Park things to do',
+    'F1 Melbourne 2026',
+    'race weekend Melbourne',
+  ],
+  openGraph: {
+    title: 'Melbourne Experiences for F1 Race Weekend 2026 | Pitlane',
+    description:
+      '35 curated Melbourne activities, tours, and dining experiences for the 2026 Australian Grand Prix weekend at Albert Park.',
+    url: 'https://pitlane.app/experiences',
+    siteName: 'Pitlane',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Melbourne Experiences for F1 Race Weekend 2026 | Pitlane',
+    description:
+      '35 curated Melbourne activities, tours, and dining experiences for the 2026 Australian Grand Prix weekend.',
+  },
 };
 
 export default function ExperiencesPage() {

@@ -22,7 +22,7 @@ export interface Session {
     dayOfWeek: 'Thursday' | 'Friday' | 'Saturday' | 'Sunday'
     startTime: string  // HH:mm format
     endTime: string
-    sessionType: 'practice' | 'qualifying' | 'sprint' | 'race'
+    sessionType: 'practice' | 'qualifying' | 'sprint' | 'race' | 'support' | 'event'
 }
 
 export interface ExperienceWindow {

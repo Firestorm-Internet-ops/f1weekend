@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 
-// FP1 start: Thursday 5 March 2026, 12:30 AEDT (UTC+11)
-const TARGET = new Date('2026-03-05T01:30:00Z');
+// FP1 start: Friday 6 March 2026, 12:30 AEDT (UTC+11)
+const TARGET = new Date('2026-03-06T01:30:00Z');
 
 interface TimeLeft {
   d: number;

@@ -25,7 +25,7 @@ export const sessions = mysqlTable("sessions", {
     day_of_week: mysqlEnum("day_of_week", ["Thursday", "Friday", "Saturday", "Sunday"]),
     start_time: time("start_time"),
     end_time: time("end_time"),
-    session_type: mysqlEnum("session_type", ["practice", "qualifying", "sprint", "race"]),
+    session_type: mysqlEnum("session_type", ["practice", "qualifying", "sprint", "race", "support", "event"]),
     created_at: timestamp("created_at").defaultNow(),
 });
 
@@ -68,6 +68,15 @@ export const experiences = mysqlTable("experiences", {
     sort_order: int("sort_order"),
     is_active: boolean("is_active").default(true),
     created_at: timestamp("created_at").defaultNow(),
+    // Enrichment columns (populated by enrich-from-gyg.ts script)
+    highlights: json("highlights"),          // string[]
+    includes: json("includes"),              // string[]
+    excludes: json("excludes"),              // string[]
+    important_info: text("important_info"),
+    photos: json("photos"),                  // string[] — GYG image URLs
+    reviews_snapshot: json("reviews_snapshot"), // {author,rating,text,date}[]
+    f1_context: text("f1_context"),          // Claude-generated F1 editorial
+    meeting_point: text("meeting_point"),    // GYG meeting point description
 });
 
 export const experience_windows_map = mysqlTable("experience_windows_map", {

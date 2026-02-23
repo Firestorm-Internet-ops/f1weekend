@@ -1,8 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
 import type { Session, ExperienceWindow } from '@/types/race';
+import type { ExperiencePreview } from '@/types/experience';
 import { formatTime } from '@/lib/utils';
+import { getSessionStatus, getSessionProgress } from '@/lib/schedule-utils';
 import GapCard from './GapCard';
 
 const DAYS = ['Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
@@ -20,20 +23,86 @@ const SESSION_COLORS: Record<string, string> = {
   qualifying: '#FFB800',
   sprint: '#FF6B35',
   race: '#E10600',
+  support: '#6E6E82',
+  event: '#00D2BE',
 };
+
+const SESSION_GROUP_LABEL: Record<string, string> = {
+  practice: 'F1 ON TRACK',
+  qualifying: 'F1 ON TRACK',
+  sprint: 'F1 ON TRACK',
+  race: 'F1 ON TRACK',
+  support: 'SUPPORT RACING',
+  event: 'F1 EVENTS',
+};
+
+const F1_TYPES = new Set(['practice', 'qualifying', 'sprint', 'race']);
 
 interface Props {
   sessions: Session[];
   windows: ExperienceWindow[];
-  windowCounts: { slug: string; count: number }[];
+  windowData: { slug: string; count: number; experiences: ExperiencePreview[] }[];
 }
 
-export default function RaceSchedule({ sessions, windows, windowCounts }: Props) {
-  const [activeDay, setActiveDay] = useState<Day>('Thursday');
+export default function RaceSchedule({ sessions, windows, windowData }: Props) {
+  const [activeDay, setActiveDay] = useState<Day>('Friday');
+  const [tick, setTick] = useState(0);
+  const [liveTick, setLiveTick] = useState(0);
+
+  // Recompute statuses every 60s
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 60_000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Update live progress bar every 10s
+  useEffect(() => {
+    const id = setInterval(() => setLiveTick((t) => t + 1), 10_000);
+    return () => clearInterval(id);
+  }, []);
 
   const daySessions = sessions.filter((s) => s.dayOfWeek === activeDay);
   const dayWindows = windows.filter((w) => w.dayOfWeek === activeDay);
-  const countMap = Object.fromEntries(windowCounts.map((wc) => [wc.slug, wc.count]));
+  const countMap = Object.fromEntries(windowData.map((w) => [w.slug, w.count]));
+  const expMap = Object.fromEntries(windowData.map((w) => [w.slug, w.experiences]));
+
+  // Compute statuses for current tick
+  const statuses = useMemo(
+    () => daySessions.map((s) => getSessionStatus(activeDay, s.startTime, s.endTime)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [daySessions, activeDay, tick],
+  );
+
+  const liveProgressValues = useMemo(
+    () =>
+      daySessions.map((s, i) =>
+        statuses[i] === 'live' ? getSessionProgress(activeDay, s.startTime, s.endTime) : 0,
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [daySessions, activeDay, statuses, liveTick],
+  );
+
+  // Group sessions: F1 sessions first, then support, then events
+  const typeOrder = ['practice', 'qualifying', 'sprint', 'race', 'event'];
+  const grouped = typeOrder
+    .map((type) => ({
+      type,
+      label: SESSION_GROUP_LABEL[type],
+      items: daySessions
+        .map((s, i) => ({ session: s, index: i }))
+        .filter(({ session }) => session.sessionType === type),
+    }))
+    .filter((g) => g.items.length > 0);
+
+  // Merge consecutive groups with the same label
+  const merged: { label: string; items: { session: Session; index: number }[] }[] = [];
+  for (const g of grouped) {
+    if (merged.length > 0 && merged[merged.length - 1].label === g.label) {
+      merged[merged.length - 1].items.push(...g.items);
+    } else {
+      merged.push({ label: g.label, items: [...g.items] });
+    }
+  }
 
   return (
     <div>
@@ -54,33 +123,87 @@ export default function RaceSchedule({ sessions, windows, windowCounts }: Props)
         ))}
       </div>
 
-      {/* F1 sessions on track */}
+      {/* Sessions on circuit — grouped by type */}
       {daySessions.length > 0 && (
-        <div className="mb-6">
-          <h3 className="text-xs font-medium uppercase-label text-[var(--text-muted)] mb-3">
-            F1 ON TRACK
-          </h3>
-          <div className="flex flex-col gap-2">
-            {daySessions.map((session) => (
-              <div
-                key={session.id}
-                className="flex items-center gap-4 p-3 rounded-lg bg-[var(--bg-tertiary)]"
-              >
-                <div
-                  className="w-1.5 h-8 rounded-full shrink-0"
-                  style={{
-                    backgroundColor: SESSION_COLORS[session.sessionType] ?? '#6E6E82',
-                  }}
-                />
-                <div>
-                  <p className="font-medium text-white text-sm">{session.name}</p>
-                  <p className="text-xs text-[var(--text-tertiary)] mono-data">
-                    {formatTime(session.startTime)} – {formatTime(session.endTime)} AEDT
-                  </p>
-                </div>
+        <div className="mb-6 flex flex-col gap-5">
+          {merged.map((group) => (
+            <div key={group.label}>
+              <h3 className="text-xs font-medium uppercase-label text-[var(--text-muted)] mb-3">
+                {group.label}
+              </h3>
+              {/* key={activeDay} forces remount on tab switch → triggers stagger */}
+              <div key={activeDay} className="flex flex-col gap-2">
+                {group.items.map(({ session, index }) => {
+                  const status = statuses[index];
+                  const progress = liveProgressValues[index];
+                  const isF1 = F1_TYPES.has(session.sessionType);
+                  const color = SESSION_COLORS[session.sessionType] ?? '#6E6E82';
+                  const isCompleted = status === 'completed';
+                  const isLive = status === 'live';
+
+                  return (
+                    <div
+                      key={session.id}
+                      className={`relative rounded-lg overflow-hidden ${isCompleted ? 'opacity-40' : ''}`}
+                      style={{
+                        animation: 'card-enter 250ms cubic-bezier(0.16,1,0.3,1) both',
+                        animationDelay: `${index * 40}ms`,
+                        background: isF1
+                          ? 'color-mix(in srgb, #E10600 6%, var(--bg-tertiary))'
+                          : 'var(--bg-tertiary)',
+                      }}
+                    >
+                      {/* Left border */}
+                      <div
+                        className="absolute left-0 top-0 bottom-0"
+                        style={{
+                          width: isF1 ? '3px' : '2px',
+                          background: isCompleted ? 'var(--text-muted)' : color,
+                        }}
+                      />
+
+                      {/* Live progress bar */}
+                      {isLive && (
+                        <div
+                          className="absolute bottom-0 left-0 h-0.5 transition-all duration-1000"
+                          style={{ width: `${progress}%`, background: color }}
+                        />
+                      )}
+
+                      <div className="pl-4 pr-3 py-3 flex items-center gap-3">
+                        {/* Session name + time */}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-white text-sm leading-tight">
+                            {session.name}
+                          </p>
+                          <p className="text-xs text-[var(--text-tertiary)] mono-data mt-0.5">
+                            {formatTime(session.startTime)} – {formatTime(session.endTime)}{' '}
+                            <span className="text-[var(--text-muted)]">AEDT</span>
+                          </p>
+                        </div>
+
+                        {/* Live indicator */}
+                        {isLive && (
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <span
+                              className="w-2 h-2 rounded-full"
+                              style={{
+                                background: '#E10600',
+                                animation: 'pulse-red 2s ease-in-out infinite',
+                              }}
+                            />
+                            <span className="text-[10px] font-semibold text-[var(--accent-red)] uppercase-label">
+                              LIVE
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
       )}
 
@@ -96,11 +219,11 @@ export default function RaceSchedule({ sessions, windows, windowCounts }: Props)
                 key={window.id}
                 slug={window.slug}
                 label={window.label}
-                description={window.description ?? ''}
                 maxDurationHours={window.maxDurationHours}
                 count={countMap[window.slug] ?? 0}
                 startTime={window.startTime}
                 endTime={window.endTime}
+                experiences={expMap[window.slug] ?? []}
               />
             ))}
           </div>
@@ -112,6 +235,16 @@ export default function RaceSchedule({ sessions, windows, windowCounts }: Props)
           No schedule data for {activeDay}.
         </div>
       )}
+
+      {/* View full schedule CTA */}
+      <div className="mt-6 pt-4 border-t border-[var(--border-subtle)]">
+        <Link
+          href="/schedule"
+          className="text-sm font-medium text-[var(--accent-teal)] hover:text-white transition-colors flex items-center gap-1"
+        >
+          View full schedule →
+        </Link>
+      </div>
     </div>
   );
 }
