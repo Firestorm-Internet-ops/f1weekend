@@ -8,6 +8,8 @@ import PhotoSlider from '@/components/experiences/PhotoSlider';
 import Breadcrumb from '@/components/Breadcrumb';
 import type { Experience } from '@/types/experience';
 
+export const dynamic = 'force-dynamic';
+
 const CATEGORY_COLORS: Record<string, string> = {
   food: '#FF6B35',
   culture: '#A855F7',

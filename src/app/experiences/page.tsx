@@ -5,6 +5,8 @@ import ExperiencesClient from '@/components/experiences/ExperiencesClient';
 import { getRaceBySlug } from '@/services/race.service';
 import { getExperiencesByRace } from '@/services/experience.service';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'Melbourne Experiences for F1 Race Weekend 2026 | F1 Weekend',
   description:

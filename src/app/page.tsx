@@ -6,6 +6,8 @@ import RaceSchedule from '@/components/race/RaceSchedule';
 import RaceCountdown from '@/components/race/RaceCountdown';
 import CircuitMap from '@/components/race/CircuitMap';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'F1 Weekend | Race Weekend Companion — Melbourne 2026',
   description:

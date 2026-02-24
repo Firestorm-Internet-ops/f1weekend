@@ -5,6 +5,8 @@ import { getRaceBySlug } from '@/services/race.service';
 import { getExperiencesByRace } from '@/services/experience.service';
 import ItineraryView from '@/components/itinerary/ItineraryView';
 
+export const dynamic = 'force-dynamic';
+
 interface Props {
   params: Promise<{ id: string }>;
 }

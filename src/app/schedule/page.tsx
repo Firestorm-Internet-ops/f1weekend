@@ -4,6 +4,8 @@ import Breadcrumb from '@/components/Breadcrumb';
 import { getRaceBySlug } from '@/services/race.service';
 import { getScheduleByRace } from '@/services/schedule.service';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'Schedule | F1 Weekend',
   description:
