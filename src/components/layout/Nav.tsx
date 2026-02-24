@@ -14,9 +14,9 @@ export default function Nav() {
             href="/"
             className="font-display font-black text-xl tracking-widest text-white uppercase"
           >
-            PITLANE
+            F1WEEKEND.CO
           </Link>
-          <span className="hidden sm:inline text-xs text-[var(--text-muted)] font-medium tracking-wide">
+          <span className="hidden sm:inline text-sm text-[var(--text-secondary)] font-medium tracking-wide">
             · by{' '}
             <a
               href="https://firestorm-internet.com/"

@@ -1,6 +1,6 @@
 /**
  * Enrichment script: pulls live data from GYG API for each experience.
- * Run after migrate-add-enrichment.ts:
+ * Run after migrate-add-tour-detail.ts:
  *   npx tsx --env-file=.env scripts/enrich-from-gyg.ts
  */
 import 'dotenv/config';
@@ -46,6 +46,19 @@ interface GYGTour {
     coordinates?: { lat?: number; long?: number };
   }[];
   url?: string;
+  highlights?: string[];
+  inclusions?: string;
+  exclusions?: string;
+  bestseller?: boolean;
+  has_pick_up?: boolean;
+  mobile_voucher?: boolean;
+  categories?: { name?: string }[];
+  price?: {
+    values?: {
+      amount?: number;
+      special?: { original_price?: number; savings?: number };
+    };
+  };
 }
 
 interface GYGTourResponse {
@@ -72,12 +85,18 @@ interface GYGOption {
   pictures?: { url?: string; ssl_url?: string }[];
   meeting_point?: string;
   meeting_point_description?: string;
+  skip_the_line?: boolean;
+  free_sale?: boolean;
+  mobile_voucher?: boolean;
+  cond_language?: { language_live?: string[] };
+  price?: { values?: { amount?: number } };
 }
 
 interface GYGOptionsResponse {
+  tour_options?: GYGOption[];   // actual root-level shape from API
   data?: {
-    tour_options?: GYGOption[]; // actual field name from API
-    options?: GYGOption[];      // fallback alias
+    tour_options?: GYGOption[]; // nested fallback
+    options?: GYGOption[];      // nested alias fallback
   };
 }
 
@@ -85,6 +104,8 @@ interface GYGOptionsResponse {
 interface GYGReviewItem {
   review_id?: number;
   reviewer_name?: string;
+  reviewer_nationality?: string;
+  reviewer_country?: string;
   review_rating?: number;
   comment?: string;
   review_date?: string;
@@ -99,6 +120,17 @@ interface GYGReviewsResponse {
   };
 }
 
+interface OptionSnapshot {
+  optionId: number;
+  title: string;
+  description: string;
+  price: number;
+  skipTheLine: boolean;
+  instantConfirmation: boolean;
+  languages: string[];
+  meetingPoint: string;
+}
+
 function gygHeaders() {
   return {
     'Accept': 'application/json',
@@ -107,7 +139,7 @@ function gygHeaders() {
 }
 
 async function fetchTourDetails(tourId: string): Promise<GYGTourResponse | null> {
-  const url = `${GYG_BASE}/tours/${tourId}?cnt_language=en&currency=AUD`;
+  const url = `${GYG_BASE}/tours/${tourId}?cnt_language=en&currency=AUD&preformatted=full`;
   const res = await fetch(url, { headers: gygHeaders() });
   if (!res.ok) {
     console.error(`  [GYG] tours/${tourId} → ${res.status} ${res.statusText}`);
@@ -117,7 +149,7 @@ async function fetchTourDetails(tourId: string): Promise<GYGTourResponse | null>
 }
 
 async function fetchTourOptions(tourId: string): Promise<GYGOptionsResponse | null> {
-  const url = `${GYG_BASE}/tours/${tourId}/options?cnt_language=en&currency=AUD`;
+  const url = `${GYG_BASE}/tours/${tourId}/options?cnt-language=en&currency=AUD`;
   const res = await fetch(url, { headers: gygHeaders() });
   if (!res.ok) {
     console.error(`  [GYG] tours/${tourId}/options → ${res.status} ${res.statusText}`);
@@ -127,7 +159,7 @@ async function fetchTourOptions(tourId: string): Promise<GYGOptionsResponse | nu
 }
 
 async function fetchTourReviews(tourId: string): Promise<GYGReviewsResponse | null> {
-  const url = `${GYG_BASE}/reviews/tour/${tourId}?cnt_language=en&currency=AUD&limit=5&sort_direction=DESC&sort_field=rating`;
+  const url = `${GYG_BASE}/reviews/tour/${tourId}?cnt_language=en&currency=AUD&limit=20&sort_direction=DESC&sort_field=rating`;
   const res = await fetch(url, { headers: gygHeaders() });
   if (!res.ok) {
     console.error(`  [GYG] reviews/tour/${tourId} → ${res.status} ${res.statusText}`);
@@ -145,6 +177,17 @@ function extractPhotos(source: { pictures?: { url?: string; ssl_url?: string }[]
 
 function dedupePhotos(photos: string[]): string[] {
   return [...new Set(photos)];
+}
+
+function stripHtml(s: string): string {
+  return s.replace(/<[^>]+>/g, '').trim();
+}
+
+function parseInclusionString(s: string | undefined): string[] {
+  if (!s) return [];
+  const clean = stripHtml(s);
+  const lines = clean.split(/\n+/).map((l) => l.trim()).filter(Boolean);
+  return lines.length > 1 ? lines : [clean];
 }
 
 async function main() {
@@ -168,7 +211,7 @@ async function main() {
   };
 
   const [rows] = await conn.execute<mysql.RowDataPacket[]>(
-    `SELECT id, title, duration_label, category, affiliate_product_id, image_url
+    `SELECT id, title, duration_label, category, affiliate_product_id, image_url, abstract
      FROM experiences
      WHERE affiliate_product_id IS NOT NULL AND affiliate_product_id != ''
      ORDER BY sort_order ASC`
@@ -201,47 +244,107 @@ async function main() {
     const tour = tourData?.data?.tours?.[0];
     const tourPhotos = tour ? extractPhotos(tour, 10) : [];
 
-    // Parse options — actual field is data.tour_options (data.options as fallback)
-    const option = optionsData?.data?.tour_options?.[0] ?? optionsData?.data?.options?.[0];
-    const optionPhotos = option ? extractPhotos(option, 10) : [];
-    const photos = dedupePhotos([...tourPhotos, ...optionPhotos]).slice(0, 5);
+    // Parse options — root-level tour_options first (actual API shape), then nested fallbacks
+    const allOptions =
+      optionsData?.tour_options ??
+      optionsData?.data?.tour_options ??
+      optionsData?.data?.options ??
+      [];
+    const option = allOptions[0];
+    const allOptionPhotos = allOptions.flatMap((opt: GYGOption) => extractPhotos(opt, 5));
+    const photos = dedupePhotos([...tourPhotos, ...allOptionPhotos]).slice(0, 12);
 
-    const highlights = option?.highlights ?? [];
-    const includes = option?.inclusions ?? option?.includes ?? option?.included ?? [];
-    const excludes = option?.exclusions ?? option?.excludes ?? option?.excluded ?? [];
+    // highlights: prefer tour-level array, fall back to options
+    const highlights =
+      (tour?.highlights && Array.isArray(tour.highlights) && tour.highlights.length > 0)
+        ? tour.highlights
+        : (option?.highlights ?? []);
+
+    // inclusions: prefer options arrays, fall back to tour-level string
+    const optionIncludes = option?.inclusions ?? option?.includes ?? option?.included ?? [];
+    const includes =
+      optionIncludes.length > 0
+        ? optionIncludes
+        : parseInclusionString(tour?.inclusions);
+
+    // exclusions: prefer options arrays, fall back to tour-level string
+    const optionExcludes = option?.exclusions ?? option?.excludes ?? option?.excluded ?? [];
+    const excludes =
+      optionExcludes.length > 0
+        ? optionExcludes
+        : parseInclusionString(tour?.exclusions);
+
     const importantInfo = option?.know_before_you_go ?? option?.important_information ?? '';
     const meetingPoint = option?.meeting_point ?? option?.meeting_point_description ?? '';
 
+    // Aggregate languages across all options
+    const languages = [...new Set(
+      allOptions.flatMap((opt: GYGOption) => opt.cond_language?.language_live ?? [])
+    )].filter(Boolean);
+
+    // Build options snapshot from all options
+    const optionsSnapshot: OptionSnapshot[] = allOptions.map((opt: GYGOption) => ({
+      optionId: opt.option_id ?? 0,
+      title: opt.title ?? '',
+      description: opt.description ?? '',
+      price: opt.price?.values?.amount ?? 0,
+      skipTheLine: opt.skip_the_line ?? false,
+      instantConfirmation: opt.free_sale ?? false,
+      languages: opt.cond_language?.language_live ?? [],
+      meetingPoint: opt.meeting_point ?? opt.meeting_point_description ?? '',
+    }));
+
     // Parse reviews — v1 API returns data.reviews.review_items
-    type ReviewSnapshot = { author: string; rating: number; text: string; date: string };
+    type ReviewSnapshot = { author: string; rating: number; text: string; date: string; country?: string };
     const reviewItems = reviewData?.data?.reviews?.review_items ?? [];
     const reviewsSnapshot: ReviewSnapshot[] = reviewItems
       .filter((r) => r.comment && r.comment.trim())
-      .slice(0, 5)
+      .slice(0, 20)
       .map((r) => ({
         author: r.reviewer_name ?? 'Anonymous',
         rating: r.review_rating ?? 5,
         text: r.comment ?? '',
         date: r.review_date ?? '',
+        country: r.reviewer_nationality ?? r.reviewer_country ?? undefined,
       }));
+
+    // GYG categories
+    const gygCategories =
+      tour?.categories && tour.categories.length > 0
+        ? tour.categories.map((c: { name?: string }) => c.name ?? '').filter(Boolean)
+        : null;
 
     // Build update — always overwrite image_url with photos[0] if available
     const updateFields: Record<string, unknown> = {
-      photos:           photos.length > 0 ? JSON.stringify(photos) : null,
-      reviews_snapshot: reviewsSnapshot.length > 0 ? JSON.stringify(reviewsSnapshot) : null,
-      highlights:       highlights.length > 0 ? JSON.stringify(highlights) : null,
-      includes:         includes.length > 0 ? JSON.stringify(includes) : null,
-      excludes:         excludes.length > 0 ? JSON.stringify(excludes) : null,
-      important_info:   importantInfo || null,
-      meeting_point:    meetingPoint || null,
+      abstract:             tour?.abstract ?? null,
+      photos:               photos.length > 0 ? JSON.stringify(photos) : null,
+      reviews_snapshot:     reviewsSnapshot.length > 0 ? JSON.stringify(reviewsSnapshot) : null,
+      highlights:           highlights.length > 0 ? JSON.stringify(highlights) : null,
+      includes:             includes.length > 0 ? JSON.stringify(includes) : null,
+      excludes:             excludes.length > 0 ? JSON.stringify(excludes) : null,
+      important_info:       importantInfo || null,
+      meeting_point:        meetingPoint || null,
+      // New tour-detail fields
+      bestseller:           tour?.bestseller ?? null,
+      original_price:       tour?.price?.values?.special?.original_price ?? null,
+      discount_pct:         tour?.price?.values?.special?.savings ?? null,
+      has_pick_up:          tour?.has_pick_up ?? null,
+      mobile_voucher:       optionsSnapshot[0]?.skipTheLine !== undefined ? (option?.mobile_voucher ?? null) : null,
+      instant_confirmation: optionsSnapshot[0]?.instantConfirmation ?? null,
+      skip_the_line:        optionsSnapshot.some((o) => o.skipTheLine) || null,
+      options_snapshot:     optionsSnapshot.length > 0 ? JSON.stringify(optionsSnapshot) : null,
+      gyg_categories:       gygCategories ? JSON.stringify(gygCategories) : null,
+      lat:                  tour?.coordinates?.lat ?? null,
+      lng:                  tour?.coordinates?.long ?? null,
+      languages:            languages.length > 0 ? JSON.stringify(languages) : null,
       ...(photos.length > 0 ? { image_url: photos[0] } : {}),
     };
 
     const setClauses = Object.keys(updateFields)
       .map((k) => `\`${k}\` = ?`)
       .join(', ');
-    const values: (string | number | null)[] = [
-      ...Object.values(updateFields).map((v) => (v === undefined ? null : v as string | number | null)),
+    const values: (string | number | boolean | null)[] = [
+      ...Object.values(updateFields).map((v) => (v === undefined ? null : v as string | number | boolean | null)),
       exp.id,
     ];
 
@@ -251,7 +354,10 @@ async function main() {
     );
 
     console.log(
-      `  ✓ photos:${photos.length} highlights:${highlights.length} includes:${includes.length} excludes:${excludes.length} reviews:${reviewsSnapshot.length} meeting:${meetingPoint ? 'yes' : 'no'}`
+      `  ✓ highlights:${highlights.length} includes:${includes.length} excludes:${excludes.length}` +
+      ` photos:${photos.length} reviews:${reviewsSnapshot.length}` +
+      ` options:${optionsSnapshot.length} bestseller:${tour?.bestseller ? 'yes' : 'no'}` +
+      ` skip-the-line:${optionsSnapshot.some((o) => o.skipTheLine) ? 'yes' : 'no'}`
     );
   }
 

@@ -21,7 +21,7 @@ export default function CategoryTabs({ active, onChange }: Props) {
         <button
           key={tab.value}
           onClick={() => onChange(tab.value)}
-          className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all uppercase-label shrink-0 ${
+          className={`px-5 py-2.5 rounded-full text-base font-medium transition-all uppercase-label shrink-0 ${
             active === tab.value
               ? 'bg-[var(--accent-teal)] text-[var(--bg-primary)]'
               : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-white hover:bg-[var(--bg-tertiary)]'

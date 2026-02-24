@@ -34,6 +34,7 @@ function mapExperience(r: typeof experiences.$inferSelect): Experience {
     slug: r.slug ?? '',
     description: r.description ?? '',
     shortDescription: r.short_description ?? '',
+    abstract: r.abstract ?? null,
     category: (r.category ?? 'culture') as Category,
     durationHours: Number(r.duration_hours),
     durationLabel: r.duration_label ?? '',
@@ -57,6 +58,23 @@ function mapExperience(r: typeof experiences.$inferSelect): Experience {
     reviewsSnapshot: (r.reviews_snapshot as import('@/types/experience').ReviewSnapshot[] | null) ?? null,
     f1Context: r.f1_context ?? null,
     meetingPoint: r.meeting_point ?? null,
+    bestseller: r.bestseller ?? null,
+    originalPrice: r.original_price !== null ? Number(r.original_price) : null,
+    discountPct: r.discount_pct ?? null,
+    hasPickUp: r.has_pick_up ?? null,
+    mobileVoucher: r.mobile_voucher ?? null,
+    instantConfirmation: r.instant_confirmation ?? null,
+    skipTheLine: r.skip_the_line ?? null,
+    optionsSnapshot: (r.options_snapshot as import('@/types/experience').OptionSnapshot[] | null) ?? null,
+    gygCategories: (r.gyg_categories as string[] | null) ?? null,
+    seoKeywords: (r.seo_keywords as string[] | null) ?? null,
+    f1WindowsLabel: r.f1_windows_label ?? null,
+    lat: r.lat !== null && r.lat !== undefined ? Number(r.lat) : null,
+    lng: r.lng !== null && r.lng !== undefined ? Number(r.lng) : null,
+    languages: (r.languages as string[] | null) ?? null,
+    distanceKm: r.distance_km !== null && r.distance_km !== undefined ? Number(r.distance_km) : null,
+    neighborhood: r.neighborhood ?? null,
+    travelMins: r.travel_mins ?? null,
   };
 }
 
@@ -205,7 +223,11 @@ export async function queryExperiences(filter: ExperienceFilter): Promise<Experi
   if (!race) return [];
 
   if (filter.windowSlug) {
-    return getExperiencesByWindow(filter.windowSlug, race.id, filter.sort);
+    const exps = await getExperiencesByWindow(filter.windowSlug, race.id, filter.sort);
+    if (filter.category) {
+      return exps.filter((e) => e.category === filter.category);
+    }
+    return exps;
   }
 
   if (filter.category) {

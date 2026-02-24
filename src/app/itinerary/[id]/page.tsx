@@ -12,8 +12,26 @@ interface Props {
 export async function generateMetadata({ params }: Props) {
   const { id } = await params;
   const itinerary = await getItinerary(id);
+  if (!itinerary) return { title: 'Itinerary | F1 Weekend' };
+
+  const description = itinerary.summary
+    ?? `Custom F1 race weekend itinerary for the 2026 Australian Grand Prix — ${itinerary.title}.`;
+
   return {
-    title: itinerary ? `${itinerary.title} | Pitlane` : 'Itinerary | Pitlane',
+    title: itinerary.title,
+    description,
+    robots: { index: false, follow: false },
+    openGraph: {
+      title: itinerary.title,
+      description,
+      url: `https://f1weekend.co/itinerary/${id}`,
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: itinerary.title,
+      description,
+    },
   };
 }
 
@@ -32,7 +50,7 @@ export default async function ItineraryDetailPage({ params }: Props) {
         <div className="mb-6">
           <Link
             href="/itinerary"
-            className="text-sm text-[var(--text-muted)] hover:text-white transition-colors"
+            className="text-sm text-[var(--text-secondary)] hover:text-white transition-colors"
           >
             ← Build another
           </Link>

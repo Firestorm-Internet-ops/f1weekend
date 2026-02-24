@@ -18,6 +18,13 @@ const DAY_SHORT: Record<Day, string> = {
   Sunday: 'Sun',
 };
 
+const DAY_DATE: Record<Day, string> = {
+  Thursday: 'Mar 5',
+  Friday: 'Mar 6',
+  Saturday: 'Mar 7',
+  Sunday: 'Mar 8',
+};
+
 const SESSION_COLORS: Record<string, string> = {
   practice: '#B8B8CC',
   qualifying: '#FFB800',
@@ -112,13 +119,14 @@ export default function RaceSchedule({ sessions, windows, windowData }: Props) {
           <button
             key={day}
             onClick={() => setActiveDay(day)}
-            className={`px-5 py-2 rounded-full text-sm font-medium transition-all uppercase-label ${
+            className={`px-6 py-3 rounded-full text-base font-medium transition-all flex flex-col items-center leading-tight ${
               activeDay === day
                 ? 'bg-[var(--accent-red)] text-white'
                 : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-white hover:bg-[var(--bg-tertiary)]'
             }`}
           >
-            {DAY_SHORT[day]}
+            <span className="uppercase-label">{DAY_SHORT[day]}</span>
+            <span className={`text-sm font-normal mt-0.5 ${activeDay === day ? 'text-white/80' : 'text-[var(--text-secondary)]'}`}>{DAY_DATE[day]}</span>
           </button>
         ))}
       </div>
@@ -128,7 +136,7 @@ export default function RaceSchedule({ sessions, windows, windowData }: Props) {
         <div className="mb-6 flex flex-col gap-5">
           {merged.map((group) => (
             <div key={group.label}>
-              <h3 className="text-xs font-medium uppercase-label text-[var(--text-muted)] mb-3">
+              <h3 className="text-sm font-semibold uppercase-label text-white mb-3">
                 {group.label}
               </h3>
               {/* key={activeDay} forces remount on tab switch → triggers stagger */}
@@ -173,12 +181,12 @@ export default function RaceSchedule({ sessions, windows, windowData }: Props) {
                       <div className="pl-4 pr-3 py-3 flex items-center gap-3">
                         {/* Session name + time */}
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-white text-sm leading-tight">
+                          <p className="font-medium text-white text-base leading-tight">
                             {session.name}
                           </p>
-                          <p className="text-xs text-[var(--text-tertiary)] mono-data mt-0.5">
+                          <p className="text-base text-[var(--text-secondary)] mono-data mt-0.5">
                             {formatTime(session.startTime)} – {formatTime(session.endTime)}{' '}
-                            <span className="text-[var(--text-muted)]">AEDT</span>
+                            <span className="text-[var(--text-secondary)]">AEDT</span>
                           </p>
                         </div>
 
@@ -210,7 +218,7 @@ export default function RaceSchedule({ sessions, windows, windowData }: Props) {
       {/* Gap cards — explore Melbourne */}
       {dayWindows.length > 0 && (
         <div>
-          <h3 className="text-xs font-medium uppercase-label text-[var(--text-muted)] mb-3">
+          <h3 className="text-sm font-semibold uppercase-label text-[var(--text-secondary)] mb-3">
             EXPLORE MELBOURNE
           </h3>
           <div className="flex flex-col gap-3">

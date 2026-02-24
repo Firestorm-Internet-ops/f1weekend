@@ -100,7 +100,7 @@ export default function ItineraryForm({ sessions }: Props) {
 
             {/* Arrival day */}
             <div>
-                <label className="block text-xs font-medium uppercase-label text-[var(--text-muted)] mb-3">
+                <label className="block text-xs font-medium uppercase-label text-[var(--text-secondary)] mb-3">
                     ARRIVAL DAY
                 </label>
                 <div className="flex gap-2 flex-wrap">
@@ -119,7 +119,7 @@ export default function ItineraryForm({ sessions }: Props) {
 
             {/* Departure day */}
             <div>
-                <label className="block text-xs font-medium uppercase-label text-[var(--text-muted)] mb-3">
+                <label className="block text-xs font-medium uppercase-label text-[var(--text-secondary)] mb-3">
                     DEPARTURE DAY
                 </label>
                 <div className="flex gap-2 flex-wrap">
@@ -138,7 +138,7 @@ export default function ItineraryForm({ sessions }: Props) {
 
             {/* Sessions to attend */}
             <div>
-                <label className="block text-xs font-medium uppercase-label text-[var(--text-muted)] mb-3">
+                <label className="block text-xs font-medium uppercase-label text-[var(--text-secondary)] mb-3">
                     SESSIONS TO ATTEND
                 </label>
 
@@ -146,7 +146,7 @@ export default function ItineraryForm({ sessions }: Props) {
                     const visibleDays = activeDays.filter(d => (sessionsByDay[d]?.length ?? 0) > 0);
                     if (activeDays.length === 0 || visibleDays.length === 0) {
                         return (
-                            <p className="text-sm text-[var(--text-muted)]">
+                            <p className="text-sm text-[var(--text-secondary)]">
                                 {sessions.length === 0
                                     ? 'Sessions unavailable — please refresh or try again.'
                                     : 'No F1 sessions on your selected days.'}
@@ -160,7 +160,7 @@ export default function ItineraryForm({ sessions }: Props) {
                                 if (daySessions.length === 0) return null;
                                 return (
                                     <div key={day}>
-                                        <p className="text-xs font-medium text-[var(--text-muted)] mb-2 uppercase tracking-wider">
+                                        <p className="text-sm font-medium text-[var(--text-secondary)] mb-2 uppercase tracking-wider">
                                             {day}
                                         </p>
                                         <div className="space-y-2">
@@ -196,13 +196,13 @@ export default function ItineraryForm({ sessions }: Props) {
                                                         {/* Session name */}
                                                         <span className="font-medium text-sm flex-1">
                                                             {session.shortName}
-                                                            <span className="font-normal text-[var(--text-muted)] ml-1.5 text-xs">
+                                                            <span className="font-normal text-[var(--text-secondary)] ml-1.5 text-xs">
                                                                 {session.name}
                                                             </span>
                                                         </span>
 
                                                         {/* Time */}
-                                                        <span className="text-xs text-[var(--text-muted)] mono-data shrink-0">
+                                                        <span className="text-sm text-[var(--text-secondary)] mono-data shrink-0">
                                                             {session.startTime} – {session.endTime}
                                                         </span>
 
@@ -227,7 +227,7 @@ export default function ItineraryForm({ sessions }: Props) {
             {error && <p className="text-sm text-[var(--accent-red)]">{error}</p>}
 
             {selectedIds.size === 0 && sessions.length > 0 && (
-                <p className="text-sm text-[var(--text-muted)] text-center -mb-4">
+                <p className="text-sm text-[var(--text-secondary)] text-center -mb-4">
                     Select at least one session to continue
                 </p>
             )}

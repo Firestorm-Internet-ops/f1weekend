@@ -1,15 +1,82 @@
+import type { Metadata } from 'next';
 import { getRaceBySlug, getSessionsByRace, getWindowsByRace } from '@/services/race.service';
 import { getExperiencesByWindow } from '@/services/experience.service';
 import RaceSchedule from '@/components/race/RaceSchedule';
 import RaceCountdown from '@/components/race/RaceCountdown';
 import CircuitMap from '@/components/race/CircuitMap';
 
+export const metadata: Metadata = {
+  title: 'F1 Weekend | Race Weekend Companion — Melbourne 2026',
+  description:
+    'Discover the best Melbourne experiences for the 2026 Australian Grand Prix. Session-gap planning, curated tours, restaurants, and activities near Albert Park Circuit.',
+  alternates: { canonical: 'https://f1weekend.co' },
+  keywords: [
+    'Australian Grand Prix 2026',
+    'Melbourne F1 2026',
+    'F1 race weekend Melbourne',
+    'Albert Park Circuit activities',
+    'things to do Melbourne Grand Prix',
+    'F1 Melbourne experiences',
+  ],
+  openGraph: {
+    title: 'F1 Weekend | Race Weekend Companion — Melbourne 2026',
+    description:
+      'Discover the best Melbourne experiences for the 2026 Australian Grand Prix. Session-gap planning, curated tours, and activities near Albert Park.',
+    url: 'https://f1weekend.co',
+    type: 'website',
+  },
+  twitter: {
+    title: 'F1 Weekend | Race Weekend Companion — Melbourne 2026',
+    description: 'Discover the best Melbourne experiences for the 2026 Australian Grand Prix.',
+  },
+};
+
+const websiteLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'F1 Weekend',
+  url: 'https://f1weekend.co',
+  description: 'F1 race weekend companion — curated Melbourne experiences for the 2026 Australian Grand Prix',
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: { '@type': 'EntryPoint', urlTemplate: 'https://f1weekend.co/experiences?q={search_term_string}' },
+    'query-input': 'required name=search_term_string',
+  },
+};
+
+const eventLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SportsEvent',
+  name: '2026 Formula 1 Australian Grand Prix',
+  alternateName: 'Australian GP 2026',
+  startDate: '2026-03-05',
+  endDate: '2026-03-08',
+  eventStatus: 'https://schema.org/EventScheduled',
+  eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
+  location: {
+    '@type': 'Place',
+    name: 'Albert Park Circuit',
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: 'Albert Park',
+      addressLocality: 'Melbourne',
+      addressRegion: 'Victoria',
+      postalCode: '3004',
+      addressCountry: 'AU',
+    },
+    geo: { '@type': 'GeoCoordinates', latitude: -37.8497, longitude: 144.9756 },
+  },
+  organizer: { '@type': 'Organization', name: 'Formula One Management', url: 'https://www.formula1.com' },
+  sport: 'Motorsport',
+  url: 'https://f1weekend.co',
+};
+
 export default async function HomePage() {
   const race = await getRaceBySlug('melbourne-2026');
 
   if (!race) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-[var(--text-muted)]">
+      <div className="min-h-screen flex items-center justify-center text-[var(--text-secondary)]">
         Race data unavailable.
       </div>
     );
@@ -37,6 +104,8 @@ export default async function HomePage() {
 
   return (
     <div className="min-h-screen">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(eventLd) }} />
       {/* ── Hero ── */}
       <section className="relative overflow-hidden pt-20 pb-12 px-4">
         {/* Background layers */}
@@ -59,19 +128,19 @@ export default async function HomePage() {
               </p>
 
               <h1 className="font-display font-black text-5xl md:text-6xl text-white uppercase-heading leading-tight mb-4">
-                When are
+                Melbourne has
                 <br />
-                you free?
+                <span className="text-[var(--accent-red)]">more to offer.</span>
               </h1>
 
               <p className="text-[var(--text-secondary)] text-base md:text-lg mb-8 max-w-sm">
-                Pick your session gap and discover the best of Melbourne — curated for race
-                weekend.
+                Discover the best of Melbourne — curated experiences for every session gap of the
+                race weekend.
               </p>
 
               {/* Countdown */}
               <div>
-                <p className="text-xs font-medium uppercase-label text-[var(--text-muted)] mb-3 tracking-widest">
+                <p className="text-xs font-medium uppercase-label text-[var(--text-secondary)] mb-3 tracking-widest">
                   LIGHTS OUT IN
                 </p>
                 <RaceCountdown />
@@ -88,7 +157,7 @@ export default async function HomePage() {
                     'radial-gradient(circle, rgba(225,6,0,0.12) 0%, transparent 70%)',
                 }}
               />
-              <CircuitMap className="w-full max-w-sm opacity-90" />
+              <CircuitMap className="w-full max-w-lg opacity-90" />
             </div>
           </div>
         </div>

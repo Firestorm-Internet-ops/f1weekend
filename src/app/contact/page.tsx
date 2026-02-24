@@ -1,12 +1,53 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Contact | Pitlane',
-  description: 'Get in touch with the Pitlane team at Firestorm Internet.',
+  title: 'Contact | F1 Weekend',
+  description: 'Get in touch with the F1 Weekend team at Firestorm Internet. Email, phone, and address for the Australian Grand Prix 2026 travel app.',
+  alternates: { canonical: 'https://f1weekend.co/contact' },
+  keywords: ['contact F1 Weekend', 'Firestorm Internet contact', 'F1 travel app support', 'Australian Grand Prix 2026 contact'],
+  openGraph: {
+    title: 'Contact F1 Weekend | F1 Race Weekend Companion',
+    description: 'Get in touch with the F1 Weekend team at Firestorm Internet.',
+    url: 'https://f1weekend.co/contact',
+    type: 'website',
+    images: [{ url: '/og/contact.png', width: 1200, height: 630, alt: 'F1 Weekend — F1 Race Weekend Companion' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Contact F1 Weekend | F1 Race Weekend Companion',
+    description: 'Get in touch with the F1 Weekend team at Firestorm Internet.',
+    images: ['/og/contact.png'],
+  },
+};
+
+const localBusinessSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'LocalBusiness',
+  name: 'Firestorm Internet',
+  url: 'https://f1weekend.co',
+  email: 'help@firestorm-internet.com',
+  telephone: '+91-73588-08488',
+  address: {
+    '@type': 'PostalAddress',
+    streetAddress: '203 30C Bollineni Hillside, Perumbakkam Main Rd, Nookampalayam',
+    addressLocality: 'Chennai',
+    postalCode: '600126',
+    addressCountry: 'IN',
+  },
+  geo: {
+    '@type': 'GeoCoordinates',
+    latitude: 12.9082,
+    longitude: 80.2068,
+  },
 };
 
 export default function ContactPage() {
   return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema) }}
+      />
     <div className="min-h-screen pt-24 pb-24 px-4">
       <div className="max-w-3xl mx-auto">
 
@@ -19,7 +60,7 @@ export default function ContactPage() {
             Contact Us
           </h1>
           <p className="text-[var(--text-secondary)] text-lg leading-relaxed">
-            Have a question about Pitlane, a partnership idea, or just want to say hello? We&apos;d
+            Have a question about F1 Weekend, a partnership idea, or just want to say hello? We&apos;d
             love to hear from you.
           </p>
         </div>
@@ -31,19 +72,19 @@ export default function ContactPage() {
           </h2>
           <div className="space-y-4 text-[var(--text-secondary)] text-base leading-relaxed mb-8">
             <p>
-              Pitlane is built out of a passion for helping people travel smarter and enjoy stress-free experiences. Whether you’re a traveler, a local explorer, or part of the travel industry, we’d love to connect with you.
+              F1 Weekend is built out of a passion for helping people travel smarter and enjoy stress-free experiences. Whether you’re a traveler, a local explorer, or part of the travel industry, we’d love to connect with you.
             </p>
             <p>
               For support, feedback, or partnership enquiries, email us at
-              hello@firestorm-internet.com. We typically reply within one business day.
+              help@firestorm-internet.com. We typically reply within one business day.
             </p>
           </div>
           <a
-            href="mailto:hello@firestorm-internet.com"
+            href="mailto:help@firestorm-internet.com"
             className="inline-flex items-center gap-3 px-6 py-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-white hover:border-[var(--border-medium)] transition-colors text-lg font-medium"
           >
             <span className="text-[var(--accent-teal)]">✉</span>
-            hello@firestorm-internet.com
+            help@firestorm-internet.com
           </a>
         </div>
 
@@ -57,8 +98,8 @@ export default function ContactPage() {
               {
                 icon: '✉',
                 label: 'Email',
-                content: 'hello@firestorm-internet.com',
-                href: 'mailto:hello@firestorm-internet.com',
+                content: 'help@firestorm-internet.com',
+                href: 'mailto:help@firestorm-internet.com',
               },
               {
                 icon: '📞',
@@ -89,7 +130,7 @@ export default function ContactPage() {
                     {item.icon}
                   </span>
                   <div>
-                    <div className="text-xs font-medium uppercase tracking-widest text-[var(--text-muted)] mb-1">
+                    <div className="text-xs font-medium uppercase tracking-widest text-[var(--text-secondary)] mb-1">
                       {item.label}
                     </div>
                     {item.href ? (
@@ -111,5 +152,6 @@ export default function ContactPage() {
 
       </div>
     </div>
+    </>
   );
 }

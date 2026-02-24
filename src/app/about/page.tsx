@@ -1,9 +1,30 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'About | Pitlane',
+  title: 'About | F1 Weekend',
   description:
-    'Pitlane is an F1 travel companion for the 2026 Australian Grand Prix, built by Firestorm Internet.',
+    'F1 Weekend is an F1 travel companion for the 2026 Australian Grand Prix, built by Firestorm Internet.',
+  alternates: { canonical: 'https://f1weekend.co/about' },
+  keywords: [
+    'F1 travel app',
+    'Australian Grand Prix companion',
+    'Melbourne race weekend guide',
+    'F1 fan travel planner',
+    'Firestorm Internet',
+  ],
+  openGraph: {
+    title: 'About F1 Weekend | F1 Race Weekend Companion',
+    description: 'F1 Weekend is an F1 travel companion for the 2026 Australian Grand Prix, built by Firestorm Internet.',
+    url: 'https://f1weekend.co/about',
+    type: 'website',
+    images: [{ url: '/og/about.png', width: 1200, height: 630, alt: 'F1 Weekend — F1 Race Weekend Companion' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'About F1 Weekend | F1 Race Weekend Companion',
+    description: 'F1 Weekend is an F1 travel companion for the 2026 Australian Grand Prix, built by Firestorm Internet.',
+    images: ['/og/about.png'],
+  },
 };
 
 export default function AboutPage() {
@@ -17,11 +38,11 @@ export default function AboutPage() {
             ABOUT US
           </p>
           <h1 className="font-display font-black text-4xl sm:text-5xl text-white uppercase-heading leading-none mb-6">
-            About Pitlane
+            About F1 Weekend
           </h1>
           <div className="space-y-4 text-[var(--text-secondary)] text-lg leading-relaxed">
             <p>
-              Pitlane is built for F1 fans travelling to Melbourne for the 2026 Australian Grand
+              F1 Weekend is built for F1 fans travelling to Melbourne for the 2026 Australian Grand
               Prix. We handle the logistics — race schedule, gap time, and what to do in each
               window — so you can focus on the weekend itself.
             </p>
@@ -31,7 +52,7 @@ export default function AboutPage() {
               schedule and the city, shown together.
             </p>
             <p>
-              Whether you&apos;re staying in the CBD or making day trips, Pitlane gives you a clear
+              Whether you&apos;re staying in the CBD or making day trips, F1 Weekend gives you a clear
               picture of the weekend so you spend less time planning and more time at the track —
               or exploring the city that surrounds it.
             </p>
@@ -41,9 +62,9 @@ export default function AboutPage() {
         {/* Section 2 — Feature Cards */}
         <div className="mb-16">
           <h2 className="font-display font-bold text-xl sm:text-2xl text-white uppercase-heading mb-2">
-            What Pitlane Does
+            What F1 Weekend Does
           </h2>
-          <p className="text-[var(--text-muted)] mb-8">
+          <p className="text-[var(--text-secondary)] mb-8">
             Hand-picked experiences and the full race schedule, in one place.
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
@@ -70,7 +91,7 @@ export default function AboutPage() {
               >
                 <div className="text-2xl mb-3">{card.icon}</div>
                 <h3 className="font-display font-bold text-white mb-1">{card.title}</h3>
-                <p className="text-sm text-[var(--text-muted)] leading-relaxed">{card.desc}</p>
+                <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{card.desc}</p>
               </div>
             ))}
           </div>
@@ -93,7 +114,7 @@ export default function AboutPage() {
                   {stat.number}
                 </div>
                 <div className="font-display font-bold text-white text-sm mb-1">{stat.label}</div>
-                <div className="text-xs text-[var(--text-muted)]">{stat.sub}</div>
+                <div className="text-sm text-[var(--text-secondary)]">{stat.sub}</div>
               </div>
             ))}
           </div>

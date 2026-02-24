@@ -31,11 +31,11 @@ export default function GapCard({
 
         {/* Subheader: time + duration inline */}
         {(startTime && endTime) || maxDurationHours ? (
-          <p className="text-xs text-[var(--text-tertiary)] mono-data mt-0.5">
+          <p className="text-sm text-[var(--text-secondary)] mono-data mt-0.5">
             {startTime && endTime && (
               <>{formatTime(startTime)} – {formatTime(endTime)} AEDT</>
             )}
-            {startTime && endTime && maxDurationHours && <span className="text-[var(--text-muted)]"> · </span>}
+            {startTime && endTime && maxDurationHours && <span className="text-[var(--text-tertiary)]"> · </span>}
             {maxDurationHours && <>up to {maxDurationHours}h free</>}
           </p>
         ) : null}
@@ -50,7 +50,7 @@ export default function GapCard({
           <div key={i} className="flex items-center gap-2 py-1.5">
             <span className="w-6 text-base shrink-0">{exp.imageEmoji}</span>
             <span className="flex-1 truncate text-sm text-white">{exp.title}</span>
-            <span className="text-xs text-[var(--text-muted)] mono-data shrink-0">{exp.durationLabel}</span>
+            <span className="text-sm text-[var(--text-secondary)] mono-data shrink-0">{exp.durationLabel}</span>
           </div>
         ))}
 

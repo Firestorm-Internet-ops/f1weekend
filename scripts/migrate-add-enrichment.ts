@@ -21,6 +21,8 @@ const COLUMNS: { name: string; definition: string }[] = [
   { name: 'reviews_snapshot',  definition: 'JSON NULL' },
   { name: 'f1_context',        definition: 'TEXT NULL' },
   { name: 'meeting_point',     definition: 'TEXT NULL' },
+  { name: 'seo_keywords',      definition: 'JSON NULL' },
+  { name: 'f1_windows_label',  definition: 'VARCHAR(255) NULL' },
 ];
 
 async function main() {

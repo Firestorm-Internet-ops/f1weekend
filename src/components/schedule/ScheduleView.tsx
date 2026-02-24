@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { MELBOURNE_2026_SCHEDULE, type SeriesKey, type ScheduleEntry } from '@/data/schedule-2026';
+import type { ScheduleDay, SeriesKey, ScheduleEntry } from '@/types/schedule';
 import { getSessionStatus, getSessionProgress } from '@/lib/schedule-utils';
 
 // ─── Series config ───────────────────────────────────────────────
@@ -100,9 +100,9 @@ function SessionRow({ entry, status, liveProgress, index }: SessionRowProps) {
 
       <div className="pl-4 pr-3 py-3 flex items-center gap-3">
         {/* Time */}
-        <div className="shrink-0 w-28 font-mono text-xs text-[var(--text-tertiary)] leading-tight">
+        <div className="shrink-0 w-28 font-mono text-sm text-[var(--text-secondary)] leading-tight">
           <span className="block">{entry.startTime} – {entry.endTime}</span>
-          <span className="text-[10px] text-[var(--text-muted)] uppercase-label">AEDT</span>
+          <span className="text-xs text-[var(--text-secondary)] uppercase-label">AEDT</span>
         </div>
 
         {/* Main content */}
@@ -132,7 +132,7 @@ function SessionRow({ entry, status, liveProgress, index }: SessionRowProps) {
         {/* Right side: duration + status */}
         <div className="shrink-0 flex flex-col items-end gap-1">
           {duration > 0 && (
-            <span className="text-[10px] font-mono text-[var(--text-muted)] bg-[var(--bg-tertiary)] px-2 py-0.5 rounded-full">
+            <span className="text-xs font-mono text-[var(--text-secondary)] bg-[var(--bg-tertiary)] px-2 py-0.5 rounded-full">
               {formatDuration(duration)}
             </span>
           )}
@@ -158,7 +158,11 @@ function SessionRow({ entry, status, liveProgress, index }: SessionRowProps) {
 
 // ─── Main component ───────────────────────────────────────────────
 
-export default function ScheduleView() {
+interface Props {
+  schedule: ScheduleDay[];
+}
+
+export default function ScheduleView({ schedule }: Props) {
   const [activeDay, setActiveDay] = useState<Day>('Thursday');
   const [activeFilter, setActiveFilter] = useState<SeriesKey | 'all'>('all');
   const [tick, setTick] = useState(0);
@@ -172,7 +176,7 @@ export default function ScheduleView() {
     };
   }, []);
 
-  const dayData = MELBOURNE_2026_SCHEDULE.find((d) => d.day === activeDay)!;
+  const dayData = schedule.find((d) => d.day === activeDay) ?? { day: activeDay, date: '', entries: [] };
 
   const filteredEntries = useMemo(
     () =>
@@ -219,7 +223,7 @@ export default function ScheduleView() {
               setActiveDay(day);
               setActiveFilter('all');
             }}
-            className={`px-4 py-2 rounded-full text-sm font-semibold transition-all uppercase-label ${
+            className={`px-5 py-2.5 rounded-full text-base font-semibold transition-all uppercase-label ${
               activeDay === day
                 ? 'bg-[var(--accent-red)] text-white'
                 : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-white hover:bg-[var(--bg-tertiary)]'
@@ -236,7 +240,7 @@ export default function ScheduleView() {
           <button
             key={chip.key}
             onClick={() => setActiveFilter(chip.key)}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
               activeFilter === chip.key
                 ? 'bg-[var(--accent-teal)] text-[var(--bg-primary)]'
                 : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-white hover:bg-[var(--bg-surface)]'
@@ -250,7 +254,7 @@ export default function ScheduleView() {
       {/* Day header */}
       <div className="flex items-center gap-3 mb-4">
         <div className="h-px flex-1 bg-[var(--border-subtle)]" />
-        <span className="text-xs font-semibold uppercase-label text-[var(--text-muted)]">
+        <span className="text-xs font-semibold uppercase-label text-[var(--text-secondary)]">
           {activeDay.toUpperCase()} &nbsp; {dayData.date.toUpperCase()}
         </span>
         <div className="h-px flex-1 bg-[var(--border-subtle)]" />
@@ -270,7 +274,7 @@ export default function ScheduleView() {
           ))}
         </div>
       ) : (
-        <p className="text-[var(--text-muted)] text-sm py-10 text-center">
+        <p className="text-[var(--text-secondary)] text-sm py-10 text-center">
           No {activeFilter === 'all' ? '' : SERIES_CONFIG[activeFilter as SeriesKey].label + ' '}sessions on {activeDay}.
         </p>
       )}

@@ -2,8 +2,17 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy | Pitlane',
-  description: 'Privacy policy for the Pitlane app by Firestorm Internet.',
+  title: 'Privacy Policy | F1 Weekend',
+  description: 'Privacy policy for the F1 Weekend app by Firestorm Internet.',
+  alternates: { canonical: 'https://f1weekend.co/privacy' },
+  robots: { index: false, follow: false },
+  openGraph: {
+    title: 'Privacy Policy | F1 Weekend',
+    description: 'Privacy policy for the F1 Weekend app by Firestorm Internet.',
+    url: 'https://f1weekend.co/privacy',
+    type: 'website',
+    images: [{ url: '/og.png', width: 1200, height: 630, alt: 'F1 Weekend — Race Weekend Companion' }],
+  },
 };
 
 const SECTIONS = [
@@ -41,7 +50,7 @@ const SECTIONS = [
   {
     title: 'Your Rights',
     content: [
-      'You can clear your session data at any time by clearing your browser\'s site data for pitlane.app.',
+      'You can clear your session data at any time by clearing your browser\'s site data for f1weekend.co.',
       'To request deletion of any data we may hold, contact us via the details on our Contact page.',
     ],
   },
@@ -60,7 +69,7 @@ export default function PrivacyPage() {
           <h1 className="font-display font-black text-4xl sm:text-5xl text-white uppercase-heading leading-none mb-4">
             Privacy Policy
           </h1>
-          <p className="text-[var(--text-muted)] text-sm mb-6">Last updated: February 2026</p>
+          <p className="text-[var(--text-secondary)] text-sm mb-6">Last updated: February 2026</p>
           <p className="text-[var(--text-secondary)] text-lg leading-relaxed">
             Pitlane is operated by Firestorm Internet. We take your privacy seriously and keep data
             collection to the minimum needed to provide a useful service.
@@ -100,10 +109,10 @@ export default function PrivacyPage() {
             <p className="text-[var(--text-secondary)] leading-relaxed">
               Privacy questions or data deletion requests:{' '}
               <a
-                href="mailto:hello@firestorm-internet.com"
+                href="mailto:help@firestorm-internet.com"
                 className="text-white hover:text-[var(--accent-teal)] transition-colors underline underline-offset-2"
               >
-                hello@firestorm-internet.com
+                help@firestorm-internet.com
               </a>
               {' '}or visit our{' '}
               <Link

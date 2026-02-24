@@ -5,8 +5,9 @@ import type { Session } from '@/types/race';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-    title: 'Build Itinerary | Pitlane',
+    title: 'Build Itinerary | F1 Weekend',
     description: 'Pick your F1 sessions and we\'ll fill the gaps with the best Melbourne experiences.',
+    robots: { index: false, follow: true },
 };
 
 export default async function ItineraryPage() {

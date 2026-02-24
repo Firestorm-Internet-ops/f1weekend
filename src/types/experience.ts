@@ -5,6 +5,18 @@ export interface ReviewSnapshot {
     rating: number
     text: string
     date: string
+    country?: string
+}
+
+export interface OptionSnapshot {
+    optionId: number
+    title: string
+    description: string
+    price: number
+    skipTheLine: boolean
+    instantConfirmation: boolean
+    languages: string[]
+    meetingPoint: string
 }
 
 export interface Experience {
@@ -14,6 +26,7 @@ export interface Experience {
     slug: string
     description: string
     shortDescription: string
+    abstract?: string | null
     category: Category
     durationHours: number
     durationLabel: string
@@ -38,6 +51,24 @@ export interface Experience {
     reviewsSnapshot: ReviewSnapshot[] | null
     f1Context: string | null
     meetingPoint: string | null
+    // Tour-detail enrichment fields
+    bestseller: boolean | null
+    originalPrice: number | null
+    discountPct: number | null
+    hasPickUp: boolean | null
+    mobileVoucher: boolean | null
+    instantConfirmation: boolean | null
+    skipTheLine: boolean | null
+    optionsSnapshot: OptionSnapshot[] | null
+    gygCategories: string[] | null
+    seoKeywords: string[] | null
+    f1WindowsLabel: string | null
+    lat: number | null
+    lng: number | null
+    languages: string[] | null
+    distanceKm: number | null
+    neighborhood: string | null
+    travelMins: number | null
 }
 
 export interface ExperienceFilter {

@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { drizzle } from 'drizzle-orm/mysql2';
 import mysql from 'mysql2/promise';
-import { sessions, experience_windows, races } from '../lib/db/schema';
+import { sessions, experience_windows, races } from '../src/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 
 /**

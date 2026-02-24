@@ -50,6 +50,7 @@ export const experiences = mysqlTable("experiences", {
     slug: varchar("slug", { length: 255 }),
     description: text("description"),
     short_description: varchar("short_description", { length: 500 }),
+    abstract: text("abstract"),
     category: mysqlEnum("category", ["food", "culture", "adventure", "daytrip", "nightlife"]),
     duration_hours: decimal("duration_hours", { precision: 3, scale: 1 }),
     duration_label: varchar("duration_label", { length: 50 }),
@@ -77,6 +78,24 @@ export const experiences = mysqlTable("experiences", {
     reviews_snapshot: json("reviews_snapshot"), // {author,rating,text,date}[]
     f1_context: text("f1_context"),          // Claude-generated F1 editorial
     meeting_point: text("meeting_point"),    // GYG meeting point description
+    // Tour-detail enrichment columns (populated by enrich-from-gyg.ts)
+    bestseller: boolean("bestseller"),
+    original_price: decimal("original_price", { precision: 10, scale: 2 }),
+    discount_pct: int("discount_pct"),
+    has_pick_up: boolean("has_pick_up"),
+    mobile_voucher: boolean("mobile_voucher"),
+    instant_confirmation: boolean("instant_confirmation"),
+    skip_the_line: boolean("skip_the_line"),
+    options_snapshot: json("options_snapshot"),   // OptionSnapshot[]
+    gyg_categories: json("gyg_categories"),       // string[]
+    seo_keywords: json("seo_keywords"),           // string[] — experience-specific extra keywords
+    f1_windows_label: varchar("f1_windows_label", { length: 255 }), // human-readable F1 schedule label
+    lat: decimal("lat", { precision: 10, scale: 7 }),
+    lng: decimal("lng", { precision: 10, scale: 7 }),
+    languages: json("languages"),                 // string[] — aggregated language codes across all options
+    distance_km: decimal("distance_km", { precision: 5, scale: 1 }),
+    neighborhood: varchar("neighborhood", { length: 100 }),
+    travel_mins: int("travel_mins"),
 });
 
 export const experience_windows_map = mysqlTable("experience_windows_map", {
@@ -119,5 +138,18 @@ export const events = mysqlTable("events", {
     event_data: json("event_data"),
     session_id: varchar("session_id", { length: 64 }),
     page_path: varchar("page_path", { length: 255 }),
+    created_at: timestamp("created_at").defaultNow(),
+});
+
+export const schedule_entries = mysqlTable("schedule_entries", {
+    id: int("id").primaryKey().autoincrement(),
+    race_id: int("race_id").references(() => races.id),
+    day_of_week: mysqlEnum("day_of_week", ["Thursday", "Friday", "Saturday", "Sunday"]).notNull(),
+    start_time: time("start_time").notNull(),
+    end_time: time("end_time").notNull(),
+    title: varchar("title", { length: 255 }).notNull(),
+    series: varchar("series", { length: 100 }),
+    series_key: varchar("series_key", { length: 50 }),
+    sort_order: int("sort_order"),
     created_at: timestamp("created_at").defaultNow(),
 });

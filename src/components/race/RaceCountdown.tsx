@@ -54,7 +54,7 @@ export default function RaceCountdown() {
       {units.map(({ value, label }, i) => (
         <div key={label} className="flex items-end gap-1 md:gap-2">
           {i > 0 && (
-            <span className="text-[var(--text-muted)] font-bold text-2xl md:text-3xl mb-5 select-none">
+            <span className="text-[var(--text-secondary)] font-bold text-2xl md:text-3xl mb-5 select-none">
               :
             </span>
           )}
@@ -65,7 +65,7 @@ export default function RaceCountdown() {
             >
               {String(value).padStart(2, '0')}
             </div>
-            <div className="text-xs text-[var(--text-muted)] uppercase-label tracking-widest mt-1">
+            <div className="text-sm text-[var(--text-secondary)] uppercase-label tracking-widest mt-1">
               {label}
             </div>
           </div>

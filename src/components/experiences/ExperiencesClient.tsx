@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { Experience } from '@/types/experience';
 import ExperienceCard from './ExperienceCard';
@@ -8,6 +8,14 @@ import CategoryTabs from './CategoryTabs';
 import SortSelector, { type SortOption } from './SortSelector';
 
 const SESSION_KEY = 'pitlane-session';
+
+const CATEGORY_LABELS: Record<string, string> = {
+  food: 'Food & Drink',
+  culture: 'Culture',
+  adventure: 'Adventure',
+  daytrip: 'Day Trip',
+  nightlife: 'Nightlife',
+};
 
 const WINDOW_LABELS: Record<string, string> = {
   'thu-full':    'Thursday — Full Day',
@@ -30,7 +38,7 @@ function getSessionId(): string {
   return id;
 }
 
-export default function ExperiencesClient() {
+export default function ExperiencesClient({ initialExperiences = [] }: { initialExperiences?: Experience[] }) {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -39,8 +47,9 @@ export default function ExperiencesClient() {
   const [sort, setSort] = useState<SortOption>(
     (searchParams.get('sort') as SortOption) ?? 'popular'
   );
-  const [experiences, setExperiences] = useState<Experience[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [experiences, setExperiences] = useState<Experience[]>(initialExperiences);
+  const [loading, setLoading] = useState(false);
+  const isFirstRender = useRef(true);
   const [bookingId, setBookingId] = useState<number | null>(null);
   const [windowLabel, setWindowLabel] = useState(windowSlug);
 
@@ -70,6 +79,13 @@ export default function ExperiencesClient() {
   };
 
   useEffect(() => {
+    const hasFilters = windowSlug || category || sort !== 'popular';
+    if (isFirstRender.current && !hasFilters) {
+      isFirstRender.current = false;
+      return;
+    }
+    isFirstRender.current = false;
+
     setLoading(true);
     const params = new URLSearchParams({ race: 'melbourne-2026' });
     if (windowSlug) params.set('window', windowSlug);
@@ -113,13 +129,13 @@ export default function ExperiencesClient() {
       {/* Active window pill */}
       {windowLabel && (
         <div className="mb-6 flex items-center gap-3 flex-wrap">
-          <span className="text-sm px-3 py-1 rounded-full bg-[var(--accent-teal-muted)] text-[var(--accent-teal)] border border-[var(--accent-teal)]/30">
+          <span className="text-base px-5 py-2.5 rounded-full bg-[var(--accent-teal-muted)] text-[var(--accent-teal)] border border-[var(--accent-teal)]/30">
             {WINDOW_LABELS[windowLabel] ?? windowLabel}
             {!loading && ` · ${experiences.length} experience${experiences.length !== 1 ? 's' : ''}`}
           </span>
           <button
             onClick={clearWindow}
-            className="text-xs text-[var(--text-muted)] hover:text-white transition-colors"
+            className="text-sm text-[var(--text-secondary)] hover:text-white transition-colors"
           >
             ✕ Clear
           </button>
@@ -127,10 +143,18 @@ export default function ExperiencesClient() {
       )}
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 justify-between mb-8">
+      <div className="flex flex-col sm:flex-row gap-3 justify-between mb-4">
         <CategoryTabs active={category} onChange={handleCategoryChange} />
         <SortSelector active={sort} onChange={handleSortChange} />
       </div>
+
+      {/* Result count */}
+      {!loading && experiences.length > 0 && (
+        <p className="text-sm text-[var(--text-secondary)] mb-5">
+          {experiences.length} experience{experiences.length !== 1 ? 's' : ''}
+          {category ? ` · ${CATEGORY_LABELS[category] ?? category}` : ''}
+        </p>
+      )}
 
       {/* Grid */}
       {loading ? (
@@ -143,18 +167,22 @@ export default function ExperiencesClient() {
         <div className="text-center py-20">
           <p className="text-4xl mb-4">🏎</p>
           <p className="text-lg font-medium text-[var(--text-secondary)]">No experiences found</p>
-          <p className="text-sm text-[var(--text-muted)] mt-2">
+          <p className="text-sm text-[var(--text-secondary)] mt-2">
             Try a different filter or time window.
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {experiences.map((exp) => (
+        <div
+          key={`${category}-${sort}-${windowSlug}`}
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+        >
+          {experiences.map((exp, i) => (
             <ExperienceCard
               key={exp.id}
               experience={exp}
               onBook={handleBook}
               loading={bookingId === exp.id}
+              index={i}
             />
           ))}
         </div>

@@ -48,11 +48,11 @@ export function SessionTime({ raceDate, time, raceTz, localOnly = false }: Sessi
 
       {!localOnly && userTz && (
         <>
-          <span className="text-[var(--text-tertiary)] mx-1.5">·</span>
+          <span className="text-[var(--text-secondary)] mx-1.5">·</span>
           <span className="text-[var(--text-secondary)]">
             {formatInTimezone(utcDate, userTz)}
           </span>
-          <span className="text-[var(--text-tertiary)] text-xs ml-1">
+          <span className="text-[var(--text-secondary)] text-xs ml-1">
             {getTimezoneAbbr(userTz, utcDate)}
           </span>
         </>

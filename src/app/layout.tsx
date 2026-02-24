@@ -3,6 +3,7 @@ import { Titillium_Web, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import Nav from "@/components/layout/Nav";
 import Footer from "@/components/layout/Footer";
+import { Analytics } from "@vercel/analytics/react";
 
 const titilliumWeb = Titillium_Web({
   variable: "--font-titillium-web",
@@ -26,9 +27,34 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Pitlane | Your Race Weekend Companion",
+  metadataBase: new URL('https://f1weekend.co'),
+  title: {
+    default: 'F1 Weekend | Your Race Weekend Companion',
+    template: '%s | F1 Weekend',
+  },
   description:
-    "Plan your F1 race weekend with curated local experiences, AI-powered itineraries, and bookable activities. Starting with the 2026 Australian Grand Prix in Melbourne.",
+    'Plan your F1 race weekend with curated local experiences, AI-powered itineraries, and bookable activities. Starting with the 2026 Australian Grand Prix in Melbourne.',
+  openGraph: {
+    siteName: 'F1 Weekend',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+  },
+};
+
+const organizationSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'Firestorm Internet',
+  url: 'https://f1weekend.co',
+  logo: 'https://f1weekend.co/logo.png',
+  contactPoint: {
+    '@type': 'ContactPoint',
+    email: 'help@firestorm-internet.com',
+    contactType: 'customer service',
+  },
+  sameAs: [],
 };
 
 export default function RootLayout({
@@ -38,12 +64,22 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://cdn.getyourguide.com" />
+      </head>
       <body
         className={`${titilliumWeb.variable} ${inter.variable} ${jetbrainsMono.variable} antialiased`}
       >
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+        />
         <Nav />
         <main>{children}</main>
         <Footer />
+        <Analytics />
       </body>
     </html>
   );

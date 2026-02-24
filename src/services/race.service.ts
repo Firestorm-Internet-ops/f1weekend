@@ -1,7 +1,29 @@
 import { db } from '@/lib/db';
 import { races, sessions, experience_windows } from '@/lib/db/schema';
 import { eq, asc, gte } from 'drizzle-orm';
+import { redis } from '@/lib/redis';
 import type { Race, Session, ExperienceWindow } from '@/types/race';
+
+const CACHE_TTL = 3600; // 1 hour
+
+async function cached<T>(key: string, fetcher: () => Promise<T>): Promise<T> {
+  try {
+    const hit = await redis.get(key);
+    if (hit) return JSON.parse(hit) as T;
+  } catch {
+    // Redis unavailable — fall through to DB
+  }
+
+  const result = await fetcher();
+
+  try {
+    await redis.set(key, JSON.stringify(result), 'EX', CACHE_TTL);
+  } catch {
+    // Redis unavailable — ignore
+  }
+
+  return result;
+}
 
 function mapRace(r: typeof races.$inferSelect): Race {
   return {
@@ -17,7 +39,7 @@ function mapRace(r: typeof races.$inferSelect): Race {
     circuitLat: Number(r.circuit_lat),
     circuitLng: Number(r.circuit_lng),
     timezone: r.timezone ?? '',
-    raceDate: r.race_date ? (r.race_date as unknown as Date).toISOString().split('T')[0] : '',
+    raceDate: r.race_date ? (typeof r.race_date === 'string' ? r.race_date.split('T')[0] : (r.race_date as unknown as Date).toISOString().split('T')[0]) : '',
   };
 }
 
@@ -50,30 +72,36 @@ function mapWindow(w: typeof experience_windows.$inferSelect): ExperienceWindow 
 }
 
 export async function getRaceBySlug(slug: string): Promise<Race | null> {
-  const result = await db.select().from(races).where(eq(races.slug, slug)).limit(1);
-  return result[0] ? mapRace(result[0]) : null;
+  const rows = await cached(`race:slug:${slug}`, () =>
+    db.select().from(races).where(eq(races.slug, slug)).limit(1)
+  );
+  return rows[0] ? mapRace(rows[0]) : null;
 }
 
 export async function getUpcomingRace(): Promise<Race | null> {
-  const result = await db
-    .select()
-    .from(races)
-    .where(gte(races.race_date, new Date()))
-    .orderBy(asc(races.race_date))
-    .limit(1);
-  return result[0] ? mapRace(result[0]) : null;
+  const rows = await cached('race:upcoming', () =>
+    db
+      .select()
+      .from(races)
+      .where(gte(races.race_date, new Date()))
+      .orderBy(asc(races.race_date))
+      .limit(1)
+  );
+  return rows[0] ? mapRace(rows[0]) : null;
 }
 
 export async function getSessionsByRace(raceId: number): Promise<Session[]> {
   const DAY_ORDER = { Thursday: 0, Friday: 1, Saturday: 2, Sunday: 3 };
 
-  const result = await db
-    .select()
-    .from(sessions)
-    .where(eq(sessions.race_id, raceId))
-    .orderBy(asc(sessions.start_time));
+  const rows = await cached(`race:sessions:${raceId}`, () =>
+    db
+      .select()
+      .from(sessions)
+      .where(eq(sessions.race_id, raceId))
+      .orderBy(asc(sessions.start_time))
+  );
 
-  return result
+  return rows
     .map(mapSession)
     .sort((a, b) => {
       const dayDiff = DAY_ORDER[a.dayOfWeek] - DAY_ORDER[b.dayOfWeek];
@@ -82,10 +110,12 @@ export async function getSessionsByRace(raceId: number): Promise<Session[]> {
 }
 
 export async function getWindowsByRace(raceId: number): Promise<ExperienceWindow[]> {
-  const result = await db
-    .select()
-    .from(experience_windows)
-    .where(eq(experience_windows.race_id, raceId))
-    .orderBy(asc(experience_windows.sort_order));
-  return result.map(mapWindow);
+  const rows = await cached(`race:windows:${raceId}`, () =>
+    db
+      .select()
+      .from(experience_windows)
+      .where(eq(experience_windows.race_id, raceId))
+      .orderBy(asc(experience_windows.sort_order))
+  );
+  return rows.map(mapWindow);
 }

@@ -9,11 +9,14 @@
     "lint": "eslint",
     "db:init": "tsx scripts/init-db.ts",
     "db:push": "drizzle-kit push --force",
-    "db:seed-experiences": "tsx src/data/seed-experiences.ts"
+    "db:seed-experiences": "tsx src/data/seed-experiences.ts",
+    "og:generate": "tsx scripts/generate-og-images.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
     "@qdrant/js-client-rest": "^1.17.0",
+    "@react-google-maps/api": "^2.20.8",
+    "@vercel/analytics": "^1.6.1",
     "date-fns": "^4.1.0",
     "date-fns-tz": "^3.2.0",
     "dotenv": "^17.3.1",

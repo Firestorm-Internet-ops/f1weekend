@@ -1,10 +1,30 @@
 import type { Metadata } from 'next';
 import CircuitMap from '@/components/race/CircuitMap';
+import Breadcrumb from '@/components/Breadcrumb';
 
 export const metadata: Metadata = {
-  title: 'Getting There | Pitlane',
+  title: 'Getting There | F1 Weekend',
   description:
-    'How to get to Albert Park Circuit for the 2026 Australian Grand Prix — trams, rideshare, walking, and parking.',
+    'How to get to Albert Park Circuit for the 2026 Australian Grand Prix — trams, rideshare, walking, and parking tips from Melbourne CBD.',
+  alternates: { canonical: 'https://f1weekend.co/getting-there' },
+  keywords: [
+    'how to get to Albert Park F1',
+    'Melbourne Grand Prix transport',
+    'Albert Park Circuit tram',
+    'parking Australian Grand Prix 2026',
+    'Melbourne F1 getting there',
+  ],
+  openGraph: {
+    title: 'Getting to Albert Park — Australian GP 2026 | F1 Weekend',
+    description: 'Trams, rideshare, walking, and parking tips for the 2026 Australian Grand Prix at Albert Park Circuit.',
+    url: 'https://f1weekend.co/getting-there',
+    type: 'website',
+    images: [{ url: '/og/getting-there.png', width: 1200, height: 630 }],
+  },
+  twitter: {
+    title: 'Getting to Albert Park — Australian GP 2026 | F1 Weekend',
+    description: 'Trams, rideshare, walking, and parking tips for the 2026 Australian GP.',
+  },
 };
 
 const TRANSPORT = [
@@ -41,12 +61,50 @@ const GATE_TIMES = [
   { day: 'Sunday', session: 'Race Day', gates: '07:30 AEDT' },
 ];
 
+const howToSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'HowTo',
+  name: 'How to get to Albert Park Circuit for Australian GP 2026',
+  description: 'Transport options for getting to Albert Park Circuit, Melbourne for the 2026 Formula 1 Australian Grand Prix.',
+  step: [
+    {
+      '@type': 'HowToStep',
+      name: 'Take the tram',
+      text: 'Board tram routes 1, 6, 16, 64, or 67 toward St Kilda Road. Tram 96 stops at St Kilda Road / Albert Road. Route 1 or 16 stops at Fitzroy St — both are a short walk to the circuit gates.',
+    },
+    {
+      '@type': 'HowToStep',
+      name: 'Walk from the CBD',
+      text: 'A 15-minute walk from Flinders Street Station along St Kilda Road and through the park. A pleasant route that avoids traffic on race days.',
+    },
+    {
+      '@type': 'HowToStep',
+      name: 'Rideshare or taxi',
+      text: 'Drop-off at the Aughtie Drive gates. Expect surge pricing at session start and end times. Consider walking a few minutes from a nearby drop zone to save on fares.',
+    },
+    {
+      '@type': 'HowToStep',
+      name: 'Drive and park',
+      text: 'Limited race-day parking is available. Book a park-and-ride spot at Royal Botanic Gardens or nearby CBD lots in advance. Public transport is strongly recommended.',
+    },
+  ],
+};
+
 export default function GettingTherePage() {
   return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(howToSchema) }}
+      />
     <div className="min-h-screen pt-24 pb-24 px-4">
       <div className="max-w-3xl mx-auto">
         {/* Header */}
         <div className="mb-10">
+          <Breadcrumb items={[
+            { label: 'Home', href: '/' },
+            { label: 'Getting There' },
+          ]} />
           <p className="text-xs font-medium uppercase-label text-[var(--accent-teal)] tracking-widest mb-3">
             VENUE GUIDE
           </p>
@@ -57,12 +115,14 @@ export default function GettingTherePage() {
             Albert Park Circuit, Melbourne VIC 3004. Race weekend: 5–8 March 2026.
           </p>
         </div>
+      </div>
 
-        {/* Circuit map */}
-        <div className="mb-12">
-          <CircuitMap className="rounded-xl overflow-hidden border border-[var(--border-subtle)]" />
-        </div>
+      {/* Circuit map */}
+      <div className="mb-12 max-w-5xl mx-auto">
+        <CircuitMap className="rounded-xl overflow-hidden border border-[var(--border-subtle)]" />
+      </div>
 
+      <div className="max-w-3xl mx-auto">
         {/* Transport options */}
         <section className="mb-12">
           <h2 className="font-display font-bold text-xl text-white uppercase-heading mb-6">
@@ -119,7 +179,7 @@ export default function GettingTherePage() {
           <h2 className="font-display font-bold text-xl text-white uppercase-heading mb-6">
             GATE OPENING TIMES
           </h2>
-          <p className="text-sm text-[var(--text-muted)] mb-4">
+          <p className="text-sm text-[var(--text-secondary)] mb-4">
             Gates open 2 hours before the first session each day.
           </p>
           <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] overflow-hidden">
@@ -132,7 +192,7 @@ export default function GettingTherePage() {
               >
                 <div>
                   <p className="font-medium text-white">{g.day}</p>
-                  <p className="text-xs text-[var(--text-muted)]">{g.session}</p>
+                  <p className="text-sm text-[var(--text-secondary)]">{g.session}</p>
                 </div>
                 <span className="mono-data text-sm text-[var(--accent-teal)] font-medium">
                   {g.gates}
@@ -143,5 +203,6 @@ export default function GettingTherePage() {
         </section>
       </div>
     </div>
+    </>
   );
 }

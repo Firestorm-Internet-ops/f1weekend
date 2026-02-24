@@ -5,7 +5,6 @@ import type { Itinerary, ItineraryDay, SessionSlot, GapSlot } from '@/types/itin
 import type { Experience } from '@/types/experience';
 import { formatTime } from '@/lib/utils';
 import BookButton from '@/components/experiences/BookButton';
-import { EXPERIENCE_LOCATIONS } from '@/data/experience-locations';
 
 interface Props {
     itinerary: Itinerary;
@@ -51,7 +50,7 @@ export default function ItineraryView({ itinerary, experiences }: Props) {
                     <button
                         key={i}
                         onClick={() => setActiveDay(i)}
-                        className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+                        className={`px-5 py-2.5 rounded-full text-base font-medium transition-all ${
                             activeDay === i
                                 ? 'bg-[var(--accent-red)] text-white'
                                 : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-white'
@@ -73,7 +72,7 @@ export default function ItineraryView({ itinerary, experiences }: Props) {
                             <div key={i} className="flex gap-4">
                                 {/* Time */}
                                 <div className="w-20 shrink-0 pt-3 text-right">
-                                    <span className="text-xs mono-data text-[var(--text-muted)]">
+                                    <span className="text-base mono-data text-[var(--text-secondary)]">
                                         {formatTime(slot.startTime)}
                                     </span>
                                 </div>
@@ -104,7 +103,7 @@ export default function ItineraryView({ itinerary, experiences }: Props) {
                     })}
                 </div>
             ) : (
-                <p className="text-[var(--text-muted)] text-sm">No slots for this day.</p>
+                <p className="text-[var(--text-secondary)] text-sm">No slots for this day.</p>
             )}
         </div>
     );
@@ -113,9 +112,9 @@ export default function ItineraryView({ itinerary, experiences }: Props) {
 function SessionBlock({ slot }: { slot: SessionSlot }) {
     return (
         <div className="rounded-lg border border-[#E1060030] bg-[#E1060010] p-3">
-            <p className="text-xs text-[#E10600] font-medium mb-1">🏎 {slot.series}</p>
-            <p className="font-bold text-white">{slot.name}</p>
-            <p className="text-xs mono-data text-[var(--text-muted)] mt-0.5">
+            <p className="text-sm text-[#E10600] font-medium mb-1">🏎 {slot.series}</p>
+            <p className="font-bold text-white text-base">{slot.name}</p>
+            <p className="text-base mono-data text-white/60 mt-0.5">
                 {formatTime(slot.startTime)} – {formatTime(slot.endTime)} AEDT
             </p>
         </div>
@@ -130,10 +129,10 @@ function GapBlock({ slot, expMap }: { slot: GapSlot; expMap: Record<number, Expe
 
     return (
         <div>
-            <p className="text-xs text-[var(--accent-teal)] font-medium mb-2">
+            <p className="text-sm text-[var(--accent-teal)] font-medium mb-2">
                 ✦ Free Window
             </p>
-            <p className="text-sm text-[var(--text-secondary)] mb-3">{slot.windowLabel}</p>
+            <p className="text-base text-[var(--text-secondary)] mb-3">{slot.windowLabel}</p>
 
             {suggestions.length > 0 && (
                 <div className="space-y-2">
@@ -147,34 +146,32 @@ function GapBlock({ slot, expMap }: { slot: GapSlot; expMap: Record<number, Expe
 }
 
 function ExperienceCard({ exp }: { exp: Experience }) {
-    const loc = EXPERIENCE_LOCATIONS[exp.slug];
-
     return (
         <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-secondary)] p-3">
             <div className="flex items-start justify-between gap-2 mb-1">
-                <p className="font-medium text-white text-sm">
+                <p className="font-semibold text-white text-base">
                     {exp.imageEmoji} {exp.title}
                 </p>
-                {loc && (
-                    <span className="text-xs mono-data text-[var(--accent-teal)] bg-[var(--accent-teal-muted)] px-2 py-0.5 rounded-full shrink-0">
-                        {loc.distanceKm < 10
-                            ? `${loc.distanceKm.toFixed(1)} km`
-                            : `${Math.round(loc.distanceKm)} km`
+                {exp.distanceKm != null && (
+                    <span className="text-sm mono-data text-[var(--accent-teal)] bg-[var(--accent-teal-muted)] px-2 py-0.5 rounded-full shrink-0">
+                        {exp.distanceKm < 10
+                            ? `${exp.distanceKm.toFixed(1)} km`
+                            : `${Math.round(exp.distanceKm)} km`
                         }
                     </span>
                 )}
             </div>
 
-            <p className="text-xs text-[var(--text-secondary)] mt-0.5 leading-relaxed">
+            <p className="text-sm text-[var(--text-secondary)] mt-0.5 leading-relaxed">
                 {exp.shortDescription}
             </p>
 
-            <div className="flex items-center gap-3 mt-2 text-xs text-[var(--text-muted)]">
+            <div className="flex items-center gap-3 mt-2 text-sm text-white/60">
                 <span>{exp.durationLabel}</span>
                 <span>{exp.priceLabel}</span>
                 <span>★ {exp.rating.toFixed(1)}</span>
-                {loc && (
-                    <span>{loc.travelMins} min away</span>
+                {exp.travelMins != null && (
+                    <span>{exp.travelMins} min away</span>
                 )}
             </div>
 
@@ -184,7 +181,7 @@ function ExperienceCard({ exp }: { exp: Experience }) {
                         experience={exp}
                         source="itinerary"
                         label="Book →"
-                        className="text-xs px-3 py-1.5 rounded-full font-medium bg-[var(--accent-red)] hover:bg-[var(--accent-red-hover)] text-white transition-colors"
+                        className="text-sm px-3 py-1.5 rounded-full font-medium bg-[var(--accent-red)] hover:bg-[var(--accent-red-hover)] text-white transition-colors"
                     />
                 </div>
             )}
