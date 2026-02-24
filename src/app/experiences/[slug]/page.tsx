@@ -25,10 +25,15 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 export async function generateStaticParams() {
-  const race = await getRaceBySlug('melbourne-2026');
-  if (!race) return [];
-  const exps = await getExperiencesByRace(race.id);
-  return exps.map((e) => ({ slug: e.slug }));
+  try {
+    const race = await getRaceBySlug('melbourne-2026');
+    if (!race) return [];
+    const exps = await getExperiencesByRace(race.id);
+    return exps.map((e) => ({ slug: e.slug }));
+  } catch {
+    // DB unreachable at build time (e.g. Vercel build env) — pages are served dynamically
+    return [];
+  }
 }
 
 interface Props {
