@@ -25,6 +25,12 @@ async function cached<T>(key: string, fetcher: () => Promise<T>): Promise<T> {
   return result;
 }
 
+function toDateString(d: unknown): string {
+  if (!d) return '';
+  if (d instanceof Date) return d.toISOString().split('T')[0];
+  return String(d).slice(0, 10);
+}
+
 function mapRace(r: typeof races.$inferSelect): Race {
   return {
     id: r.id,
@@ -39,7 +45,7 @@ function mapRace(r: typeof races.$inferSelect): Race {
     circuitLat: Number(r.circuit_lat),
     circuitLng: Number(r.circuit_lng),
     timezone: r.timezone ?? '',
-    raceDate: r.race_date ? (typeof r.race_date === 'string' ? r.race_date.split('T')[0] : (r.race_date as unknown as Date).toISOString().split('T')[0]) : '',
+    raceDate: toDateString(r.race_date),
   };
 }
 

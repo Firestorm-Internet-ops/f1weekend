@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import Link from 'next/link';
 import ExperienceMapClient from '@/components/experiences/ExperienceMapClient';
 
@@ -47,7 +48,9 @@ export default function ExperienceMapPage() {
           </Link>
         </div>
 
-        <ExperienceMapClient />
+        <Suspense fallback={<div className="h-[600px] bg-[var(--bg-secondary)] rounded-2xl animate-pulse" />}>
+          <ExperienceMapClient />
+        </Suspense>
       </div>
     </div>
   );

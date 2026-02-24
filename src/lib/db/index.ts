@@ -9,7 +9,8 @@ const pool = mysql.createPool({
   password: process.env.DATABASE_PASSWORD ?? '',
   database: process.env.DATABASE_NAME ?? 'pitlane',
   waitForConnections: true,
-  connectionLimit: 10,
+  connectionLimit: 1,
+  ssl: process.env.DATABASE_HOST && process.env.DATABASE_HOST !== 'localhost' ? { rejectUnauthorized: false } : undefined,
 });
 
 export const db = drizzle(pool, { schema, mode: 'default' });
