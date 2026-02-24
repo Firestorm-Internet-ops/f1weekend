@@ -1,6 +1,8 @@
 import { getRaceBySlug } from '@/services/race.service';
 import { getExperiencesByRace } from '@/services/experience.service';
 
+export const dynamic = 'force-dynamic';
+
 function fmt(date: Date): string {
   return date.toISOString().split('T')[0];
 }
