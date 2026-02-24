@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { getRaceBySlug, getSessionsByRace, getWindowsByRace } from '@/services/race.service';
-import { getExperiencesByWindow } from '@/services/experience.service';
+import { getExperiencesByWindow, getFeaturedExperiences } from '@/services/experience.service';
 import RaceSchedule from '@/components/race/RaceSchedule';
 import RaceCountdown from '@/components/race/RaceCountdown';
 import CircuitMap from '@/components/race/CircuitMap';
@@ -82,9 +83,10 @@ export default async function HomePage() {
     );
   }
 
-  const [sessions, windows] = await Promise.all([
+  const [sessions, windows, featuredExps] = await Promise.all([
     getSessionsByRace(race.id),
     getWindowsByRace(race.id),
+    getFeaturedExperiences(race.id),
   ]);
 
   const windowData = await Promise.all(
@@ -133,10 +135,26 @@ export default async function HomePage() {
                 <span className="text-[var(--accent-red)]">more to offer.</span>
               </h1>
 
-              <p className="text-[var(--text-secondary)] text-base md:text-lg mb-8 max-w-sm">
+              <p className="text-[var(--text-secondary)] text-base md:text-lg max-w-sm">
                 Discover the best of Melbourne — curated experiences for every session gap of the
                 race weekend.
               </p>
+
+              {/* CTAs */}
+              <div className="flex flex-wrap gap-3 mb-8 mt-6">
+                <Link
+                  href="/experiences"
+                  className="px-5 py-2.5 bg-[var(--accent-teal)] hover:bg-[var(--accent-teal-hover)] text-[var(--bg-primary)] font-semibold text-sm rounded-full transition-colors whitespace-nowrap"
+                >
+                  Explore Melbourne
+                </Link>
+                <Link
+                  href="/itinerary"
+                  className="px-5 py-2.5 border border-white/20 hover:border-white/40 text-white hover:bg-white/5 font-semibold text-sm rounded-full transition-colors whitespace-nowrap"
+                >
+                  Build Itinerary
+                </Link>
+              </div>
 
               {/* Countdown */}
               <div>
@@ -144,6 +162,26 @@ export default async function HomePage() {
                   LIGHTS OUT IN
                 </p>
                 <RaceCountdown />
+              </div>
+
+              {/* Category pills — mobile only */}
+              <div className="flex flex-wrap gap-2 mt-6 md:hidden">
+                {[
+                  { label: 'Food',      cat: 'food',      color: '#FF6B35' },
+                  { label: 'Culture',   cat: 'culture',   color: '#A855F7' },
+                  { label: 'Adventure', cat: 'adventure', color: '#22C55E' },
+                  { label: 'Day Trip',  cat: 'daytrip',   color: '#3B82F6' },
+                  { label: 'Nightlife', cat: 'nightlife', color: '#EC4899' },
+                ].map(({ label, cat, color }) => (
+                  <Link
+                    key={cat}
+                    href={`/experiences?category=${cat}`}
+                    className="px-3 py-1 rounded-full text-xs font-semibold uppercase-label transition-colors"
+                    style={{ background: `${color}22`, color, border: `1px solid ${color}44` }}
+                  >
+                    {label}
+                  </Link>
+                ))}
               </div>
             </div>
 
@@ -162,6 +200,52 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* ── Featured Experiences ── */}
+      {featuredExps.length > 0 && (
+        <section className="max-w-6xl mx-auto px-4 py-10">
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="font-display font-black text-xl text-white uppercase-heading">
+              Top Picks
+            </h2>
+            <Link
+              href="/experiences"
+              className="text-sm font-medium text-[var(--accent-teal)] hover:text-white transition-colors"
+            >
+              View all →
+            </Link>
+          </div>
+
+          {/* Horizontal scroll on mobile, wrapping row on desktop */}
+          <div className="flex gap-4 overflow-x-auto pb-2 sm:flex-wrap sm:overflow-visible scrollbar-hide">
+            {featuredExps.slice(0, 6).map((exp) => {
+              const CATEGORY_COLORS: Record<string, string> = {
+                food: '#FF6B35', culture: '#A855F7', adventure: '#22C55E',
+                daytrip: '#3B82F6', nightlife: '#EC4899',
+              };
+              const color = CATEGORY_COLORS[exp.category] ?? '#6E6E82';
+              return (
+                <Link
+                  key={exp.id}
+                  href={`/experiences/${exp.slug}`}
+                  className="group shrink-0 w-48 sm:w-44 p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-subtle)] hover:border-[var(--accent-teal)]/50 hover:bg-[var(--bg-surface)] transition-all"
+                >
+                  <div className="text-3xl mb-3">{exp.imageEmoji}</div>
+                  <p className="text-sm font-semibold text-white group-hover:text-[var(--accent-teal)] transition-colors line-clamp-2 leading-tight mb-2">
+                    {exp.title}
+                  </p>
+                  <p className="text-xs font-medium mb-1" style={{ color }}>
+                    {exp.category.charAt(0).toUpperCase() + exp.category.slice(1)}
+                  </p>
+                  <p className="text-xs text-[var(--text-secondary)] mono-data">
+                    {exp.durationLabel} · {exp.priceLabel}
+                  </p>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* ── Race schedule + gap cards ── */}
       <section className="max-w-3xl mx-auto px-4 pb-24">
