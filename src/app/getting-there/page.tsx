@@ -96,7 +96,7 @@ export default async function GettingTherePage() {
   const race = await getRaceBySlug('melbourne-2026');
   const allSessions = race ? await getSessionsByRace(race.id) : [];
 
-  const gateTimes = (['Thursday', 'Friday', 'Saturday', 'Sunday'] as const)
+  const gateTimes = ['Thursday', 'Friday', 'Saturday', 'Sunday']
     .map(day => {
       const daySessions = allSessions.filter(s => s.dayOfWeek === day);
       const first = daySessions.sort((a, b) => a.startTime.localeCompare(b.startTime))[0];
