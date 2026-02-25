@@ -1,4 +1,9 @@
 import type { Metadata } from 'next';
+import { db } from '@/lib/db';
+import { experiences } from '@/lib/db/schema';
+import { eq, count } from 'drizzle-orm';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'About | F1 Weekend',
@@ -27,7 +32,12 @@ export const metadata: Metadata = {
   },
 };
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const [{ value: expCount }] = await db
+    .select({ value: count() })
+    .from(experiences)
+    .where(eq(experiences.is_active, true));
+
   return (
     <div className="min-h-screen pt-24 pb-24 px-4">
       <div className="max-w-3xl mx-auto">
@@ -103,7 +113,7 @@ export default function AboutPage() {
             {[
               { number: '2026', label: 'Australian GP', sub: 'Melbourne, Mar 5–8' },
               { number: '4', label: 'Race Days', sub: 'Thursday through Sunday' },
-              { number: '35', label: 'Experiences', sub: 'Hand-picked for race fans' },
+              { number: String(expCount), label: 'Experiences', sub: 'Hand-picked for race fans' },
               { number: '4', label: 'Session Categories', sub: 'Practice, Quali, Sprint, Race' },
             ].map((stat) => (
               <div

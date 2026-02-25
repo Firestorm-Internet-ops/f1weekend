@@ -4,16 +4,9 @@ import { useState, useCallback, useEffect, useMemo } from 'react';
 import { GoogleMap, useJsApiLoader, Marker, InfoWindow, Polyline } from '@react-google-maps/api';
 import type { Experience } from '@/types/experience';
 import { ALBERT_PARK_CIRCUIT } from '@/data/circuit-path';
+import { CATEGORY_COLORS } from '@/lib/constants/categories';
 
 const CIRCUIT = { lat: -37.8497, lng: 144.968 };
-
-const CATEGORY_COLORS: Record<string, string> = {
-  food: '#FF6B35',
-  culture: '#A855F7',
-  adventure: '#22C55E',
-  daytrip: '#3B82F6',
-  nightlife: '#EC4899',
-};
 
 // Google Maps dark style matching app's #15151E background
 const DARK_MAP_STYLE: google.maps.MapTypeStyle[] = [

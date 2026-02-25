@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getRaceBySlug, getSessionsByRace, getWindowsByRace } from '@/services/race.service';
+import { CATEGORY_COLORS } from '@/lib/constants/categories';
 import { getExperiencesByWindow, getFeaturedExperiences } from '@/services/experience.service';
 import RaceSchedule from '@/components/race/RaceSchedule';
 import RaceCountdown from '@/components/race/RaceCountdown';
@@ -169,12 +170,14 @@ export default async function HomePage() {
               {/* Category pills — mobile only */}
               <div className="flex flex-wrap gap-2 mt-6 md:hidden">
                 {[
-                  { label: 'Food',      cat: 'food',      color: '#FF6B35' },
-                  { label: 'Culture',   cat: 'culture',   color: '#A855F7' },
-                  { label: 'Adventure', cat: 'adventure', color: '#22C55E' },
-                  { label: 'Day Trip',  cat: 'daytrip',   color: '#3B82F6' },
-                  { label: 'Nightlife', cat: 'nightlife', color: '#EC4899' },
-                ].map(({ label, cat, color }) => (
+                  { label: 'Food',      cat: 'food' },
+                  { label: 'Culture',   cat: 'culture' },
+                  { label: 'Adventure', cat: 'adventure' },
+                  { label: 'Day Trip',  cat: 'daytrip' },
+                  { label: 'Nightlife', cat: 'nightlife' },
+                ].map(({ label, cat }) => {
+                  const color = CATEGORY_COLORS[cat] ?? '#6E6E82';
+                  return (
                   <Link
                     key={cat}
                     href={`/experiences?category=${cat}`}
@@ -183,7 +186,8 @@ export default async function HomePage() {
                   >
                     {label}
                   </Link>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
@@ -221,10 +225,6 @@ export default async function HomePage() {
           {/* Horizontal scroll on mobile, wrapping row on desktop */}
           <div className="flex gap-4 overflow-x-auto pb-2 sm:flex-wrap sm:overflow-visible scrollbar-hide">
             {featuredExps.slice(0, 6).map((exp) => {
-              const CATEGORY_COLORS: Record<string, string> = {
-                food: '#FF6B35', culture: '#A855F7', adventure: '#22C55E',
-                daytrip: '#3B82F6', nightlife: '#EC4899',
-              };
               const color = CATEGORY_COLORS[exp.category] ?? '#6E6E82';
               return (
                 <Link

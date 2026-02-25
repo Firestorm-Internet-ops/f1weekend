@@ -8,24 +8,9 @@ import BookButton from '@/components/experiences/BookButton';
 import PhotoSlider from '@/components/experiences/PhotoSlider';
 import Breadcrumb from '@/components/Breadcrumb';
 import type { Experience } from '@/types/experience';
+import { CATEGORY_COLORS, CATEGORY_LABELS } from '@/lib/constants/categories';
 
 export const dynamic = 'force-dynamic';
-
-const CATEGORY_COLORS: Record<string, string> = {
-  food: '#FF6B35',
-  culture: '#A855F7',
-  adventure: '#22C55E',
-  daytrip: '#3B82F6',
-  nightlife: '#EC4899',
-};
-
-const CATEGORY_LABELS: Record<string, string> = {
-  food: 'Food & Drink',
-  culture: 'Culture',
-  adventure: 'Adventure',
-  daytrip: 'Day Trip',
-  nightlife: 'Nightlife',
-};
 
 export async function generateStaticParams() {
   try {

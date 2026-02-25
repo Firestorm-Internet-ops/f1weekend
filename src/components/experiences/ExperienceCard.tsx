@@ -3,22 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import type { Experience } from '@/types/experience';
-
-const CATEGORY_COLORS: Record<string, string> = {
-  food: '#FF6B35',
-  culture: '#A855F7',
-  adventure: '#22C55E',
-  daytrip: '#3B82F6',
-  nightlife: '#EC4899',
-};
-
-const CATEGORY_LABELS: Record<string, string> = {
-  food: 'Food & Drink',
-  culture: 'Culture',
-  adventure: 'Adventure',
-  daytrip: 'Day Trip',
-  nightlife: 'Nightlife',
-};
+import { CATEGORY_COLORS, CATEGORY_LABELS } from '@/lib/constants/categories';
 
 interface Props {
   experience: Experience;
@@ -82,7 +67,7 @@ export default function ExperienceCard({ experience, onBook, loading, index = 0 
           <div className="absolute top-3 left-3 right-3 flex items-start justify-between">
             <span
               className="text-xs font-medium px-2.5 py-1 rounded-full uppercase-badge shadow-lg"
-              style={{ color, backgroundColor: `${color}25`, backdropFilter: 'blur(4px)' }}
+              style={{ color, backgroundColor: 'rgba(15,15,30,0.72)', border: `1px solid ${color}55`, backdropFilter: 'blur(8px)' }}
             >
               {categoryLabel}
             </span>

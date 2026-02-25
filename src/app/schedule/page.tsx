@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import ScheduleView from '@/components/schedule/ScheduleView';
 import Breadcrumb from '@/components/Breadcrumb';
-import { getRaceBySlug } from '@/services/race.service';
+import { getRaceBySlug, getSessionsByRace } from '@/services/race.service';
 import { getScheduleByRace } from '@/services/schedule.service';
 
 export const dynamic = 'force-dynamic';
@@ -32,29 +32,36 @@ export const metadata: Metadata = {
   },
 };
 
-const scheduleLd = {
-  '@context': 'https://schema.org',
-  '@type': 'SportsEvent',
-  name: '2026 Formula 1 Australian Grand Prix',
-  startDate: '2026-03-05T10:30:00+11:00',
-  endDate: '2026-03-08T16:00:00+11:00',
-  location: {
-    '@type': 'Place',
-    name: 'Albert Park Circuit',
-    address: { '@type': 'PostalAddress', addressLocality: 'Melbourne', addressCountry: 'AU' },
-  },
-  subEvent: [
-    { '@type': 'SportsEvent', name: 'Practice 1', startDate: '2026-03-06T11:30:00+11:00', endDate: '2026-03-06T12:30:00+11:00' },
-    { '@type': 'SportsEvent', name: 'Practice 2', startDate: '2026-03-06T15:00:00+11:00', endDate: '2026-03-06T16:00:00+11:00' },
-    { '@type': 'SportsEvent', name: 'Practice 3', startDate: '2026-03-07T12:30:00+11:00', endDate: '2026-03-07T13:30:00+11:00' },
-    { '@type': 'SportsEvent', name: 'Qualifying', startDate: '2026-03-07T16:00:00+11:00', endDate: '2026-03-07T17:00:00+11:00' },
-    { '@type': 'SportsEvent', name: 'Australian Grand Prix Race', startDate: '2026-03-08T15:00:00+11:00', endDate: '2026-03-08T17:00:00+11:00' },
-  ],
-};
-
 export default async function SchedulePage() {
   const race = await getRaceBySlug('melbourne-2026');
-  const schedule = race ? await getScheduleByRace(race.id) : [];
+  const [schedule, sessions] = race
+    ? await Promise.all([getScheduleByRace(race.id), getSessionsByRace(race.id)])
+    : [[], []];
+
+  const DAY_DATES: Record<string, string> = {
+    Thursday: '2026-03-05', Friday: '2026-03-06',
+    Saturday: '2026-03-07', Sunday: '2026-03-08',
+  };
+  const scheduleLd = {
+    '@context': 'https://schema.org',
+    '@type': 'SportsEvent',
+    name: '2026 Formula 1 Australian Grand Prix',
+    startDate: '2026-03-05T10:00:00+11:00',
+    endDate: '2026-03-08T17:00:00+11:00',
+    location: {
+      '@type': 'Place',
+      name: 'Albert Park Circuit',
+      address: { '@type': 'PostalAddress', addressLocality: 'Melbourne', addressCountry: 'AU' },
+    },
+    subEvent: sessions
+      .filter(s => ['practice', 'qualifying', 'sprint', 'race'].includes(s.sessionType))
+      .map(s => ({
+        '@type': 'SportsEvent',
+        name: s.name,
+        startDate: `${DAY_DATES[s.dayOfWeek]}T${s.startTime.slice(0, 5)}:00+11:00`,
+        endDate:   `${DAY_DATES[s.dayOfWeek]}T${s.endTime.slice(0, 5)}:00+11:00`,
+      })),
+  };
 
   return (
     <div className="min-h-screen">

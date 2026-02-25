@@ -38,6 +38,7 @@ async function main() {
     user: DB_USER,
     password: DB_PASS,
     database: DB_NAME,
+    ssl: DB_HOST !== 'localhost' ? { rejectUnauthorized: false } : undefined,
   });
 
   console.log(`[seed] Connected to ${DB_HOST}:${DB_PORT}/${DB_NAME}`);

@@ -6,16 +6,9 @@ import type { Experience } from '@/types/experience';
 import ExperienceCard from './ExperienceCard';
 import CategoryTabs from './CategoryTabs';
 import SortSelector, { type SortOption } from './SortSelector';
+import { CATEGORY_LABELS } from '@/lib/constants/categories';
 
 const SESSION_KEY = 'pitlane-session';
-
-const CATEGORY_LABELS: Record<string, string> = {
-  food: 'Food & Drink',
-  culture: 'Culture',
-  adventure: 'Adventure',
-  daytrip: 'Day Trip',
-  nightlife: 'Nightlife',
-};
 
 const WINDOW_LABELS: Record<string, string> = {
   'thu-full':    'Thursday — Full Day',

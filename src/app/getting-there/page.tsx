@@ -1,6 +1,9 @@
 import type { Metadata } from 'next';
 import CircuitMap from '@/components/race/CircuitMap';
 import Breadcrumb from '@/components/Breadcrumb';
+import { getRaceBySlug, getSessionsByRace } from '@/services/race.service';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'Getting There | F1 Weekend',
@@ -54,12 +57,11 @@ const TRANSPORT = [
   },
 ];
 
-const GATE_TIMES = [
-  { day: 'Thursday', session: 'Practice 1', gates: '10:00 AEDT' },
-  { day: 'Friday', session: 'Practice 2 & 3', gates: '08:30 AEDT' },
-  { day: 'Saturday', session: 'Qualifying', gates: '08:30 AEDT' },
-  { day: 'Sunday', session: 'Race Day', gates: '07:30 AEDT' },
-];
+function subtractHours(time: string, h: number): string {
+  const [hh, mm] = time.split(':').map(Number);
+  const totalMins = hh * 60 + mm - h * 60;
+  return `${String(Math.floor(totalMins / 60)).padStart(2, '0')}:${String(totalMins % 60).padStart(2, '0')} AEDT`;
+}
 
 const howToSchema = {
   '@context': 'https://schema.org',
@@ -90,7 +92,18 @@ const howToSchema = {
   ],
 };
 
-export default function GettingTherePage() {
+export default async function GettingTherePage() {
+  const race = await getRaceBySlug('melbourne-2026');
+  const allSessions = race ? await getSessionsByRace(race.id) : [];
+
+  const gateTimes = (['Thursday', 'Friday', 'Saturday', 'Sunday'] as const)
+    .map(day => {
+      const daySessions = allSessions.filter(s => s.dayOfWeek === day);
+      const first = daySessions.sort((a, b) => a.startTime.localeCompare(b.startTime))[0];
+      return first ? { day, session: first.name, gates: subtractHours(first.startTime, 2) } : null;
+    })
+    .filter((g): g is { day: string; session: string; gates: string } => g !== null);
+
   return (
     <>
       <script
@@ -183,11 +196,11 @@ export default function GettingTherePage() {
             Gates open 2 hours before the first session each day.
           </p>
           <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] overflow-hidden">
-            {GATE_TIMES.map((g, i) => (
+            {gateTimes.map((g, i) => (
               <div
                 key={g.day}
                 className={`flex items-center justify-between px-5 py-4 ${
-                  i < GATE_TIMES.length - 1 ? 'border-b border-[var(--border-subtle)]' : ''
+                  i < gateTimes.length - 1 ? 'border-b border-[var(--border-subtle)]' : ''
                 }`}
               >
                 <div>
