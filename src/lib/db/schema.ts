@@ -96,6 +96,7 @@ export const experiences = mysqlTable("experiences", {
     distance_km: decimal("distance_km", { precision: 5, scale: 1 }),
     neighborhood: varchar("neighborhood", { length: 100 }),
     travel_mins: int("travel_mins"),
+    guide_article: text("guide_article"),         // long-form markdown from f1-city-explorer-seo agent
 });
 
 export const experience_windows_map = mysqlTable("experience_windows_map", {

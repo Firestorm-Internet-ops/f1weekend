@@ -227,6 +227,118 @@ body {
 .scrollbar-hide { scrollbar-width: none; }
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 
+/* Guide Article — prose styles for f1-city-explorer-seo generated content */
+.guide-article h1,
+.guide-article h2,
+.guide-article h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: #ffffff;
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+  line-height: 1.3;
+}
+.guide-article h1 { font-size: 1.5rem; }
+.guide-article h2 { font-size: 1.25rem; }
+.guide-article h3 { font-size: 1.1rem; }
+.guide-article p {
+  margin-bottom: 1rem;
+  font-size: 0.9375rem;
+  line-height: 1.7;
+}
+.guide-article ul,
+.guide-article ol {
+  margin-bottom: 1rem;
+  padding-left: 1.5rem;
+}
+.guide-article li {
+  margin-bottom: 0.4rem;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+.guide-article ul li { list-style-type: disc; }
+.guide-article ol li { list-style-type: decimal; }
+.guide-article blockquote {
+  border-left: 3px solid var(--accent-teal);
+  padding: 0.75rem 1rem;
+  margin: 1.5rem 0;
+  background: var(--accent-teal-muted);
+  border-radius: 0 0.5rem 0.5rem 0;
+}
+.guide-article blockquote p {
+  margin-bottom: 0;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+.guide-article strong { color: #ffffff; font-weight: 600; }
+.guide-article a {
+  color: var(--accent-teal);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.guide-article a:hover { color: var(--accent-teal-hover); }
+.guide-article hr {
+  border: none;
+  border-top: 1px solid var(--border-subtle);
+  margin: 2rem 0;
+}
+.guide-article em { font-style: italic; }
+.guide-article code {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+  background: var(--bg-tertiary);
+  padding: 0.1em 0.4em;
+  border-radius: 0.25rem;
+}
+
+/* Quick-facts bar above guide article body */
+.guide-facts-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+.guide-fact {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.guide-fact--f1 {
+  border-color: var(--accent-teal);
+  color: var(--accent-teal);
+}
+
+/* Stronger H2 section breaks in guide */
+.guide-article h2 {
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+/* Style the In Summary list as a card */
+.guide-article > ul:last-of-type {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.75rem;
+  padding: 1rem 1rem 1rem 2.25rem;
+  list-style-type: none;
+}
+.guide-article > ul:last-of-type li {
+  padding-left: 0;
+  position: relative;
+}
+.guide-article > ul:last-of-type li::before {
+  content: '→';
+  position: absolute;
+  left: -1.25rem;
+  color: var(--accent-teal);
+  font-weight: 600;
+}
+
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { marked } from 'marked';
 import { getExperienceBySlug, getExperiencesByRace } from '@/services/experience.service';
 import { getRaceBySlug } from '@/services/race.service';
 import BookButton from '@/components/experiences/BookButton';
@@ -178,6 +179,25 @@ function buildBreadcrumbLd(exp: Experience) {
   };
 }
 
+function buildArticleLd(exp: Experience) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: `${exp.title} — Complete F1 Weekend Guide`,
+    author: { '@type': 'Organization', name: 'F1 Weekend' },
+    publisher: { '@type': 'Organization', name: 'F1 Weekend', url: 'https://f1weekend.co' },
+    datePublished: '2026-02-24',
+    dateModified: '2026-02-24',
+    url: `https://f1weekend.co/experiences/${exp.slug}`,
+    about: {
+      '@type': 'TouristAttraction',
+      name: exp.title,
+      url: `https://f1weekend.co/experiences/${exp.slug}`,
+    },
+    ...(exp.photos?.[0] ? { image: exp.photos[0] } : {}),
+  };
+}
+
 function buildFaqLd(exp: Experience) {
   const pairs: { q: string; a: string }[] = [];
 
@@ -240,6 +260,21 @@ export default async function ExperienceDetailPage({ params }: Props) {
   const categoryLabel = CATEGORY_LABELS[exp.category] ?? exp.category;
   const faqLd = buildFaqLd(exp);
 
+  function stripArticleFrontMatter(md: string): string {
+    return md
+      .split('\n')
+      .filter(line =>
+        !line.startsWith('# ') &&
+        !line.startsWith('Meta description:') &&
+        !line.startsWith('URL:') &&
+        !line.startsWith('Category:')
+      )
+      .join('\n')
+      .replace(/^\s+/, '');
+  }
+
+  const guideHtml = exp.guideArticle ? await marked(stripArticleFrontMatter(exp.guideArticle)) : null;
+
   return (
     <>
       <script
@@ -254,6 +289,12 @@ export default async function ExperienceDetailPage({ params }: Props) {
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }}
+        />
+      )}
+      {exp.guideArticle && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(buildArticleLd(exp)) }}
         />
       )}
 
@@ -561,6 +602,28 @@ export default async function ExperienceDetailPage({ params }: Props) {
                   </div>
                 ))}
               </div>
+            </section>
+          )}
+
+          {/* Expert Guide — long-form editorial from f1-city-explorer-seo */}
+          {guideHtml && (
+            <section aria-label="Expert Guide" className="mb-8">
+              <h2 className="font-display font-bold text-white text-xl mb-4">Expert Guide</h2>
+              <div className="guide-facts-bar">
+                <span className="guide-fact">{exp.durationLabel}</span>
+                <span className="guide-fact">{exp.priceLabel}</span>
+                <span className="guide-fact">★ {exp.rating} ({exp.reviewCount.toLocaleString()} reviews)</span>
+                {exp.travelMins && (
+                  <span className="guide-fact">{exp.travelMins} min from circuit</span>
+                )}
+                {exp.f1WindowsLabel && (
+                  <span className="guide-fact guide-fact--f1">Best: {exp.f1WindowsLabel}</span>
+                )}
+              </div>
+              <article
+                className="guide-article text-[var(--text-secondary)] leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: guideHtml }}
+              />
             </section>
           )}
 

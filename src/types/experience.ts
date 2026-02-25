@@ -69,6 +69,7 @@ export interface Experience {
     distanceKm: number | null
     neighborhood: string | null
     travelMins: number | null
+    guideArticle: string | null
 }
 
 export interface ExperienceFilter {

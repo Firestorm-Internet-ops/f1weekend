@@ -75,6 +75,7 @@ function mapExperience(r: typeof experiences.$inferSelect): Experience {
     distanceKm: r.distance_km !== null && r.distance_km !== undefined ? Number(r.distance_km) : null,
     neighborhood: r.neighborhood ?? null,
     travelMins: r.travel_mins ?? null,
+    guideArticle: r.guide_article ?? null,
   };
 }
 

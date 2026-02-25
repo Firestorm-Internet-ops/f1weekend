@@ -22,6 +22,7 @@
     "dotenv": "^17.3.1",
     "drizzle-orm": "^0.45.1",
     "ioredis": "^5.9.3",
+    "marked": "^17.0.3",
     "mysql2": "^3.17.4",
     "nanoid": "^5.1.6",
     "next": "16.1.6",
@@ -33,6 +34,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.0",
+    "@types/marked": "^5.0.2",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
