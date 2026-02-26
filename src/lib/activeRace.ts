@@ -2,7 +2,7 @@
 // Melbourne ends at 23:59:59 AEDT on Mar 8 2026, then Shanghai becomes active.
 export function getActiveRaceSlug(): string {
   const now = new Date();
-  const MELBOURNE_END = new Date('2026-02-01T00:00:00+11:00'); // TEMP: force Shanghai preview
+  const MELBOURNE_END = new Date('2026-03-08T23:59:59+11:00');
   return now < MELBOURNE_END ? 'melbourne-2026' : 'shanghai-2026';
 }
 

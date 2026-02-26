@@ -1,0 +1,1214 @@
+{
+  "id": "00000000-0000-0000-0000-000000000000",
+  "prevId": "",
+  "version": "5",
+  "dialect": "mysql",
+  "tables": {
+    "affiliate_clicks": {
+      "name": "affiliate_clicks",
+      "columns": {
+        "id": {
+          "autoincrement": true,
+          "name": "id",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "experience_id": {
+          "autoincrement": false,
+          "name": "experience_id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "itinerary_id": {
+          "autoincrement": false,
+          "name": "itinerary_id",
+          "type": "varchar(12)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "affiliate_partner": {
+          "autoincrement": false,
+          "name": "affiliate_partner",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "source": {
+          "autoincrement": false,
+          "name": "source",
+          "type": "enum('feed','itinerary','featured')",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "session_id": {
+          "autoincrement": false,
+          "name": "session_id",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "user_agent": {
+          "autoincrement": false,
+          "name": "user_agent",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "referer": {
+          "autoincrement": false,
+          "name": "referer",
+          "type": "varchar(1000)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "clicked_at": {
+          "default": "(now())",
+          "autoincrement": false,
+          "name": "clicked_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "compositePrimaryKeys": {
+        "affiliate_clicks_id": {
+          "name": "affiliate_clicks_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "affiliate_clicks_experience_id_experiences_id_fk": {
+          "name": "affiliate_clicks_experience_id_experiences_id_fk",
+          "tableFrom": "affiliate_clicks",
+          "tableTo": "experiences",
+          "columnsFrom": [
+            "experience_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "events": {
+      "name": "events",
+      "columns": {
+        "id": {
+          "autoincrement": true,
+          "name": "id",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "event_type": {
+          "autoincrement": false,
+          "name": "event_type",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "event_data": {
+          "autoincrement": false,
+          "name": "event_data",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "session_id": {
+          "autoincrement": false,
+          "name": "session_id",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "page_path": {
+          "autoincrement": false,
+          "name": "page_path",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "default": "(now())",
+          "autoincrement": false,
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "compositePrimaryKeys": {
+        "events_id": {
+          "name": "events_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "experience_windows": {
+      "name": "experience_windows",
+      "columns": {
+        "id": {
+          "autoincrement": true,
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "race_id": {
+          "autoincrement": false,
+          "name": "race_id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "slug": {
+          "autoincrement": false,
+          "name": "slug",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "label": {
+          "autoincrement": false,
+          "name": "label",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "day_of_week": {
+          "autoincrement": false,
+          "name": "day_of_week",
+          "type": "enum('Thursday','Friday','Saturday','Sunday')",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "start_time": {
+          "autoincrement": false,
+          "name": "start_time",
+          "type": "time",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "end_time": {
+          "autoincrement": false,
+          "name": "end_time",
+          "type": "time",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "max_duration_hours": {
+          "autoincrement": false,
+          "name": "max_duration_hours",
+          "type": "decimal(3,1)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "description": {
+          "autoincrement": false,
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sort_order": {
+          "autoincrement": false,
+          "name": "sort_order",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "default": "(now())",
+          "autoincrement": false,
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "compositePrimaryKeys": {
+        "experience_windows_id": {
+          "name": "experience_windows_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "experience_windows_race_id_races_id_fk": {
+          "name": "experience_windows_race_id_races_id_fk",
+          "tableFrom": "experience_windows",
+          "tableTo": "races",
+          "columnsFrom": [
+            "race_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "experience_windows_map": {
+      "name": "experience_windows_map",
+      "columns": {
+        "experience_id": {
+          "autoincrement": false,
+          "name": "experience_id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "window_id": {
+          "autoincrement": false,
+          "name": "window_id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "compositePrimaryKeys": {
+        "experience_windows_map_experience_id_window_id": {
+          "name": "experience_windows_map_experience_id_window_id",
+          "columns": [
+            "experience_id",
+            "window_id"
+          ]
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "experience_windows_map_experience_id_experiences_id_fk": {
+          "name": "experience_windows_map_experience_id_experiences_id_fk",
+          "tableFrom": "experience_windows_map",
+          "tableTo": "experiences",
+          "columnsFrom": [
+            "experience_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "experience_windows_map_window_id_experience_windows_id_fk": {
+          "name": "experience_windows_map_window_id_experience_windows_id_fk",
+          "tableFrom": "experience_windows_map",
+          "tableTo": "experience_windows",
+          "columnsFrom": [
+            "window_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "experiences": {
+      "name": "experiences",
+      "columns": {
+        "id": {
+          "autoincrement": true,
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "race_id": {
+          "autoincrement": false,
+          "name": "race_id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "title": {
+          "autoincrement": false,
+          "name": "title",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "slug": {
+          "autoincrement": false,
+          "name": "slug",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "description": {
+          "autoincrement": false,
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "short_description": {
+          "autoincrement": false,
+          "name": "short_description",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "abstract": {
+          "autoincrement": false,
+          "name": "abstract",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bestseller": {
+          "autoincrement": false,
+          "name": "bestseller",
+          "type": "tinyint(1)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "category": {
+          "autoincrement": false,
+          "name": "category",
+          "type": "enum('food','culture','adventure','daytrip','nightlife')",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "duration_hours": {
+          "autoincrement": false,
+          "name": "duration_hours",
+          "type": "decimal(3,1)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "duration_label": {
+          "autoincrement": false,
+          "name": "duration_label",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "price_amount": {
+          "autoincrement": false,
+          "name": "price_amount",
+          "type": "decimal(10,2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "price_currency": {
+          "autoincrement": false,
+          "name": "price_currency",
+          "type": "varchar(3)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "price_label": {
+          "autoincrement": false,
+          "name": "price_label",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "original_price": {
+          "autoincrement": false,
+          "name": "original_price",
+          "type": "decimal(10,2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "discount_pct": {
+          "autoincrement": false,
+          "name": "discount_pct",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "rating": {
+          "autoincrement": false,
+          "name": "rating",
+          "type": "decimal(3,1)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "review_count": {
+          "autoincrement": false,
+          "name": "review_count",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "image_url": {
+          "autoincrement": false,
+          "name": "image_url",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "image_emoji": {
+          "autoincrement": false,
+          "name": "image_emoji",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "affiliate_partner": {
+          "autoincrement": false,
+          "name": "affiliate_partner",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "affiliate_url": {
+          "autoincrement": false,
+          "name": "affiliate_url",
+          "type": "varchar(1000)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "affiliate_product_id": {
+          "autoincrement": false,
+          "name": "affiliate_product_id",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_featured": {
+          "default": 0,
+          "autoincrement": false,
+          "name": "is_featured",
+          "type": "tinyint(1)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tag": {
+          "autoincrement": false,
+          "name": "tag",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sort_order": {
+          "autoincrement": false,
+          "name": "sort_order",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_active": {
+          "default": 1,
+          "autoincrement": false,
+          "name": "is_active",
+          "type": "tinyint(1)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "default": "(now())",
+          "autoincrement": false,
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "highlights": {
+          "autoincrement": false,
+          "name": "highlights",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "includes": {
+          "autoincrement": false,
+          "name": "includes",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "excludes": {
+          "autoincrement": false,
+          "name": "excludes",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "important_info": {
+          "autoincrement": false,
+          "name": "important_info",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "photos": {
+          "autoincrement": false,
+          "name": "photos",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "gyg_categories": {
+          "autoincrement": false,
+          "name": "gyg_categories",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reviews_snapshot": {
+          "autoincrement": false,
+          "name": "reviews_snapshot",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "options_snapshot": {
+          "autoincrement": false,
+          "name": "options_snapshot",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "f1_context": {
+          "autoincrement": false,
+          "name": "f1_context",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "meeting_point": {
+          "autoincrement": false,
+          "name": "meeting_point",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mobile_voucher": {
+          "autoincrement": false,
+          "name": "mobile_voucher",
+          "type": "tinyint(1)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "instant_confirmation": {
+          "autoincrement": false,
+          "name": "instant_confirmation",
+          "type": "tinyint(1)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "skip_the_line": {
+          "autoincrement": false,
+          "name": "skip_the_line",
+          "type": "tinyint(1)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "has_pick_up": {
+          "autoincrement": false,
+          "name": "has_pick_up",
+          "type": "tinyint(1)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "distance_km": {
+          "autoincrement": false,
+          "name": "distance_km",
+          "type": "decimal(5,1)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "neighborhood": {
+          "autoincrement": false,
+          "name": "neighborhood",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "travel_mins": {
+          "autoincrement": false,
+          "name": "travel_mins",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lat": {
+          "autoincrement": false,
+          "name": "lat",
+          "type": "decimal(10,7)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lng": {
+          "autoincrement": false,
+          "name": "lng",
+          "type": "decimal(10,7)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "languages": {
+          "autoincrement": false,
+          "name": "languages",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "seo_keywords": {
+          "autoincrement": false,
+          "name": "seo_keywords",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "f1_windows_label": {
+          "autoincrement": false,
+          "name": "f1_windows_label",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "guide_article": {
+          "autoincrement": false,
+          "name": "guide_article",
+          "type": "longtext",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "compositePrimaryKeys": {
+        "experiences_id": {
+          "name": "experiences_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "experiences_race_id_races_id_fk": {
+          "name": "experiences_race_id_races_id_fk",
+          "tableFrom": "experiences",
+          "tableTo": "races",
+          "columnsFrom": [
+            "race_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "itineraries": {
+      "name": "itineraries",
+      "columns": {
+        "id": {
+          "autoincrement": false,
+          "name": "id",
+          "type": "varchar(12)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "race_id": {
+          "autoincrement": false,
+          "name": "race_id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "arrival_day": {
+          "autoincrement": false,
+          "name": "arrival_day",
+          "type": "enum('Wednesday','Thursday','Friday')",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "departure_day": {
+          "autoincrement": false,
+          "name": "departure_day",
+          "type": "enum('Sunday','Monday','Tuesday')",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "interests": {
+          "autoincrement": false,
+          "name": "interests",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "group_size": {
+          "default": 1,
+          "autoincrement": false,
+          "name": "group_size",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "itinerary_json": {
+          "autoincrement": false,
+          "name": "itinerary_json",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "prompt_hash": {
+          "autoincrement": false,
+          "name": "prompt_hash",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "generation_model": {
+          "autoincrement": false,
+          "name": "generation_model",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "default": "(now())",
+          "autoincrement": false,
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "view_count": {
+          "default": 0,
+          "autoincrement": false,
+          "name": "view_count",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "share_count": {
+          "default": 0,
+          "autoincrement": false,
+          "name": "share_count",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "compositePrimaryKeys": {
+        "itineraries_id": {
+          "name": "itineraries_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "itineraries_race_id_races_id_fk": {
+          "name": "itineraries_race_id_races_id_fk",
+          "tableFrom": "itineraries",
+          "tableTo": "races",
+          "columnsFrom": [
+            "race_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "races": {
+      "name": "races",
+      "columns": {
+        "id": {
+          "autoincrement": true,
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "slug": {
+          "autoincrement": false,
+          "name": "slug",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "name": {
+          "autoincrement": false,
+          "name": "name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "season": {
+          "autoincrement": false,
+          "name": "season",
+          "type": "year",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "round": {
+          "autoincrement": false,
+          "name": "round",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "circuit_name": {
+          "autoincrement": false,
+          "name": "circuit_name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "city": {
+          "autoincrement": false,
+          "name": "city",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "country": {
+          "autoincrement": false,
+          "name": "country",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "country_code": {
+          "autoincrement": false,
+          "name": "country_code",
+          "type": "char(2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "circuit_lat": {
+          "autoincrement": false,
+          "name": "circuit_lat",
+          "type": "decimal(10,6)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "circuit_lng": {
+          "autoincrement": false,
+          "name": "circuit_lng",
+          "type": "decimal(10,6)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "timezone": {
+          "autoincrement": false,
+          "name": "timezone",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "race_date": {
+          "autoincrement": false,
+          "name": "race_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "default": "(now())",
+          "autoincrement": false,
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "compositePrimaryKeys": {
+        "races_id": {
+          "name": "races_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "uniqueConstraints": {
+        "races_slug_unique": {
+          "name": "races_slug_unique",
+          "columns": [
+            "slug"
+          ]
+        }
+      },
+      "checkConstraint": {}
+    },
+    "schedule_entries": {
+      "name": "schedule_entries",
+      "columns": {
+        "id": {
+          "autoincrement": true,
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "race_id": {
+          "autoincrement": false,
+          "name": "race_id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "day_of_week": {
+          "autoincrement": false,
+          "name": "day_of_week",
+          "type": "enum('Thursday','Friday','Saturday','Sunday')",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "start_time": {
+          "autoincrement": false,
+          "name": "start_time",
+          "type": "time",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "end_time": {
+          "autoincrement": false,
+          "name": "end_time",
+          "type": "time",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "autoincrement": false,
+          "name": "title",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "series": {
+          "autoincrement": false,
+          "name": "series",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "series_key": {
+          "autoincrement": false,
+          "name": "series_key",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sort_order": {
+          "autoincrement": false,
+          "name": "sort_order",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "default": "(CURRENT_TIMESTAMP)",
+          "autoincrement": false,
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "compositePrimaryKeys": {
+        "schedule_entries_id": {
+          "name": "schedule_entries_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "sessions": {
+      "name": "sessions",
+      "columns": {
+        "id": {
+          "autoincrement": true,
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "race_id": {
+          "autoincrement": false,
+          "name": "race_id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "name": {
+          "autoincrement": false,
+          "name": "name",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "short_name": {
+          "autoincrement": false,
+          "name": "short_name",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "day_of_week": {
+          "autoincrement": false,
+          "name": "day_of_week",
+          "type": "enum('Thursday','Friday','Saturday','Sunday')",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "start_time": {
+          "autoincrement": false,
+          "name": "start_time",
+          "type": "time",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "end_time": {
+          "autoincrement": false,
+          "name": "end_time",
+          "type": "time",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "session_type": {
+          "autoincrement": false,
+          "name": "session_type",
+          "type": "enum('practice','qualifying','sprint','race','support','event')",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "default": "(now())",
+          "autoincrement": false,
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "compositePrimaryKeys": {
+        "sessions_id": {
+          "name": "sessions_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "sessions_race_id_races_id_fk": {
+          "name": "sessions_race_id_races_id_fk",
+          "tableFrom": "sessions",
+          "tableTo": "races",
+          "columnsFrom": [
+            "race_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    }
+  },
+  "views": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  },
+  "internal": {
+    "tables": {
+      "affiliate_clicks": {
+        "columns": {
+          "clicked_at": {
+            "isDefaultAnExpression": true
+          }
+        }
+      },
+      "events": {
+        "columns": {
+          "created_at": {
+            "isDefaultAnExpression": true
+          }
+        }
+      },
+      "experience_windows": {
+        "columns": {
+          "created_at": {
+            "isDefaultAnExpression": true
+          }
+        }
+      },
+      "experiences": {
+        "columns": {
+          "created_at": {
+            "isDefaultAnExpression": true
+          }
+        }
+      },
+      "itineraries": {
+        "columns": {
+          "created_at": {
+            "isDefaultAnExpression": true
+          }
+        }
+      },
+      "races": {
+        "columns": {
+          "created_at": {
+            "isDefaultAnExpression": true
+          }
+        }
+      },
+      "schedule_entries": {
+        "columns": {
+          "created_at": {
+            "isDefaultAnExpression": true
+          }
+        }
+      },
+      "sessions": {
+        "columns": {
+          "created_at": {
+            "isDefaultAnExpression": true
+          }
+        }
+      }
+    },
+    "indexes": {}
+  }
+}
