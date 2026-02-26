@@ -4,13 +4,14 @@ import { useRef } from 'react';
 
 interface Props {
   photos: string[] | null;
+  imageUrl?: string | null;
   title: string;
   color: string;
   imageEmoji: string;
 }
 
-export default function PhotoSlider({ photos, title, color, imageEmoji }: Props) {
-  const allPhotos = photos ?? [];
+export default function PhotoSlider({ photos, imageUrl, title, color, imageEmoji }: Props) {
+  const allPhotos = (photos && photos.length > 0) ? photos : (imageUrl ? [imageUrl] : []);
   const n = allPhotos.length;
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -62,8 +63,9 @@ export default function PhotoSlider({ photos, title, color, imageEmoji }: Props)
               src={url}
               alt={`${title} photo ${i + 1}`}
               fill
+              unoptimized
+              referrerPolicy="no-referrer"
               sizes="(max-width: 640px) 100vw, 60vw"
-              quality={90}
               className="object-cover"
               priority={i === 0}
             />

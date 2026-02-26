@@ -29,7 +29,7 @@ export function slugify(text: string): string {
 /** Format a price for display: 13500 (cents) → "A$135" */
 export function formatPrice(amountCents: number, currency = 'AUD'): string {
   const amount = amountCents / 100;
-  const symbol = currency === 'AUD' ? 'A$' : currency === 'USD' ? '$' : currency;
+  const symbol = currency === 'AUD' ? 'A$' : currency === 'CNY' ? '¥' : currency === 'USD' ? '$' : currency;
   return `${symbol}${amount % 1 === 0 ? amount : amount.toFixed(2)}`;
 }
 

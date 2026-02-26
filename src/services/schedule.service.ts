@@ -25,13 +25,23 @@ async function cached<T>(key: string, fetcher: () => Promise<T>): Promise<T> {
   return result;
 }
 
-// Date strings for each day of Melbourne 2026
-const DAY_DATES: Record<string, string> = {
-  Thursday: '05 March',
-  Friday:   '06 March',
-  Saturday: '07 March',
-  Sunday:   '08 March',
-};
+const MONTHS = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+
+// Compute display date strings ("05 March") from raceDate (the Sunday race day).
+function computeDayDates(raceDate: string): Record<string, string> {
+  const DAYS = ['Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
+  const OFFSETS = [-3, -2, -1, 0];
+  const result: Record<string, string> = {};
+  for (let i = 0; i < DAYS.length; i++) {
+    const d = new Date(raceDate + 'T00:00:00Z');
+    d.setUTCDate(d.getUTCDate() + OFFSETS[i]);
+    result[DAYS[i]] = `${String(d.getUTCDate()).padStart(2, '0')} ${MONTHS[d.getUTCMonth()]}`;
+  }
+  return result;
+}
 
 // Normalize TIME column (MySQL returns "HH:MM:SS"; we want "HH:MM")
 function toHHMM(t: string | null): string {
@@ -39,7 +49,7 @@ function toHHMM(t: string | null): string {
   return t.slice(0, 5);
 }
 
-export async function getScheduleByRace(raceId: number): Promise<ScheduleDay[]> {
+export async function getScheduleByRace(raceId: number, raceDate?: string): Promise<ScheduleDay[]> {
   const rows = await cached(`schedule:race:${raceId}`, () =>
     db
       .select()
@@ -47,6 +57,11 @@ export async function getScheduleByRace(raceId: number): Promise<ScheduleDay[]> 
       .where(eq(schedule_entries.race_id, raceId))
       .orderBy(asc(schedule_entries.day_of_week), asc(schedule_entries.sort_order))
   );
+
+  // Compute day dates — dynamically from raceDate when provided
+  const DAY_DATES = raceDate
+    ? computeDayDates(raceDate)
+    : { Thursday: '05 March', Friday: '06 March', Saturday: '07 March', Sunday: '08 March' };
 
   // Group by day
   const dayMap = new Map<string, ScheduleEntry[]>();

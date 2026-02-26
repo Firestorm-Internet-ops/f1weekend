@@ -31,7 +31,13 @@ function getSessionId(): string {
   return id;
 }
 
-export default function ExperiencesClient({ initialExperiences = [] }: { initialExperiences?: Experience[] }) {
+export default function ExperiencesClient({
+  initialExperiences = [],
+  raceSlug,
+}: {
+  initialExperiences?: Experience[];
+  raceSlug: string;
+}) {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -52,9 +58,10 @@ export default function ExperiencesClient({ initialExperiences = [] }: { initial
       if (win) params.set('window', win);
       if (newCat) params.set('category', newCat);
       if (newSort !== 'popular') params.set('sort', newSort);
-      return `/experiences${params.size ? `?${params.toString()}` : ''}`;
+      const base = `/races/${raceSlug}/experiences`;
+      return `${base}${params.size ? `?${params.toString()}` : ''}`;
     },
-    []
+    [raceSlug]
   );
 
   const handleCategoryChange = (cat: string) => {
@@ -80,7 +87,7 @@ export default function ExperiencesClient({ initialExperiences = [] }: { initial
     isFirstRender.current = false;
 
     setLoading(true);
-    const params = new URLSearchParams({ race: 'melbourne-2026' });
+    const params = new URLSearchParams({ race: raceSlug });
     if (windowSlug) params.set('window', windowSlug);
     if (category) params.set('category', category);
     if (sort) params.set('sort', sort);
@@ -93,7 +100,7 @@ export default function ExperiencesClient({ initialExperiences = [] }: { initial
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, [windowSlug, category, sort]);
+  }, [windowSlug, category, sort, raceSlug]);
 
   const handleBook = async (experienceId: number) => {
     setBookingId(experienceId);
@@ -176,6 +183,7 @@ export default function ExperiencesClient({ initialExperiences = [] }: { initial
               onBook={handleBook}
               loading={bookingId === exp.id}
               index={i}
+              detailHref={`/races/${raceSlug}/experiences/${exp.slug}`}
             />
           ))}
         </div>

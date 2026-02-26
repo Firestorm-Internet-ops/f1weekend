@@ -12,13 +12,19 @@ const SESSION_DAYS = ['Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
 const DAY_START = '08:00';
 const DAY_END = '22:00';
 
-// Hardcoded race dates for Melbourne 2026 (Mar 5-8)
-const RACE_DATES: Record<string, string> = {
-    Thursday:  '2026-03-05',
-    Friday:    '2026-03-06',
-    Saturday:  '2026-03-07',
-    Sunday:    '2026-03-08',
-};
+// Compute race day dates from the race's race_date (Sunday = race day).
+// Thursday = -3 days, Friday = -2, Saturday = -1, Sunday = 0.
+function computeRaceDates(raceDateStr: string): Record<string, string> {
+    const DAYS = ['Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
+    const OFFSETS = [-3, -2, -1, 0];
+    const result: Record<string, string> = {};
+    for (let i = 0; i < DAYS.length; i++) {
+        const d = new Date(raceDateStr + 'T00:00:00Z');
+        d.setUTCDate(d.getUTCDate() + OFFSETS[i]);
+        result[DAYS[i]] = d.toISOString().split('T')[0];
+    }
+    return result;
+}
 
 function timeToMinutes(t: string): number {
     const [h, m] = t.split(':').map(Number);
@@ -61,6 +67,8 @@ function findBestWindow(
 export async function buildManualItinerary(input: ManualItineraryInput): Promise<Itinerary> {
     const race = await getRaceBySlug(input.raceSlug);
     if (!race) throw new Error(`Race not found: ${input.raceSlug}`);
+
+    const RACE_DATES = computeRaceDates(race.raceDate);
 
     const [allSessions, windows] = await Promise.all([
         getSessionsByRace(race.id),
@@ -137,7 +145,7 @@ export async function buildManualItinerary(input: ManualItineraryInput): Promise
     }
 
     const id = generateId();
-    const title = `Melbourne 2026 — ${input.arrivalDay} to ${input.departureDay}`;
+    const title = `${race.city} ${race.season} — ${input.arrivalDay} to ${input.departureDay}`;
     const itinerary: Itinerary = { id, title, days };
 
     await db.insert(itineraries).values({

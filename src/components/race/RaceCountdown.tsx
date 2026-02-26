@@ -1,9 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-
-// FP1 start: Friday 6 March 2026, 12:30 AEDT (UTC+11)
-const TARGET = new Date('2026-03-06T01:30:00Z');
+import { useEffect, useMemo, useState } from 'react';
 
 interface TimeLeft {
   d: number;
@@ -12,27 +9,31 @@ interface TimeLeft {
   s: number;
 }
 
-function getTimeLeft(): TimeLeft | null {
-  const diff = TARGET.getTime() - Date.now();
-  if (diff <= 0) return null;
-  return {
-    d: Math.floor(diff / 86_400_000),
-    h: Math.floor((diff % 86_400_000) / 3_600_000),
-    m: Math.floor((diff % 3_600_000) / 60_000),
-    s: Math.floor((diff % 60_000) / 1_000),
-  };
-}
-
-export default function RaceCountdown() {
+export default function RaceCountdown({ targetDate }: { targetDate: string }) {
+  const target = useMemo(() => new Date(targetDate), [targetDate]);
   const [time, setTime] = useState<TimeLeft | null>(null);
+  const [completed, setCompleted] = useState(false);
 
   useEffect(() => {
+    function getTimeLeft(): TimeLeft | null {
+      const diff = target.getTime() - Date.now();
+      if (diff <= 0) {
+        setCompleted(true);
+        return null;
+      }
+      return {
+        d: Math.floor(diff / 86_400_000),
+        h: Math.floor((diff % 86_400_000) / 3_600_000),
+        m: Math.floor((diff % 3_600_000) / 60_000),
+        s: Math.floor((diff % 60_000) / 1_000),
+      };
+    }
     setTime(getTimeLeft());
     const id = setInterval(() => setTime(getTimeLeft()), 1000);
     return () => clearInterval(id);
-  }, []);
+  }, [target]);
 
-  if (time === null && typeof window !== 'undefined' && Date.now() >= TARGET.getTime()) {
+  if (completed) {
     return (
       <p className="font-display font-black text-2xl text-[var(--accent-red)] uppercase-heading tracking-widest">
         LIGHTS OUT 🏁

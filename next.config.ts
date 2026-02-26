@@ -4,6 +4,7 @@ const nextConfig: NextConfig = {
   reactCompiler: true,
   compress: true,
   images: {
+    qualities: [75, 80, 90],
     remotePatterns: [
       { protocol: 'https', hostname: 'cdn.getyourguide.com' },
       { protocol: 'https', hostname: 'img.getyourguide.com' },

@@ -62,7 +62,7 @@ export default async function AboutPage() {
               schedule and the city, shown together.
             </p>
             <p>
-              Whether you&apos;re staying in the CBD or making day trips, F1 Weekend gives you a clear
+              Whether you&apos;re staying in the Central Business District or making day trips, F1 Weekend gives you a clear
               picture of the weekend so you spend less time planning and more time at the track —
               or exploring the city that surrounds it.
             </p>
@@ -87,7 +87,7 @@ export default async function AboutPage() {
               {
                 icon: '🌏',
                 title: 'Melbourne Experiences',
-                desc: 'Curated spots across the CBD, St Kilda, Fitzroy, and Albert Park — each tagged to the session gaps they fit.',
+                desc: 'Curated spots across the Central Business District, St Kilda, Fitzroy, and Albert Park — each tagged to the session gaps they fit.',
               },
               {
                 icon: '📋',

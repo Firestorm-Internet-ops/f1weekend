@@ -10,6 +10,9 @@
     "db:init": "tsx scripts/init-db.ts",
     "db:push": "drizzle-kit push --force",
     "db:seed-experiences": "tsx src/data/seed-experiences.ts",
+    "db:enrich-seo": "npx tsx --env-file=.env scripts/enrich-seo-content.ts",
+    "db:enrich-seo-shanghai": "npx tsx --env-file=.env scripts/enrich-seo-content.ts --race shanghai-2026 --featured-only",
+    "db:patch-shanghai-prices": "npx tsx --env-file=.env scripts/patch-shanghai-gyg-prices.ts",
     "og:generate": "tsx scripts/generate-og-images.ts"
   },
   "dependencies": {

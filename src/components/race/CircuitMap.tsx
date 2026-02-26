@@ -1,6 +1,18 @@
 import Image from 'next/image';
 
-export default function CircuitMap({ className }: { className?: string }) {
+export default function CircuitMap({
+  className,
+  src = '/Australia_Circuit.avif',
+  alt = 'Albert Park Circuit — Melbourne',
+  width = 1920,
+  height = 1080,
+}: {
+  className?: string;
+  src?: string;
+  alt?: string;
+  width?: number;
+  height?: number;
+}) {
   return (
     <div className={`relative ${className ?? ''}`}>
       {/* Subtle red glow behind the image */}
@@ -11,10 +23,10 @@ export default function CircuitMap({ className }: { className?: string }) {
         }}
       />
       <Image
-        src="/Australia_Circuit.avif"
-        alt="Albert Park Circuit — Melbourne"
-        width={1920}
-        height={1080}
+        src={src}
+        alt={alt}
+        width={width}
+        height={height}
         className="w-full h-auto object-contain opacity-85 drop-shadow-[0_0_24px_rgba(0,210,190,0.1)]"
         priority
       />

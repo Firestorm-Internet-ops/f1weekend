@@ -23,6 +23,10 @@ const DB_PASS = process.env.DATABASE_PASSWORD ?? '';
 const DB_NAME = process.env.DATABASE_NAME ?? 'pitlane';
 
 const FORCE = process.argv.includes('--force');
+const FEATURED_ONLY = process.argv.includes('--featured-only');
+
+const raceArgIdx = process.argv.indexOf('--race');
+const RACE_SLUG = raceArgIdx !== -1 ? process.argv[raceArgIdx + 1] : 'melbourne-2026';
 
 function delay(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
@@ -38,6 +42,9 @@ const WINDOW_LABEL_MAP: Record<string, string> = {
   'sat-evening': 'Saturday Evening (after Qualifying)',
   'sun-morning': 'Sunday Morning (Race Day Build-Up)',
   'sun-evening': 'Sunday Evening (Post-Race Celebration)',
+  // Shanghai-specific windows
+  'pre-race':    'Thursday Pre-Race',
+  'post-race':   'Sunday Evening (Post-Race)',
 };
 
 interface ExperienceRow {
@@ -72,14 +79,31 @@ interface EnrichedContent {
   f1_windows_label: string;
 }
 
-const SYSTEM_PROMPT = `You are an SEO specialist for Pitlane, an F1 travel companion app for the 2026 Australian Grand Prix (Melbourne, Albert Park, 5–8 March 2026). Race schedule: Thu free practice, Fri practice (FP1 + FP2), Sat qualifying, Sun race. Audience: F1 fans planning activities around race sessions. Return ONLY valid JSON, no markdown fences.`;
+interface RaceMeta {
+  name: string;
+  city: string;
+  circuit_name: string;
+  race_date: string;
+}
 
-function buildUserPrompt(exp: ExperienceRow, windowLabels: string[]): string {
-  const highlights: string[] = exp.highlights ? JSON.parse(exp.highlights) : [];
-  const includes: string[] = exp.includes ? JSON.parse(exp.includes) : [];
-  const gygCategories: string[] = exp.gyg_categories ? JSON.parse(exp.gyg_categories) : [];
+function buildSystemPrompt(race: RaceMeta): string {
+  const raceDay = new Date(race.race_date + 'T00:00:00Z');
+  const sunStr = raceDay.toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+  return `You are an SEO specialist for F1 Weekend, an F1 travel companion app for the ${race.name} (${race.city}, ${race.circuit_name}, ending ${sunStr}). Audience: F1 fans planning activities around race sessions. Return ONLY valid JSON, no markdown fences.`;
+}
 
-  return `Write SEO content for this Melbourne experience. Return ONLY a JSON object with no extra text.
+function parseJsonArray(val: unknown): string[] {
+  if (!val) return [];
+  if (Array.isArray(val)) return val as string[];
+  try { return JSON.parse(val as string); } catch { return []; }
+}
+
+function buildUserPrompt(exp: ExperienceRow, windowLabels: string[], city: string, raceName: string): string {
+  const highlights = parseJsonArray(exp.highlights);
+  const includes = parseJsonArray(exp.includes);
+  const gygCategories = parseJsonArray(exp.gyg_categories);
+
+  return `Write SEO content for this ${city} experience. Return ONLY a JSON object with no extra text.
 
 Title: ${exp.title}
 Category: ${exp.category}
@@ -94,19 +118,20 @@ Available F1 windows: ${windowLabels.length > 0 ? windowLabels.join(' · ') : 'A
 Return this JSON structure (fill in the values):
 {
   "abstract": "140-160 char F1-focused meta description with price and race-weekend angle",
-  "f1_context": "80-120 word paragraph for F1 fans explaining why this fits the 2026 Australian GP, written in second person",
-  "seo_keywords": ["6 to 8 long-tail keywords combining activity + Melbourne + F1/race weekend"],
-  "f1_windows_label": "compact schedule like 'Thu pre-race · Fri morning & evening · Sat & Sun evenings'"
+  "f1_context": "80-120 word paragraph for F1 fans explaining why this fits the ${raceName}, written in second person",
+  "seo_keywords": ["6 to 8 long-tail keywords combining activity + ${city} + F1/race weekend"],
+  "f1_windows_label": "compact schedule like 'Fri morning · Sat & Sun evenings'"
 }`;
 }
 
 async function generateContent(
   exp: ExperienceRow,
   windowLabels: string[],
+  race: RaceMeta,
 ): Promise<EnrichedContent | null> {
   let raw: string;
   try {
-    raw = await generateText(SYSTEM_PROMPT, buildUserPrompt(exp, windowLabels));
+    raw = await generateText(buildSystemPrompt(race), buildUserPrompt(exp, windowLabels, race.city, race.name));
   } catch (err) {
     console.error(`  [seo-enrich] LLM error:`, err);
     return null;
@@ -149,12 +174,27 @@ async function main() {
     : 'claude-sonnet-4-6';
 
   console.log(`[seo-enrich] Connected to ${DB_HOST}:${DB_PORT}/${DB_NAME}`);
+  console.log(`[seo-enrich] Race: ${RACE_SLUG}`);
   console.log(`[seo-enrich] LLM: ${provider} / ${model}`);
-  console.log(`[seo-enrich] Mode: ${FORCE ? 'FORCE (re-process all)' : 'idempotent (skip if f1_context IS NOT NULL)'}`);
+  console.log(`[seo-enrich] Mode: ${FORCE ? 'FORCE (re-process all)' : 'idempotent (skip if f1_context IS NOT NULL)'}${FEATURED_ONLY ? ' | featured-only' : ''}`);
 
+  // Look up race metadata for dynamic prompts
+  const [raceMeta] = await conn.execute<mysql.RowDataPacket[]>(
+    `SELECT name, city, circuit_name, race_date FROM races WHERE slug = ? LIMIT 1`,
+    [RACE_SLUG],
+  );
+  if (!raceMeta.length) {
+    console.error(`[seo-enrich] Race not found: ${RACE_SLUG}`);
+    await conn.end();
+    process.exit(1);
+  }
+  const race = raceMeta[0] as RaceMeta;
+  console.log(`[seo-enrich] Race name: "${race.name}", city: "${race.city}"\n`);
+
+  const featuredClause = FEATURED_ONLY ? ' AND e.is_featured = 1' : '';
   const whereClause = FORCE
-    ? `WHERE e.race_id = (SELECT id FROM races WHERE slug = 'melbourne-2026')`
-    : `WHERE e.race_id = (SELECT id FROM races WHERE slug = 'melbourne-2026') AND e.f1_context IS NULL`;
+    ? `WHERE e.race_id = (SELECT id FROM races WHERE slug = '${RACE_SLUG}')${featuredClause}`
+    : `WHERE e.race_id = (SELECT id FROM races WHERE slug = '${RACE_SLUG}') AND e.f1_context IS NULL${featuredClause}`;
 
   const [rows] = await conn.execute<mysql.RowDataPacket[]>(
     `SELECT e.id, e.title, e.slug, e.category,
@@ -196,7 +236,7 @@ async function main() {
     const windowLabels = windows.map((w) => WINDOW_LABEL_MAP[w.slug] ?? w.label ?? w.slug);
 
     // Generate enriched content via LLM
-    const content = await generateContent(exp, windowLabels);
+    const content = await generateContent(exp, windowLabels, race);
 
     if (!content) {
       errors++;

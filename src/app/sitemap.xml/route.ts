@@ -28,29 +28,73 @@ export async function GET() {
       changefreq: 'daily',
       priority: '1.0',
     },
+    // Race-canonical URLs (authoritative paths)
     {
-      loc: 'https://f1weekend.co/experiences',
+      loc: 'https://f1weekend.co/races/melbourne-2026',
       lastmod: fmt(now),
       changefreq: 'daily',
       priority: '0.9',
     },
     {
-      loc: 'https://f1weekend.co/schedule',
+      loc: 'https://f1weekend.co/races/melbourne-2026/experiences',
+      lastmod: fmt(now),
+      changefreq: 'daily',
+      priority: '0.9',
+    },
+    {
+      loc: 'https://f1weekend.co/races/melbourne-2026/guide',
+      lastmod: fmt(now),
+      changefreq: 'weekly',
+      priority: '0.85',
+    },
+    {
+      loc: 'https://f1weekend.co/races/melbourne-2026/schedule',
       lastmod: fmt(staticDate),
       changefreq: 'weekly',
       priority: '0.7',
     },
     {
-      loc: 'https://f1weekend.co/getting-there',
+      loc: 'https://f1weekend.co/races/melbourne-2026/getting-there',
       lastmod: fmt(staticDate),
       changefreq: 'monthly',
       priority: '0.6',
+    },
+    // Flat redirect pages (lower priority — canonicals are above)
+    {
+      loc: 'https://f1weekend.co/experiences',
+      lastmod: fmt(now),
+      changefreq: 'daily',
+      priority: '0.7',
+    },
+    {
+      loc: 'https://f1weekend.co/guide',
+      lastmod: fmt(now),
+      changefreq: 'weekly',
+      priority: '0.7',
+    },
+    {
+      loc: 'https://f1weekend.co/schedule',
+      lastmod: fmt(staticDate),
+      changefreq: 'weekly',
+      priority: '0.5',
+    },
+    {
+      loc: 'https://f1weekend.co/getting-there',
+      lastmod: fmt(staticDate),
+      changefreq: 'monthly',
+      priority: '0.5',
     },
     {
       loc: 'https://f1weekend.co/experiences/map',
       lastmod: fmt(now),
       changefreq: 'weekly',
       priority: '0.6',
+    },
+    {
+      loc: 'https://f1weekend.co/f1-2026',
+      lastmod: fmt(staticDate),
+      changefreq: 'weekly',
+      priority: '0.8',
     },
     {
       loc: 'https://f1weekend.co/about',
@@ -66,7 +110,7 @@ export async function GET() {
     },
     // /privacy intentionally omitted — noindex legal page
     ...exps.map((e) => ({
-      loc: `https://f1weekend.co/experiences/${e.slug}`,
+      loc: `https://f1weekend.co/races/melbourne-2026/experiences/${e.slug}`,
       lastmod: fmt(now),
       changefreq: 'weekly',
       priority: '0.8',

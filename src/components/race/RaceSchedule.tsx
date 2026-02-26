@@ -5,7 +5,7 @@ import Link from 'next/link';
 import type { Session, ExperienceWindow } from '@/types/race';
 import type { ExperiencePreview } from '@/types/experience';
 import { formatTime } from '@/lib/utils';
-import { getSessionStatus, getSessionProgress } from '@/lib/schedule-utils';
+import { computeISODayDates, getUtcOffsetHours, getSessionStatus, getSessionProgress } from '@/lib/schedule-utils';
 import GapCard from './GapCard';
 
 const DAYS = ['Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
@@ -16,13 +16,6 @@ const DAY_SHORT: Record<Day, string> = {
   Friday: 'Fri',
   Saturday: 'Sat',
   Sunday: 'Sun',
-};
-
-const DAY_DATE: Record<Day, string> = {
-  Thursday: 'Mar 5',
-  Friday: 'Mar 6',
-  Saturday: 'Mar 7',
-  Sunday: 'Mar 8',
 };
 
 const SESSION_COLORS: Record<string, string> = {
@@ -49,10 +42,41 @@ interface Props {
   sessions: Session[];
   windows: ExperienceWindow[];
   windowData: { slug: string; count: number; experiences: ExperiencePreview[] }[];
+  basePath?: string;
+  schedulePath?: string;
+  race: { city: string; raceDate: string; timezone: string };
 }
 
-export default function RaceSchedule({ sessions, windows, windowData }: Props) {
-  const [activeDay, setActiveDay] = useState<Day>('Friday');
+export default function RaceSchedule({ sessions, windows, windowData, basePath = '/experiences', schedulePath = '/schedule', race }: Props) {
+  // Compute dynamic date/timezone values from race prop
+  const dayDates = computeISODayDates(race.raceDate);
+  const utcOffsetHours = getUtcOffsetHours(race.timezone, race.raceDate);
+
+  // Format dates for tab display: "Mar 13"
+  const dayDisplayDates = Object.fromEntries(
+    Object.entries(dayDates).map(([day, ds]) => {
+      const d = new Date(ds + 'T00:00:00Z');
+      return [day, d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })];
+    }),
+  ) as Record<Day, string>;
+
+  // Timezone label for session times (e.g., "CST", "AEDT")
+  const tzLabel = (() => {
+    try {
+      const parts = new Intl.DateTimeFormat('en', {
+        timeZone: race.timezone,
+        timeZoneName: 'short',
+      }).formatToParts(new Date(race.raceDate + 'T12:00:00Z'));
+      return parts.find((p) => p.type === 'timeZoneName')?.value ?? 'LT';
+    } catch {
+      return 'LT';
+    }
+  })();
+
+  // Only show tabs for days that have sessions
+  const daysWithSessions = DAYS.filter((day) => sessions.some((s) => s.dayOfWeek === day));
+
+  const [activeDay, setActiveDay] = useState<Day>(() => daysWithSessions[0] ?? 'Friday');
   const [tick, setTick] = useState(0);
   const [liveTick, setLiveTick] = useState(0);
 
@@ -75,7 +99,7 @@ export default function RaceSchedule({ sessions, windows, windowData }: Props) {
 
   // Compute statuses for current tick
   const statuses = useMemo(
-    () => daySessions.map((s) => getSessionStatus(activeDay, s.startTime, s.endTime)),
+    () => daySessions.map((s) => getSessionStatus(activeDay, s.startTime, s.endTime, dayDates, utcOffsetHours)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [daySessions, activeDay, tick],
   );
@@ -83,7 +107,7 @@ export default function RaceSchedule({ sessions, windows, windowData }: Props) {
   const liveProgressValues = useMemo(
     () =>
       daySessions.map((s, i) =>
-        statuses[i] === 'live' ? getSessionProgress(activeDay, s.startTime, s.endTime) : 0,
+        statuses[i] === 'live' ? getSessionProgress(activeDay, s.startTime, s.endTime, dayDates, utcOffsetHours) : 0,
       ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [daySessions, activeDay, statuses, liveTick],
@@ -113,9 +137,9 @@ export default function RaceSchedule({ sessions, windows, windowData }: Props) {
 
   return (
     <div>
-      {/* Day tabs */}
+      {/* Day tabs — only days that have sessions */}
       <div className="flex gap-2 mb-8 flex-wrap">
-        {DAYS.map((day) => (
+        {daysWithSessions.map((day) => (
           <button
             key={day}
             onClick={() => setActiveDay(day)}
@@ -126,7 +150,7 @@ export default function RaceSchedule({ sessions, windows, windowData }: Props) {
             }`}
           >
             <span className="uppercase-label">{DAY_SHORT[day]}</span>
-            <span className={`text-sm font-normal mt-0.5 ${activeDay === day ? 'text-white/80' : 'text-[var(--text-secondary)]'}`}>{DAY_DATE[day]}</span>
+            <span className={`text-sm font-normal mt-0.5 ${activeDay === day ? 'text-white/80' : 'text-[var(--text-secondary)]'}`}>{dayDisplayDates[day]}</span>
           </button>
         ))}
       </div>
@@ -186,7 +210,7 @@ export default function RaceSchedule({ sessions, windows, windowData }: Props) {
                           </p>
                           <p className="text-base text-[var(--text-secondary)] mono-data mt-0.5">
                             {formatTime(session.startTime)} – {formatTime(session.endTime)}{' '}
-                            <span className="text-[var(--text-secondary)]">AEDT</span>
+                            <span className="text-[var(--text-secondary)]">{tzLabel}</span>
                           </p>
                         </div>
 
@@ -215,11 +239,11 @@ export default function RaceSchedule({ sessions, windows, windowData }: Props) {
         </div>
       )}
 
-      {/* Gap cards — explore Melbourne */}
+      {/* Gap cards — explore city */}
       {dayWindows.length > 0 && (
         <div>
           <h3 className="text-sm font-semibold uppercase-label text-[var(--text-secondary)] mb-3">
-            EXPLORE MELBOURNE
+            EXPLORE {race.city.toUpperCase()}
           </h3>
           <div className="flex flex-col gap-3">
             {dayWindows.map((window) => (
@@ -232,6 +256,7 @@ export default function RaceSchedule({ sessions, windows, windowData }: Props) {
                 startTime={window.startTime}
                 endTime={window.endTime}
                 experiences={expMap[window.slug] ?? []}
+                basePath={basePath}
               />
             ))}
           </div>
@@ -247,7 +272,7 @@ export default function RaceSchedule({ sessions, windows, windowData }: Props) {
       {/* View full schedule CTA */}
       <div className="mt-6 pt-4 border-t border-[var(--border-subtle)]">
         <Link
-          href="/schedule"
+          href={schedulePath}
           className="text-sm font-medium text-[var(--accent-teal)] hover:text-white transition-colors flex items-center gap-1"
         >
           View full schedule →

@@ -10,6 +10,7 @@ interface Props {
   startTime: string | null;
   endTime: string | null;
   experiences: ExperiencePreview[];
+  basePath?: string;
 }
 
 export default function GapCard({
@@ -20,9 +21,10 @@ export default function GapCard({
   startTime,
   endTime,
   experiences,
+  basePath = '/experiences',
 }: Props) {
   return (
-    <Link href={`/experiences?window=${slug}`}>
+    <Link href={`${basePath}?window=${slug}`}>
       <div className="group p-4 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-secondary)] hover:border-[var(--accent-teal)]/50 hover:bg-[var(--bg-surface)] transition-all cursor-pointer">
         {/* Header */}
         <h3 className="font-display font-bold text-white group-hover:text-[var(--accent-teal)] transition-colors uppercase-heading leading-tight">

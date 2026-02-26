@@ -10,11 +10,13 @@ interface Props {
   onBook: (id: number) => void;
   loading?: boolean;
   index?: number;
+  detailHref?: string;
 }
 
-export default function ExperienceCard({ experience, onBook, loading, index = 0 }: Props) {
+export default function ExperienceCard({ experience, onBook, loading, index = 0, detailHref }: Props) {
   const color = CATEGORY_COLORS[experience.category] ?? '#6E6E82';
   const categoryLabel = CATEGORY_LABELS[experience.category] ?? experience.category;
+  const href = detailHref ?? `/experiences/${experience.slug}`;
 
   return (
     <div
@@ -25,15 +27,16 @@ export default function ExperienceCard({ experience, onBook, loading, index = 0 
       }}
     >
       {/* ── Visual header (links to detail page) ── */}
-      <Link href={`/experiences/${experience.slug}`} className="block">
+      <Link href={href} className="block">
         <div className="relative h-60 overflow-hidden">
           {experience.imageUrl ? (
             <Image
               src={experience.imageUrl}
               alt={experience.title}
               fill
+              unoptimized
+              referrerPolicy="no-referrer"
               sizes="(max-width: 640px) 100vw, 33vw"
-              quality={80}
               className="object-cover transition-transform duration-500 group-hover:scale-105"
             />
           ) : (
@@ -95,7 +98,7 @@ export default function ExperienceCard({ experience, onBook, loading, index = 0 
       {/* ── Card body ── */}
       <div className="p-5 pt-3">
         {/* Title (links to detail page) */}
-        <Link href={`/experiences/${experience.slug}`}>
+        <Link href={href}>
           <h3 className="font-display font-bold text-white text-xl leading-snug mb-2 hover:text-[var(--accent-teal)] transition-colors">
             {experience.title}
           </h3>
@@ -133,7 +136,7 @@ export default function ExperienceCard({ experience, onBook, loading, index = 0 
           </div>
           <div className="flex items-center gap-2">
             <Link
-              href={`/experiences/${experience.slug}`}
+              href={href}
               className="px-3 py-2 rounded-full text-base font-medium border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:border-[var(--border-medium)] hover:text-white transition-colors"
             >
               Details

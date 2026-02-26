@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, useRef } from 'react';
 import type { ScheduleDay, SeriesKey, ScheduleEntry } from '@/types/schedule';
-import { getSessionStatus, getSessionProgress } from '@/lib/schedule-utils';
+import { computeISODayDates, getUtcOffsetHours, getSessionStatus, getSessionProgress } from '@/lib/schedule-utils';
 
 // ─── Series config ───────────────────────────────────────────────
 
@@ -61,9 +61,10 @@ interface SessionRowProps {
   status: SessionStatus;
   liveProgress: number;
   index: number;
+  tzLabel: string;
 }
 
-function SessionRow({ entry, status, liveProgress, index }: SessionRowProps) {
+function SessionRow({ entry, status, liveProgress, index, tzLabel }: SessionRowProps) {
   const cfg = SERIES_CONFIG[entry.seriesKey];
   const isF1 = entry.seriesKey === 'f1';
   const isCompleted = status === 'completed';
@@ -102,7 +103,7 @@ function SessionRow({ entry, status, liveProgress, index }: SessionRowProps) {
         {/* Time */}
         <div className="shrink-0 w-28 font-mono text-sm text-[var(--text-secondary)] leading-tight">
           <span className="block">{entry.startTime} – {entry.endTime}</span>
-          <span className="text-xs text-[var(--text-secondary)] uppercase-label">AEDT</span>
+          <span className="text-xs text-[var(--text-secondary)] uppercase-label">{tzLabel}</span>
         </div>
 
         {/* Main content */}
@@ -160,13 +161,20 @@ function SessionRow({ entry, status, liveProgress, index }: SessionRowProps) {
 
 interface Props {
   schedule: ScheduleDay[];
+  initialDay?: Day;
+  tzLabel?: string;
+  raceDate?: string;
+  timezone?: string;
 }
 
-export default function ScheduleView({ schedule }: Props) {
-  const [activeDay, setActiveDay] = useState<Day>('Thursday');
+export default function ScheduleView({ schedule, initialDay = 'Thursday', tzLabel = 'AEDT', raceDate = '2026-03-08', timezone = 'Australia/Melbourne' }: Props) {
+  const [activeDay, setActiveDay] = useState<Day>(initialDay);
   const [activeFilter, setActiveFilter] = useState<SeriesKey | 'all'>('all');
   const [tick, setTick] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const dayDates = useMemo(() => computeISODayDates(raceDate), [raceDate]);
+  const utcOffsetHours = useMemo(() => getUtcOffsetHours(timezone, raceDate), [timezone, raceDate]);
 
   // Update statuses every 60s
   useEffect(() => {
@@ -189,7 +197,7 @@ export default function ScheduleView({ schedule }: Props) {
   // Compute statuses for the current tick
   const statuses = useMemo(
     () =>
-      filteredEntries.map((e) => getSessionStatus(activeDay, e.startTime, e.endTime)),
+      filteredEntries.map((e) => getSessionStatus(activeDay, e.startTime, e.endTime, dayDates, utcOffsetHours)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [filteredEntries, activeDay, tick],
   );
@@ -205,7 +213,7 @@ export default function ScheduleView({ schedule }: Props) {
     () =>
       filteredEntries.map((e, i) =>
         statuses[i] === 'live'
-          ? getSessionProgress(activeDay, e.startTime, e.endTime)
+          ? getSessionProgress(activeDay, e.startTime, e.endTime, dayDates, utcOffsetHours)
           : 0,
       ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -214,9 +222,9 @@ export default function ScheduleView({ schedule }: Props) {
 
   return (
     <div>
-      {/* Day tabs */}
+      {/* Day tabs — only show days that have entries */}
       <div className="flex gap-2 mb-5 flex-wrap">
-        {DAYS.map((day) => (
+        {DAYS.filter((day) => schedule.some((d) => d.day === day && d.entries.length > 0)).map((day) => (
           <button
             key={day}
             onClick={() => {
@@ -270,6 +278,7 @@ export default function ScheduleView({ schedule }: Props) {
               status={statuses[i]}
               liveProgress={liveProgressValues[i]}
               index={i}
+              tzLabel={tzLabel}
             />
           ))}
         </div>

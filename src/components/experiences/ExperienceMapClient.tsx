@@ -6,7 +6,7 @@ import type { Experience } from '@/types/experience';
 import CategoryTabs from './CategoryTabs';
 import ExperienceMap from './ExperienceMap';
 
-export default function ExperienceMapClient() {
+export default function ExperienceMapClient({ raceSlug }: { raceSlug: string }) {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -18,12 +18,13 @@ export default function ExperienceMapClient() {
     setCategory(cat);
     const params = new URLSearchParams();
     if (cat) params.set('category', cat);
-    router.replace(`/experiences/map${params.size ? `?${params.toString()}` : ''}`, { scroll: false });
+    const base = `/races/${raceSlug}/experiences/map`;
+    router.replace(`${base}${params.size ? `?${params.toString()}` : ''}`, { scroll: false });
   };
 
   useEffect(() => {
     setLoading(true);
-    const params = new URLSearchParams({ race: 'melbourne-2026' });
+    const params = new URLSearchParams({ race: raceSlug });
     if (category) params.set('category', category);
 
     fetch(`/api/experiences?${params.toString()}`)
@@ -33,7 +34,7 @@ export default function ExperienceMapClient() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, [category]);
+  }, [category, raceSlug]);
 
   return (
     <div>
