@@ -161,13 +161,14 @@ MYSQL_PWD="${CLOUDSQL_PASSWORD:-}" mysql \
 
 COLS_ADDED=0
 while IFS=$'\t' read -r TBL COL TYPE NULLABLE; do
-  if ! grep -qP "^${TBL}\t${COL}\t" "$CLOUD_COLS_FILE"; then
+  # Use awk for exact field match — grep -P not available on macOS BSD grep
+  if ! awk -F'\t' -v t="$TBL" -v c="$COL" '$1==t && $2==c {found=1; exit} END {exit !found}' "$CLOUD_COLS_FILE"; then
     NULL_DEF=$([ "$NULLABLE" = "YES" ] && echo "NULL" || echo "NOT NULL")
     log "  + ${TBL}.${COL} (${TYPE} ${NULL_DEF})"
     MYSQL_PWD="${CLOUDSQL_PASSWORD:-}" mysql \
       --host=127.0.0.1 --port="$CLOUDSQL_PROXY_PORT" --user="$CLOUDSQL_USER" \
       "$CLOUDSQL_DB" \
-      --execute="ALTER TABLE \`${TBL}\` ADD COLUMN IF NOT EXISTS \`${COL}\` ${TYPE} ${NULL_DEF};" \
+      --execute="ALTER TABLE \`${TBL}\` ADD COLUMN \`${COL}\` ${TYPE} ${NULL_DEF};" \
       || log "  ! warning: failed to add \`${TBL}\`.\`${COL}\` — skipping"
     ((COLS_ADDED++)) || true
   fi
