@@ -22,6 +22,9 @@ FRONTEND_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 CLOUDSQL_ENV="$FRONTEND_DIR/.env.cloudsql"
 LOCAL_ENV="$FRONTEND_DIR/.env"
 TS=$(date +%Y%m%d_%H%M%S)
+SCHEMA_FILE="/tmp/pitlane_schema_${TS}.sql"
+LOCAL_COLS_FILE="/tmp/pitlane_local_cols_${TS}.tsv"
+CLOUD_COLS_FILE="/tmp/pitlane_cloud_cols_${TS}.tsv"
 DATA_FILE="/tmp/pitlane_data_${TS}.sql"
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -70,7 +73,9 @@ cleanup() {
     wait "$PROXY_PID" 2>/dev/null || true
   fi
   local removed=0
-  [[ -f "$DATA_FILE" ]]   && { rm -f "$DATA_FILE";   removed=1; }
+  for f in "$SCHEMA_FILE" "$LOCAL_COLS_FILE" "$CLOUD_COLS_FILE" "$DATA_FILE"; do
+    [[ -f "$f" ]] && { rm -f "$f"; removed=1; }
+  done
   [[ $removed -eq 1 ]] && log "Removed temp dump files"
 }
 trap cleanup EXIT
@@ -108,21 +113,67 @@ if [[ $PROXY_READY -eq 0 ]]; then
   die "Aborting"
 fi
 
-# ── Sync schema via drizzle-kit push (handles CREATE TABLE + ALTER TABLE) ─────
+# ── Sync schema: step 1 — create new tables ───────────────────────────────────
 
-log "Running drizzle-kit push --force against Cloud SQL..."
+log "Schema sync (1/2): creating any new tables..."
 
-(
-  cd "$FRONTEND_DIR"
-  DATABASE_HOST=127.0.0.1 \
-  DATABASE_PORT="$CLOUDSQL_PROXY_PORT" \
-  DATABASE_USER="$CLOUDSQL_USER" \
-  DATABASE_PASSWORD="${CLOUDSQL_PASSWORD:-}" \
-  DATABASE_NAME="$CLOUDSQL_DB" \
-  npx drizzle-kit push --force
-)
+MYSQL_PWD="$LOCAL_PASS" mysqldump \
+  --host="$LOCAL_HOST" \
+  --port="$LOCAL_PORT" \
+  --user="$LOCAL_USER" \
+  --no-data \
+  --skip-add-drop-table \
+  --no-tablespaces \
+  "$LOCAL_DB" \
+  | sed 's/^CREATE TABLE `/CREATE TABLE IF NOT EXISTS `/' \
+  > "$SCHEMA_FILE"
 
-log "Schema sync complete"
+MYSQL_PWD="${CLOUDSQL_PASSWORD:-}" mysql \
+  --host=127.0.0.1 \
+  --port="$CLOUDSQL_PROXY_PORT" \
+  --user="$CLOUDSQL_USER" \
+  "$CLOUDSQL_DB" \
+  < "$SCHEMA_FILE"
+
+# ── Sync schema: step 2 — add missing columns to existing tables ──────────────
+
+log "Schema sync (2/2): adding any missing columns..."
+
+MYSQL_PWD="$LOCAL_PASS" mysql \
+  --host="$LOCAL_HOST" --port="$LOCAL_PORT" --user="$LOCAL_USER" \
+  --skip-column-names --batch \
+  "$LOCAL_DB" \
+  --execute="SELECT TABLE_NAME, COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE
+             FROM INFORMATION_SCHEMA.COLUMNS
+             WHERE TABLE_SCHEMA='$LOCAL_DB'
+             ORDER BY TABLE_NAME, ORDINAL_POSITION" \
+  > "$LOCAL_COLS_FILE"
+
+MYSQL_PWD="${CLOUDSQL_PASSWORD:-}" mysql \
+  --host=127.0.0.1 --port="$CLOUDSQL_PROXY_PORT" --user="$CLOUDSQL_USER" \
+  --skip-column-names --batch \
+  "$CLOUDSQL_DB" \
+  --execute="SELECT TABLE_NAME, COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE
+             FROM INFORMATION_SCHEMA.COLUMNS
+             WHERE TABLE_SCHEMA='$CLOUDSQL_DB'
+             ORDER BY TABLE_NAME, ORDINAL_POSITION" \
+  > "$CLOUD_COLS_FILE"
+
+COLS_ADDED=0
+while IFS=$'\t' read -r TBL COL TYPE NULLABLE; do
+  if ! grep -qP "^${TBL}\t${COL}\t" "$CLOUD_COLS_FILE"; then
+    NULL_DEF=$([ "$NULLABLE" = "YES" ] && echo "NULL" || echo "NOT NULL")
+    log "  + ${TBL}.${COL} (${TYPE} ${NULL_DEF})"
+    MYSQL_PWD="${CLOUDSQL_PASSWORD:-}" mysql \
+      --host=127.0.0.1 --port="$CLOUDSQL_PROXY_PORT" --user="$CLOUDSQL_USER" \
+      "$CLOUDSQL_DB" \
+      --execute="ALTER TABLE \`${TBL}\` ADD COLUMN IF NOT EXISTS \`${COL}\` ${TYPE} ${NULL_DEF};" \
+      || log "  ! warning: failed to add \`${TBL}\`.\`${COL}\` — skipping"
+    ((COLS_ADDED++)) || true
+  fi
+done < "$LOCAL_COLS_FILE"
+
+log "Schema sync complete ($COLS_ADDED columns added)"
 
 # ── Dump local data with REPLACE INTO ────────────────────────────────────────
 
@@ -134,6 +185,7 @@ MYSQL_PWD="$LOCAL_PASS" mysqldump \
   --user="$LOCAL_USER" \
   --no-create-info \
   --replace \
+  --complete-insert \
   --single-transaction \
   --no-tablespaces \
   --skip-triggers \
