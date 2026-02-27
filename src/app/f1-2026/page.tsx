@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   ],
   openGraph: {
     title: 'F1 2026 Season Travel Guide — All 24 Races | F1 Weekend',
-    description: 'Complete F1 2026 calendar with travel guides for every race city. 24 races, 21 cities, 5 continents.',
+    description: 'Complete F1 2026 calendar with travel guides for every race city. 24 races, 24 cities, 5 continents.',
     url: 'https://f1weekend.co/f1-2026',
     siteName: 'F1 Weekend',
     type: 'website',
@@ -70,7 +70,7 @@ const F1_2026: Race[] = [
 const FAQ = [
   {
     q: 'When is the 2026 F1 season?',
-    a: 'The 2026 Formula 1 season runs from March 5 to December 6, spanning 24 grands prix across 21 cities on 5 continents. It starts in Melbourne, Australia and finishes at Yas Marina in Abu Dhabi.',
+    a: 'The 2026 Formula 1 season runs from March 5 to December 6, spanning 24 grands prix across 24 cities on 5 continents. It starts in Melbourne, Australia and finishes at Yas Marina in Abu Dhabi.',
   },
   {
     q: 'Which cities host F1 races in 2026?',
@@ -99,7 +99,7 @@ const eventSeriesLd = {
   '@type': 'EventSeries',
   name: '2026 Formula 1 World Championship',
   url: 'https://f1weekend.co/f1-2026',
-  description: 'The 2026 FIA Formula One World Championship — 24 grands prix across 21 cities.',
+  description: 'The 2026 FIA Formula One World Championship — 24 grands prix across 24 cities.',
   organizer: { '@type': 'Organization', name: 'Formula One Management', url: 'https://www.formula1.com' },
   startDate: '2026-03-05',
   endDate: '2026-12-06',
@@ -151,7 +151,7 @@ export default function F12026Page() {
               <span className="text-[var(--accent-teal)]">Travel Guide</span>
             </h1>
             <p className="text-[var(--text-secondary)] text-lg max-w-xl">
-              24 races. 21 cities. One insane year. Your complete guide to following Formula 1 around the world.
+              24 races. 24 cities. One insane year. Your complete guide to following Formula 1 around the world.
             </p>
           </div>
 
@@ -159,7 +159,7 @@ export default function F12026Page() {
           <div className="flex flex-wrap gap-3 mb-12">
             {[
               { value: '24', label: 'Races' },
-              { value: '21', label: 'Host Cities' },
+              { value: '24', label: 'Host Cities' },
               { value: '5', label: 'Continents' },
               { value: '10', label: 'Months' },
             ].map(({ value, label }) => (

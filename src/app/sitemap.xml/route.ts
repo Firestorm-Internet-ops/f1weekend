@@ -59,6 +59,12 @@ export async function GET() {
       changefreq: 'monthly',
       priority: '0.6',
     },
+    {
+      loc: 'https://f1weekend.co/races/melbourne-2026/experiences/map',
+      lastmod: fmt(now),
+      changefreq: 'weekly',
+      priority: '0.6',
+    },
     // Flat redirect pages (lower priority — canonicals are above)
     {
       loc: 'https://f1weekend.co/experiences',
@@ -95,6 +101,12 @@ export async function GET() {
       lastmod: fmt(staticDate),
       changefreq: 'weekly',
       priority: '0.8',
+    },
+    {
+      loc: 'https://f1weekend.co/itinerary',
+      lastmod: fmt(staticDate),
+      changefreq: 'monthly',
+      priority: '0.5',
     },
     {
       loc: 'https://f1weekend.co/about',
