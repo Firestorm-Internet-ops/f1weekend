@@ -149,7 +149,7 @@
       <body>
         <header>
           <h1>&#x1F5FA; XML Sitemap</h1>
-          <p>This sitemap contains all the URLs for F1 Weekend — the ultimate guide for Australian Grand Prix 2026 in Melbourne.</p>
+          <p>This sitemap contains all the URLs for F1 Weekend — your complete F1 travel guide for every race on the 2026 calendar.</p>
         </header>
 
         <div class="stats">
