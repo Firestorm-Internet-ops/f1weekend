@@ -3,10 +3,11 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import ScheduleView from '@/components/schedule/ScheduleView';
 import Breadcrumb from '@/components/Breadcrumb';
+import RaceSwitcher from '@/components/race/RaceSwitcher';
 import { getRaceBySlug, getSessionsByRace } from '@/services/race.service';
 import { getScheduleByRace } from '@/services/schedule.service';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 3600; // 1 hour
 
 interface Props {
   params: Promise<{ raceSlug: string }>;
@@ -99,6 +100,9 @@ export default async function SchedulePage({ params }: Props) {
         <p className="text-xs uppercase-label text-[var(--accent-red)] mb-3 tracking-widest">
           {race.city} · Round {race.round} · {race.season}
         </p>
+        <div className="mb-4">
+          <RaceSwitcher raceSlug={raceSlug} pageType="schedule" />
+        </div>
         <h1 className="font-display font-black text-4xl md:text-5xl text-white uppercase-heading mb-2">
           Weekend Schedule
         </h1>
@@ -126,7 +130,7 @@ export default async function SchedulePage({ params }: Props) {
         )}
         <ScheduleView
           schedule={schedule}
-          initialDay={isShanghai ? 'Friday' : 'Thursday'}
+          initialDay="Friday"
           tzLabel={isShanghai ? 'CST' : 'AEDT'}
           raceDate={race.raceDate}
           timezone={race.timezone}
@@ -134,42 +138,85 @@ export default async function SchedulePage({ params }: Props) {
         {isMelbourne && (
           <section className="mt-12 border-t border-[var(--border-subtle)] pt-8">
             <h2 className="font-display font-bold text-xl text-white uppercase-heading mb-4">
-              Make the Most of Your Session Gaps
+              Session Gap Planner
             </h2>
             <p className="text-[var(--text-secondary)] text-sm leading-relaxed mb-6">
-              Each session gap has been matched to curated Melbourne experiences that fit the
-              available time. Browse by category below, or explore all 30+ experiences.
+              Each session gap has been mapped to experiences that actually fit the available time.
+              Here is what to do in each window, with links to the relevant experiences.
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="p-5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
+            <div className="space-y-6">
+              <div className="p-6 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
                 <p className="text-xs font-medium uppercase-label text-[var(--accent-teal)] mb-2">BEFORE FP1 · 3.5 HRS</p>
-                <p className="font-display font-bold text-white mb-2">Thursday & Friday Morning</p>
-                <p className="text-xs text-[var(--text-secondary)] mb-4">
-                  Perfect for a laneway food tour, Central Business District walk, or St Kilda beach visit before gates open.
+                <h3 className="font-display font-bold text-white text-lg mb-2">Thursday &amp; Friday Morning</h3>
+                <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-4">
+                  The 3.5-hour window before gates open on Friday is the most versatile gap of the
+                  weekend. A guided Melbourne Laneways Food Tour (10 tastings, 3 hours, A$99–A$130)
+                  fits perfectly — you&apos;re back at the tram stop with 30 minutes to spare. On
+                  Thursday, this gap extends all day, making it the right time for the Great Ocean
+                  Road or Yarra Valley. Self-guided options: Degraves Street espresso walk (free),
+                  Fitzroy street art tour (free), Royal Botanic Gardens (free, 1.5 hrs).
                 </p>
-                <Link href="/races/melbourne-2026/experiences?category=food" className="text-xs font-medium text-[var(--accent-teal)] hover:text-white transition-colors">
-                  Browse food experiences →
-                </Link>
+                <div className="flex flex-wrap gap-3">
+                  <Link href="/races/melbourne-2026/experiences?category=food" className="text-xs font-medium text-[var(--accent-teal)] hover:text-white transition-colors">
+                    Food experiences →
+                  </Link>
+                  <Link href="/races/melbourne-2026/experiences?category=daytrip" className="text-xs font-medium text-[var(--accent-teal)] hover:text-white transition-colors">
+                    Day trips →
+                  </Link>
+                </div>
               </div>
-              <div className="p-5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
+
+              <div className="p-6 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
                 <p className="text-xs font-medium uppercase-label text-[var(--accent-red)] mb-2">BETWEEN SESSIONS · 1.5 HRS</p>
-                <p className="font-display font-bold text-white mb-2">Afternoon Gaps</p>
-                <p className="text-xs text-[var(--text-secondary)] mb-4">
-                  Short walks, café stops, or a quick visit to the Royal Botanic Gardens nearby.
+                <h3 className="font-display font-bold text-white text-lg mb-2">Afternoon Session Gaps</h3>
+                <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-4">
+                  Shorter 1–2 hour gaps between sessions suit walking and eating rather than guided
+                  tours. The Royal Botanic Gardens (free entry, 10-minute walk from the circuit)
+                  is the best use of a tight gap. St Kilda Pier walk (free, 20 minutes by tram) is
+                  good on Friday afternoons. For food: South Yarra&apos;s Commercial Road has
+                  excellent cafés within a 15-minute tram from the circuit.
                 </p>
-                <Link href="/races/melbourne-2026/experiences?category=culture" className="text-xs font-medium text-[var(--accent-teal)] hover:text-white transition-colors">
-                  Browse culture experiences →
-                </Link>
+                <div className="flex flex-wrap gap-3">
+                  <Link href="/races/melbourne-2026/experiences?category=culture" className="text-xs font-medium text-[var(--accent-teal)] hover:text-white transition-colors">
+                    Culture &amp; walks →
+                  </Link>
+                </div>
               </div>
-              <div className="p-5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
+
+              <div className="p-6 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
                 <p className="text-xs font-medium uppercase-label mb-2" style={{ color: '#9B59B6' }}>EVENING · 4+ HRS</p>
-                <p className="font-display font-bold text-white mb-2">Post-Session Evenings</p>
-                <p className="text-xs text-[var(--text-secondary)] mb-4">
-                  Dinner in South Yarra, rooftop bars in the Central Business District, or nightlife along the Yarra.
+                <h3 className="font-display font-bold text-white text-lg mb-2">Post-Session Evenings (Thu–Sat)</h3>
+                <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-4">
+                  Friday and Saturday evenings after sessions end at ~17:00–19:00 AEDT give you
+                  4–6 hours. Melbourne&apos;s dining scene is at its best after 7 PM. Top areas:
+                  South Yarra and Toorak Road for modern Australian (15 min tram), Lygon Street
+                  Carlton for Italian (30 min tram), Flinders Lane Central Business District laneways for
+                  Japanese to Lebanese. Book ahead — Melbourne restaurants fill up during race week.
+                  For nightlife: the Yarra River precinct has rooftop bars open until 3 AM.
                 </p>
-                <Link href="/races/melbourne-2026/experiences?category=nightlife" className="text-xs font-medium text-[var(--accent-teal)] hover:text-white transition-colors">
-                  Browse nightlife & dining →
-                </Link>
+                <div className="flex flex-wrap gap-3">
+                  <Link href="/races/melbourne-2026/experiences?category=nightlife" className="text-xs font-medium text-[var(--accent-teal)] hover:text-white transition-colors">
+                    Nightlife &amp; dining →
+                  </Link>
+                </div>
+              </div>
+
+              <div className="p-6 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
+                <p className="text-xs font-medium uppercase-label mb-2" style={{ color: '#F39C12' }}>SUNDAY MORNING · 3+ HRS</p>
+                <h3 className="font-display font-bold text-white text-lg mb-2">Race Day Morning (before 11:00 AEDT)</h3>
+                <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-4">
+                  Gates open around 11:00 AEDT on race day — leaving 3+ hours for a relaxed
+                  morning. South Melbourne Market (open from 08:00, 10 min tram) is ideal: fresh
+                  produce, Melbourne&apos;s best coffee, and dim sum all under one roof. St Kilda
+                  Beach is a 15-minute walk from the market — do both. Alternatively, a short
+                  half-day Torquay coast drive (returns by 13:00) squeezes in the Great Ocean Road
+                  start if you missed Thursday.
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  <Link href="/races/melbourne-2026/experiences" className="text-xs font-medium text-[var(--accent-teal)] hover:text-white transition-colors">
+                    All Sunday morning options →
+                  </Link>
+                </div>
               </div>
             </div>
             <Link

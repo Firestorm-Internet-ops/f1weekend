@@ -45,9 +45,10 @@ interface Props {
   basePath?: string;
   schedulePath?: string;
   race: { city: string; raceDate: string; timezone: string };
+  initialDay?: Day;
 }
 
-export default function RaceSchedule({ sessions, windows, windowData, basePath = '/experiences', schedulePath = '/schedule', race }: Props) {
+export default function RaceSchedule({ sessions, windows, windowData, basePath = '/experiences', schedulePath = '/schedule', race, initialDay }: Props) {
   // Compute dynamic date/timezone values from race prop
   const dayDates = computeISODayDates(race.raceDate);
   const utcOffsetHours = getUtcOffsetHours(race.timezone, race.raceDate);
@@ -76,7 +77,10 @@ export default function RaceSchedule({ sessions, windows, windowData, basePath =
   // Only show tabs for days that have sessions
   const daysWithSessions = DAYS.filter((day) => sessions.some((s) => s.dayOfWeek === day));
 
-  const [activeDay, setActiveDay] = useState<Day>(() => daysWithSessions[0] ?? 'Friday');
+  const [activeDay, setActiveDay] = useState<Day>(() => {
+    if (initialDay && daysWithSessions.includes(initialDay)) return initialDay;
+    return daysWithSessions[0] ?? 'Friday';
+  });
   const [tick, setTick] = useState(0);
   const [liveTick, setLiveTick] = useState(0);
 

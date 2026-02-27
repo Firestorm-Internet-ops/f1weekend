@@ -3,7 +3,7 @@ import { experiences, experience_windows, experience_windows_map } from '@/lib/d
 import { eq, and, asc, desc, inArray } from 'drizzle-orm';
 import { redis } from '@/lib/redis';
 import { getRaceBySlug } from '@/services/race.service';
-import type { Experience, Category, ExperienceFilter } from '@/types/experience';
+import type { Experience, Category, ExperienceFilter, FAQItem } from '@/types/experience';
 
 const CACHE_TTL = 3600; // 1 hour
 
@@ -76,6 +76,7 @@ function mapExperience(r: typeof experiences.$inferSelect): Experience {
     neighborhood: r.neighborhood ?? null,
     travelMins: r.travel_mins ?? null,
     guideArticle: r.guide_article ?? null,
+    faqItems: (r.faq_items as FAQItem[] | null) ?? null,
   };
 }
 

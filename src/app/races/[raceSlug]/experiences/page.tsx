@@ -3,10 +3,11 @@ import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import Link from 'next/link';
 import ExperiencesClient from '@/components/experiences/ExperiencesClient';
+import RaceSwitcher from '@/components/race/RaceSwitcher';
 import { getRaceBySlug } from '@/services/race.service';
 import { getExperiencesByRace } from '@/services/experience.service';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 3600; // 1 hour
 
 interface Props {
   params: Promise<{ raceSlug: string }>;
@@ -17,7 +18,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const race = await getRaceBySlug(raceSlug);
   if (!race) return {};
 
-  const title = `${race.city} Experiences for F1 Race Weekend ${race.season} | F1 Weekend`;
+  const title = `Things to Do in ${race.city} During F1 ${race.season} | f1weekend.co`;
   const description = `Curated activities, tours, and dining experiences for the ${race.name} weekend at ${race.circuitName}. Filter by category and session gap.`;
   const canonical = `https://f1weekend.co/races/${raceSlug}/experiences`;
 
@@ -185,6 +186,10 @@ export default async function ExperiencesPage({ params }: Props) {
             <span>⊙</span>
             <span>Map</span>
           </Link>
+        </div>
+
+        <div className="mb-6">
+          <RaceSwitcher raceSlug={raceSlug} pageType="experiences" />
         </div>
 
         <Suspense

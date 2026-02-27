@@ -1,5 +1,6 @@
 import ItineraryForm from '@/components/itinerary/ItineraryForm';
 import { getRaceBySlug, getSessionsByRace } from '@/services/race.service';
+import { getActiveRaceSlug } from '@/lib/activeRace';
 import type { Session } from '@/types/race';
 
 export const dynamic = 'force-dynamic';
@@ -11,7 +12,7 @@ export const metadata = {
 };
 
 export default async function ItineraryPage() {
-    const race = await getRaceBySlug('melbourne-2026');
+    const race = await getRaceBySlug(getActiveRaceSlug());
     const allSessions: Session[] = race ? await getSessionsByRace(race.id) : [];
     const sessions = allSessions.filter(s =>
         ['practice', 'qualifying', 'sprint', 'race'].includes(s.sessionType)

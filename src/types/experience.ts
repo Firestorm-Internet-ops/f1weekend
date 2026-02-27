@@ -1,5 +1,10 @@
 export type Category = 'food' | 'culture' | 'adventure' | 'daytrip' | 'nightlife'
 
+export interface FAQItem {
+  question: string
+  answer: string
+}
+
 export interface ReviewSnapshot {
     author: string
     rating: number
@@ -70,6 +75,7 @@ export interface Experience {
     neighborhood: string | null
     travelMins: number | null
     guideArticle: string | null
+    faqItems: FAQItem[] | null
 }
 
 export interface ExperienceFilter {

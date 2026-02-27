@@ -1,6 +1,14 @@
 import { nanoid } from 'nanoid';
 import { fromZonedTime, toZonedTime, format as formatTz } from 'date-fns-tz';
 
+/** Format lap/sector time in seconds to "M:SS.mmm" (e.g. 83.456 → "1:23.456") */
+export function formatLapTime(seconds: number): string {
+  if (typeof seconds !== 'number' || seconds <= 0) return 'N/A';
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${minutes}:${remainingSeconds.toFixed(3).padStart(6, '0')}`;
+}
+
 /** Convert "13:30:00" or "13:30" to "1:30 PM" */
 export function formatTime(time: string): string {
   const [hourStr, minuteStr] = time.split(':');

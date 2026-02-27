@@ -4,37 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
 import { getActiveRaceSlug } from '@/lib/activeRace';
-
-interface RaceMeta {
-  flag: string;
-  short: string;
-  city: string;
-  country: string;
-  dates: string;
-  name: string;
-  available: boolean;
-}
-
-const RACES: Record<string, RaceMeta> = {
-  'melbourne-2026': {
-    flag: '🇦🇺',
-    short: 'AUS',
-    city: 'Melbourne',
-    country: 'Australian GP',
-    dates: 'Mar 5–8',
-    name: 'Australian Grand Prix',
-    available: true,
-  },
-  'shanghai-2026': {
-    flag: '🇨🇳',
-    short: 'CHN',
-    city: 'Shanghai',
-    country: 'Chinese GP',
-    dates: 'Mar 13–15',
-    name: 'Chinese Grand Prix',
-    available: true,
-  },
-};
+import { RACES } from '@/lib/constants/races';
 
 function extractRaceSlug(pathname: string): string | null {
   const match = pathname.match(/^\/races\/([^/]+)/);
@@ -72,11 +42,14 @@ export default function Nav() {
   const isGettingThereActive =
     pathname === '/getting-there' ||
     (!!raceSlug && pathname.startsWith(`/races/${raceSlug}/getting-there`));
+  const isTipsActive =
+    !!raceSlug && pathname.startsWith(`/races/${raceSlug}/tips`);
 
   // Nav link targets — keep users in their current race context
   const scheduleHref = `/races/${displayRaceSlug}/schedule`;
   const experiencesHref = `/races/${displayRaceSlug}/experiences`;
   const gettingThereHref = `/races/${displayRaceSlug}/getting-there`;
+  const tipsHref = `/races/${displayRaceSlug}/tips`;
 
   return (
     <>
@@ -206,6 +179,16 @@ export default function Nav() {
                 Getting There
               </Link>
               <Link
+                href={tipsHref}
+                className={`text-sm font-medium transition-colors ${
+                  isTipsActive
+                    ? 'text-[var(--accent-teal)]'
+                    : 'text-[var(--text-secondary)] hover:text-white'
+                }`}
+              >
+                Tips
+              </Link>
+              <Link
                 href="/f1-2026"
                 className={`text-sm font-medium transition-colors ${
                   pathname === '/f1-2026'
@@ -299,6 +282,17 @@ export default function Nav() {
               }`}
             >
               Getting There
+            </Link>
+            <Link
+              href={tipsHref}
+              onClick={() => setIsOpen(false)}
+              className={`text-sm font-medium py-2 transition-colors ${
+                isTipsActive
+                  ? 'text-[var(--accent-teal)]'
+                  : 'text-[var(--text-secondary)] hover:text-white'
+              }`}
+            >
+              Tips
             </Link>
             <Link
               href="/f1-2026"
