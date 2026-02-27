@@ -1,10 +1,12 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import Link from 'next/link';
 import CircuitMap from '@/components/race/CircuitMap';
+import RaceSwitcher from '@/components/race/RaceSwitcher';
 import Breadcrumb from '@/components/Breadcrumb';
 import { getRaceBySlug, getSessionsByRace } from '@/services/race.service';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 604800; // 1 week
 
 interface Props {
   params: Promise<{ raceSlug: string }>;
@@ -147,6 +149,9 @@ export default async function GettingTherePage({ params }: Props) {
             <p className="text-xs font-medium uppercase-label text-[var(--accent-teal)] tracking-widest mb-3">
               VENUE GUIDE
             </p>
+            <div className="mb-4">
+              <RaceSwitcher raceSlug={raceSlug} pageType="getting-there" />
+            </div>
             <h1 className="font-display font-black text-4xl sm:text-5xl text-white uppercase-heading leading-none mb-4">
               GETTING<br />THERE
             </h1>
@@ -268,6 +273,23 @@ export default async function GettingTherePage({ params }: Props) {
                 </div>
               ))}
             </div>
+          </section>
+
+          <section className="mt-12 pt-8 border-t border-[var(--border-subtle)]">
+            <h2 className="font-display font-bold text-xl text-white uppercase-heading mb-3">
+              Things to Do Between Sessions
+            </h2>
+            <p className="text-[var(--text-secondary)] text-sm leading-relaxed mb-4">
+              {isMelbourne
+                ? 'Albert Park is 3 km from the CBD — every session gap is an opportunity to explore Melbourne\'s food, culture, and nightlife.'
+                : 'Curated activities matched to every F1 session gap in the race weekend schedule.'}
+            </p>
+            <Link
+              href={`/races/${raceSlug}/experiences`}
+              className="inline-block text-sm font-medium text-[var(--accent-teal)] hover:text-white transition-colors"
+            >
+              Browse {race.city} experiences →
+            </Link>
           </section>
         </div>
       </div>

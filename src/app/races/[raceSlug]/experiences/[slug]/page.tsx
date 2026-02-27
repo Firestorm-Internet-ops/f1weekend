@@ -10,7 +10,7 @@ import type { Experience } from '@/types/experience';
 import { CATEGORY_COLORS, CATEGORY_LABELS } from '@/lib/constants/categories';
 import { formatPrice } from '@/lib/utils';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 86400; // 24 hours
 
 interface Props {
   params: Promise<{ raceSlug: string; slug: string }>;
@@ -18,10 +18,16 @@ interface Props {
 
 export async function generateStaticParams() {
   try {
-    const race = await getRaceBySlug('melbourne-2026');
-    if (!race) return [];
-    const exps = await getExperiencesByRace(race.id);
-    return exps.map((e) => ({ raceSlug: 'melbourne-2026', slug: e.slug }));
+    const slugs = ['melbourne-2026', 'shanghai-2026'];
+    const results = await Promise.all(
+      slugs.map(async (raceSlug) => {
+        const race = await getRaceBySlug(raceSlug);
+        if (!race) return [];
+        const exps = await getExperiencesByRace(race.id);
+        return exps.map((e) => ({ raceSlug, slug: e.slug }));
+      })
+    );
+    return results.flat();
   } catch {
     return [];
   }
@@ -34,7 +40,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const race = await getRaceBySlug(raceSlug);
   const canonical = `https://f1weekend.co/races/${raceSlug}/experiences/${exp.slug}`;
-  const title = `${exp.title} | ${race?.name ?? 'F1 Weekend'}`;
+  const title = `${exp.title} — ${race?.city ?? 'Melbourne'} F1 ${race?.season ?? '2026'} | f1weekend.co`;
   const description = exp.abstract
     ? `${exp.abstract} ${exp.priceLabel} · ${exp.durationLabel}.`
     : `${exp.title} — ${exp.priceLabel} · ${exp.durationLabel} · A curated experience for the ${race?.name ?? 'F1 race weekend'}.`;
@@ -74,23 +80,32 @@ function toISO8601Duration(hours: number): string {
   return `PT${h}H${m}M`;
 }
 
-function buildJsonLd(exp: Experience, raceSlug: string) {
+function buildJsonLd(exp: Experience, raceSlug: string, race: { city: string; country: string; countryCode: string } | null) {
   const url = `https://f1weekend.co/races/${raceSlug}/experiences/${exp.slug}`;
+  const city = race?.city ?? 'Melbourne';
+  const countryCode = race?.countryCode ?? 'AU';
   const ld: Record<string, unknown> = {
     '@context': 'https://schema.org',
-    '@type': 'TouristAttraction',
+    '@type': ['TouristAttraction', 'Product'],
     name: exp.title,
     description: exp.abstract ?? exp.description ?? exp.shortDescription,
     url,
     sameAs: [exp.affiliateUrl],
     priceRange: exp.priceLabel,
     duration: toISO8601Duration(exp.durationHours),
+    touristType: 'F1 race fan',
+    containedInPlace: {
+      '@type': 'City',
+      name: city,
+      addressCountry: countryCode,
+    },
     offers: {
       '@type': 'Offer',
       price: exp.priceAmount,
       priceCurrency: exp.priceCurrency,
       availability: 'https://schema.org/InStock',
       url: exp.affiliateUrl,
+      seller: { '@type': 'Organization', name: 'GetYourGuide' },
     },
   };
   if (exp.photos && exp.photos.length > 0) ld.image = exp.photos;
@@ -136,12 +151,43 @@ export default async function ExperienceDetailPage({ params }: Props) {
   const categoryLabel = CATEGORY_LABELS[exp.category] ?? exp.category;
   const guideHtml = exp.guideArticle ? await marked(stripArticleFrontMatter(exp.guideArticle)) : null;
 
+  const breadcrumbLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://f1weekend.co' },
+      { '@type': 'ListItem', position: 2, name: race?.city ?? 'Race', item: `https://f1weekend.co/races/${raceSlug}` },
+      { '@type': 'ListItem', position: 3, name: 'Experiences', item: `https://f1weekend.co/races/${raceSlug}/experiences` },
+      { '@type': 'ListItem', position: 4, name: exp.title, item: `https://f1weekend.co/races/${raceSlug}/experiences/${exp.slug}` },
+    ],
+  };
+
+  const faqLd = exp.faqItems && exp.faqItems.length > 0 ? {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: exp.faqItems.map((item) => ({
+      '@type': 'Question',
+      name: item.question,
+      acceptedAnswer: { '@type': 'Answer', text: item.answer },
+    })),
+  } : null;
+
   return (
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(buildJsonLd(exp, raceSlug)) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(buildJsonLd(exp, raceSlug, race)) }}
       />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+      />
+      {faqLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }}
+        />
+      )}
 
       <div className="min-h-screen pt-20 pb-24">
         <PhotoSlider photos={exp.photos} imageUrl={exp.imageUrl} title={exp.title} color={color} imageEmoji={exp.imageEmoji} />

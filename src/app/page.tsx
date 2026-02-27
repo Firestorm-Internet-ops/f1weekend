@@ -390,6 +390,7 @@ export default async function HomePage() {
           basePath={expBasePath}
           schedulePath={`/races/${activeRaceSlug}/schedule`}
           race={{ city: race.city, raceDate: race.raceDate, timezone: race.timezone }}
+          initialDay="Friday"
         />
       </section>
 

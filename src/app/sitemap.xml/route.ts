@@ -8,8 +8,15 @@ function fmt(date: Date): string {
 }
 
 export async function GET() {
-  const race = await getRaceBySlug('melbourne-2026');
-  const exps = race ? await getExperiencesByRace(race.id) : [];
+  const [melbRace, shangRace] = await Promise.all([
+    getRaceBySlug('melbourne-2026'),
+    getRaceBySlug('shanghai-2026'),
+  ]);
+
+  const [melbExps, shangExps] = await Promise.all([
+    melbRace ? getExperiencesByRace(melbRace.id) : [],
+    shangRace ? getExperiencesByRace(shangRace.id) : [],
+  ]);
 
   const now = new Date();
   const staticDate = new Date('2026-01-01');
@@ -28,7 +35,7 @@ export async function GET() {
       changefreq: 'daily',
       priority: '1.0',
     },
-    // Race-canonical URLs (authoritative paths)
+    // Melbourne race canonical URLs
     {
       loc: 'https://f1weekend.co/races/melbourne-2026',
       lastmod: fmt(now),
@@ -61,6 +68,37 @@ export async function GET() {
     },
     {
       loc: 'https://f1weekend.co/races/melbourne-2026/experiences/map',
+      lastmod: fmt(now),
+      changefreq: 'weekly',
+      priority: '0.6',
+    },
+    // Shanghai race canonical URLs
+    {
+      loc: 'https://f1weekend.co/races/shanghai-2026',
+      lastmod: fmt(now),
+      changefreq: 'daily',
+      priority: '0.9',
+    },
+    {
+      loc: 'https://f1weekend.co/races/shanghai-2026/experiences',
+      lastmod: fmt(now),
+      changefreq: 'daily',
+      priority: '0.9',
+    },
+    {
+      loc: 'https://f1weekend.co/races/shanghai-2026/schedule',
+      lastmod: fmt(staticDate),
+      changefreq: 'weekly',
+      priority: '0.7',
+    },
+    {
+      loc: 'https://f1weekend.co/races/shanghai-2026/getting-there',
+      lastmod: fmt(staticDate),
+      changefreq: 'monthly',
+      priority: '0.6',
+    },
+    {
+      loc: 'https://f1weekend.co/races/shanghai-2026/experiences/map',
       lastmod: fmt(now),
       changefreq: 'weekly',
       priority: '0.6',
@@ -121,8 +159,14 @@ export async function GET() {
       priority: '0.3',
     },
     // /privacy intentionally omitted — noindex legal page
-    ...exps.map((e) => ({
+    ...melbExps.map((e) => ({
       loc: `https://f1weekend.co/races/melbourne-2026/experiences/${e.slug}`,
+      lastmod: fmt(now),
+      changefreq: 'weekly',
+      priority: '0.8',
+    })),
+    ...shangExps.map((e) => ({
+      loc: `https://f1weekend.co/races/shanghai-2026/experiences/${e.slug}`,
       lastmod: fmt(now),
       changefreq: 'weekly',
       priority: '0.8',

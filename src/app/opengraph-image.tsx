@@ -22,7 +22,7 @@ export default function Image() {
         F1WEEKEND.CO
       </div>
       <div style={{ fontSize: 28, color: '#9a9aaf', maxWidth: 700 }}>
-        Curated experiences, AI itineraries & the full race schedule — built for F1 fans.
+        Curated experiences, AI itineraries &amp; the full race schedule — built for F1 fans.
       </div>
     </div>,
     { width: 1200, height: 630 }

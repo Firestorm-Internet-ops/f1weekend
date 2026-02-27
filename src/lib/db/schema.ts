@@ -1,4 +1,4 @@
-import { mysqlTable, int, varchar, year, decimal, char, date, timestamp, mysqlEnum, time, boolean, json, bigint, primaryKey, text } from "drizzle-orm/mysql-core";
+import { mysqlTable, int, varchar, year, decimal, char, date, timestamp, mysqlEnum, time, boolean, json, bigint, primaryKey, text, longtext } from "drizzle-orm/mysql-core";
 
 export const races = mysqlTable("races", {
     id: int("id").primaryKey().autoincrement(),
@@ -96,7 +96,8 @@ export const experiences = mysqlTable("experiences", {
     distance_km: decimal("distance_km", { precision: 5, scale: 1 }),
     neighborhood: varchar("neighborhood", { length: 100 }),
     travel_mins: int("travel_mins"),
-    guide_article: text("guide_article"),         // long-form markdown from f1-city-explorer-seo agent
+    guide_article: longtext("guide_article"),      // long-form markdown from f1-city-explorer-seo agent
+    faq_items: json("faq_items"),                  // FAQItem[] — { question: string, answer: string }[]
 });
 
 export const experience_windows_map = mysqlTable("experience_windows_map", {
@@ -126,7 +127,7 @@ export const affiliate_clicks = mysqlTable("affiliate_clicks", {
     experience_id: int("experience_id").references(() => experiences.id),
     itinerary_id: varchar("itinerary_id", { length: 12 }),
     affiliate_partner: varchar("affiliate_partner", { length: 50 }),
-    source: mysqlEnum("source", ["feed", "itinerary", "featured"]),
+    source: mysqlEnum("source", ["feed", "itinerary", "featured", "map", "guide"]),
     session_id: varchar("session_id", { length: 64 }),
     user_agent: varchar("user_agent", { length: 500 }),
     referer: varchar("referer", { length: 1000 }),
