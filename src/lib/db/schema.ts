@@ -97,6 +97,7 @@ export const experiences = mysqlTable("experiences", {
     neighborhood: varchar("neighborhood", { length: 100 }),
     travel_mins: int("travel_mins"),
     guide_article: text("guide_article"),         // long-form markdown from f1-city-explorer-seo agent
+    faq_items: json("faq_items"),                  // FAQItem[] — { question: string, answer: string }[]
 });
 
 export const experience_windows_map = mysqlTable("experience_windows_map", {

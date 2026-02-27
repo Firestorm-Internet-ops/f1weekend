@@ -22,7 +22,6 @@ FRONTEND_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 CLOUDSQL_ENV="$FRONTEND_DIR/.env.cloudsql"
 LOCAL_ENV="$FRONTEND_DIR/.env"
 TS=$(date +%Y%m%d_%H%M%S)
-SCHEMA_FILE="/tmp/pitlane_schema_${TS}.sql"
 DATA_FILE="/tmp/pitlane_data_${TS}.sql"
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -71,7 +70,6 @@ cleanup() {
     wait "$PROXY_PID" 2>/dev/null || true
   fi
   local removed=0
-  [[ -f "$SCHEMA_FILE" ]] && { rm -f "$SCHEMA_FILE"; removed=1; }
   [[ -f "$DATA_FILE" ]]   && { rm -f "$DATA_FILE";   removed=1; }
   [[ $removed -eq 1 ]] && log "Removed temp dump files"
 }
@@ -110,23 +108,21 @@ if [[ $PROXY_READY -eq 0 ]]; then
   die "Aborting"
 fi
 
-# ── Dump local schema (no DROP TABLE, CREATE TABLE IF NOT EXISTS) ─────────────
+# ── Sync schema via drizzle-kit push (handles CREATE TABLE + ALTER TABLE) ─────
 
-log "Dumping schema from '$LOCAL_DB' to $SCHEMA_FILE..."
+log "Running drizzle-kit push --force against Cloud SQL..."
 
-MYSQL_PWD="$LOCAL_PASS" mysqldump \
-  --host="$LOCAL_HOST" \
-  --port="$LOCAL_PORT" \
-  --user="$LOCAL_USER" \
-  --no-data \
-  --skip-add-drop-table \
-  --routines \
-  --no-tablespaces \
-  "$LOCAL_DB" \
-  | sed 's/^CREATE TABLE `/CREATE TABLE IF NOT EXISTS `/' \
-  > "$SCHEMA_FILE"
+(
+  cd "$FRONTEND_DIR"
+  DATABASE_HOST=127.0.0.1 \
+  DATABASE_PORT="$CLOUDSQL_PROXY_PORT" \
+  DATABASE_USER="$CLOUDSQL_USER" \
+  DATABASE_PASSWORD="${CLOUDSQL_PASSWORD:-}" \
+  DATABASE_NAME="$CLOUDSQL_DB" \
+  npx drizzle-kit push --force
+)
 
-log "Schema dump complete ($(du -sh "$SCHEMA_FILE" | cut -f1))"
+log "Schema sync complete"
 
 # ── Dump local data with REPLACE INTO ────────────────────────────────────────
 
@@ -145,19 +141,6 @@ MYSQL_PWD="$LOCAL_PASS" mysqldump \
   > "$DATA_FILE"
 
 log "Data dump complete ($(du -sh "$DATA_FILE" | cut -f1))"
-
-# ── Apply schema (new tables only) ───────────────────────────────────────────
-
-log "Applying schema to '$CLOUDSQL_DB' (new tables only)..."
-
-MYSQL_PWD="${CLOUDSQL_PASSWORD:-}" mysql \
-  --host=127.0.0.1 \
-  --port="$CLOUDSQL_PROXY_PORT" \
-  --user="$CLOUDSQL_USER" \
-  "$CLOUDSQL_DB" \
-  < "$SCHEMA_FILE"
-
-log "Schema applied"
 
 # ── Upsert data (REPLACE INTO) ────────────────────────────────────────────────
 
