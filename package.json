@@ -21,7 +21,6 @@
     "enrich-seo": "tsx --env-file=.env scripts/enrich-seo-content.ts"
   },
   "dependencies": {
-    "@pitlane/gyg": "*",
     "@anthropic-ai/sdk": "^0.78.0",
     "@qdrant/js-client-rest": "^1.17.0",
     "@react-google-maps/api": "^2.20.8",
