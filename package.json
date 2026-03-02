@@ -13,9 +13,15 @@
     "db:enrich-seo": "npx tsx --env-file=.env scripts/enrich-seo-content.ts",
     "db:enrich-seo-shanghai": "npx tsx --env-file=.env scripts/enrich-seo-content.ts --race shanghai-2026 --featured-only",
     "db:patch-shanghai-prices": "npx tsx --env-file=.env scripts/patch-shanghai-gyg-prices.ts",
-    "og:generate": "tsx scripts/generate-og-images.ts"
+    "og:generate": "tsx scripts/generate-og-images.ts",
+    "discover": "tsx --env-file=.env scripts/discover-gyg-tours.ts",
+    "select-candidates": "tsx --env-file=.env scripts/select-candidates.ts",
+    "seed-candidates": "tsx --env-file=.env scripts/seed-from-candidates.ts",
+    "enrich-gyg": "tsx --env-file=.env scripts/enrich-from-gyg.ts",
+    "enrich-seo": "tsx --env-file=.env scripts/enrich-seo-content.ts"
   },
   "dependencies": {
+    "@pitlane/gyg": "*",
     "@anthropic-ai/sdk": "^0.78.0",
     "@qdrant/js-client-rest": "^1.17.0",
     "@react-google-maps/api": "^2.20.8",

@@ -6,33 +6,170 @@ import ExperiencesClient from '@/components/experiences/ExperiencesClient';
 import RaceSwitcher from '@/components/race/RaceSwitcher';
 import { getRaceBySlug } from '@/services/race.service';
 import { getExperiencesByRace } from '@/services/experience.service';
+import { CATEGORY_LABELS } from '@/lib/constants/categories';
 
 export const revalidate = 3600; // 1 hour
 
 interface Props {
   params: Promise<{ raceSlug: string }>;
+  searchParams: Promise<{ category?: string; window?: string; sort?: string }>;
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+// Per-city, per-category metadata copy — answers the AEO query directly
+const CATEGORY_META: Record<string, Record<string, { title: string; description: string }>> = {
+  Melbourne: {
+    food: {
+      title: 'Best Food & Drink Experiences in Melbourne During F1 2026',
+      description:
+        'The best food tours, coffee walks, and dining experiences in Melbourne for the 2026 Australian Grand Prix weekend — from laneway espresso to South Melbourne Market.',
+    },
+    culture: {
+      title: 'Best Culture Experiences in Melbourne During F1 2026',
+      description:
+        'Top cultural experiences in Melbourne for the 2026 Australian Grand Prix — NGV galleries, street-art walking tours, and Southbank arts precincts.',
+    },
+    adventure: {
+      title: 'Best Adventure Experiences in Melbourne During F1 2026',
+      description:
+        'Adventure activities in Melbourne for the 2026 Australian Grand Prix weekend — coastal kayaking, surfing lessons at St Kilda, and bay wildlife tours.',
+    },
+    daytrip: {
+      title: 'Best Day Trips from Melbourne During F1 2026',
+      description:
+        'The best day trips from Melbourne for the 2026 Australian Grand Prix — Great Ocean Road (A$115), Yarra Valley wine (A$95–A$140), and Phillip Island.',
+    },
+    nightlife: {
+      title: 'Best Nightlife Experiences in Melbourne During F1 2026',
+      description:
+        'Top nightlife picks in Melbourne for the 2026 Australian Grand Prix weekend — rooftop bars, live music venues, and CBD cocktail bars open until late.',
+    },
+  },
+  Shanghai: {
+    food: {
+      title: 'Best Food & Drink Experiences in Shanghai During F1 2026',
+      description:
+        'The best food tours in Shanghai for the 2026 Chinese Grand Prix weekend — French Concession food walks (A$97–A$124), late-night street food, and dumpling masterclasses.',
+    },
+    culture: {
+      title: 'Best Culture Experiences in Shanghai During F1 2026',
+      description:
+        'Top cultural experiences in Shanghai for the 2026 Chinese Grand Prix — Yu Garden, Tianzifang arts district, acrobatics shows, and tea ceremony workshops.',
+    },
+    adventure: {
+      title: 'Best Adventure Experiences in Shanghai During F1 2026',
+      description:
+        'Adventure activities in Shanghai for the 2026 Chinese Grand Prix weekend — Huangpu River kayaking, cycling tours, and rooftop sightseeing experiences.',
+    },
+    daytrip: {
+      title: 'Best Day Trips from Shanghai During F1 2026',
+      description:
+        'The best day trips from Shanghai for the 2026 Chinese Grand Prix — Zhujiajiao water town (A$195), Suzhou by bullet train (A$307–A$407), and Hangzhou.',
+    },
+    nightlife: {
+      title: 'Best Nightlife Experiences in Shanghai During F1 2026',
+      description:
+        'Top nightlife in Shanghai for the 2026 Chinese Grand Prix weekend — Bund rooftop bars, French Concession cocktail bars, and Huangpu River evening cruises.',
+    },
+  },
+  Suzuka: {
+    food: {
+      title: 'Best Food Experiences in Suzuka & Nagoya During F1 2026',
+      description:
+        'The best food experiences around Suzuka for the 2026 Japanese Grand Prix — miso katsu, ramen tours, Nagoya morning breakfast culture, and sake tastings.',
+    },
+    culture: {
+      title: 'Best Culture Experiences Near Suzuka During F1 2026',
+      description:
+        'Top cultural experiences near Suzuka for the 2026 Japanese Grand Prix — Ise Grand Shrine, Nara deer park, Kyoto temples, and traditional craft workshops.',
+    },
+    adventure: {
+      title: 'Best Adventure Experiences Near Suzuka During F1 2026',
+      description:
+        'Adventure activities near Suzuka for the 2026 Japanese Grand Prix weekend — cycling Nara to Osaka, Mount Wakakusa hike, and coastal walks on Ise Bay.',
+    },
+    daytrip: {
+      title: 'Best Day Trips from Suzuka During F1 2026',
+      description:
+        'The best day trips from Suzuka for the 2026 Japanese Grand Prix — Kyoto by shinkansen, Nara in 2 hours, Osaka Dotonbori, and the Ise Shrine coastal route.',
+    },
+    nightlife: {
+      title: 'Best Nightlife Experiences Near Suzuka During F1 2026',
+      description:
+        'Nightlife options near Suzuka for the 2026 Japanese Grand Prix weekend — Nagoya izakaya bars, Sakae district cocktail lounges, and craft beer venues.',
+    },
+  },
+  Sakhir: {
+    food: {
+      title: 'Best Food & Dining Experiences in Bahrain During F1 2026',
+      description:
+        'The best food experiences in Bahrain for the 2026 Bahrain Grand Prix — traditional machboos dinners, Manama souq food walks, Adliya restaurant strip, and fresh Gulf seafood.',
+    },
+    culture: {
+      title: 'Best Culture Experiences in Bahrain During F1 2026',
+      description:
+        'Top cultural experiences in Bahrain for the 2026 Bahrain Grand Prix — UNESCO-listed Bahrain Fort, Manama Gold Souk, National Museum, and Muharraq old town walking tours.',
+    },
+    adventure: {
+      title: 'Best Adventure Experiences in Bahrain During F1 2026',
+      description:
+        'Adventure activities in Bahrain for the 2026 Bahrain Grand Prix weekend — desert safaris at sunset, dune bashing, camel riding, and kite-surfing off the northern coast.',
+    },
+    daytrip: {
+      title: 'Best Day Trips & Excursions in Bahrain During F1 2026',
+      description:
+        'The best day trips and excursions for the 2026 Bahrain Grand Prix — dhow dinner cruises, Al Dar Islands boat trips, Tree of Life tours, and full Manama city tours.',
+    },
+    nightlife: {
+      title: 'Best Nightlife Experiences in Bahrain During F1 2026',
+      description:
+        'Top nightlife in Bahrain for the 2026 Bahrain Grand Prix weekend — Adliya rooftop bars, hotel lounges after qualifying, and the electric Saturday-night circuit atmosphere.',
+    },
+  },
+};
+
+export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { raceSlug } = await params;
+  const { category } = await searchParams;
   const race = await getRaceBySlug(raceSlug);
   if (!race) return {};
 
-  const title = `Things to Do in ${race.city} During F1 ${race.season} | f1weekend.co`;
-  const description = `Curated activities, tours, and dining experiences for the ${race.name} weekend at ${race.circuitName}. Filter by category and session gap.`;
+  const categoryLabel = category ? (CATEGORY_LABELS[category] ?? category) : null;
+  // Canonical always points to the unfiltered URL — filter params must never appear in canonicals
   const canonical = `https://f1weekend.co/races/${raceSlug}/experiences`;
+
+  // Use category-specific copy if available, otherwise fall back to race-level copy
+  const categoryCopy = category ? CATEGORY_META[race.city]?.[category] : null;
+
+  const title = categoryCopy?.title
+    ?? (categoryLabel
+      ? `Best ${categoryLabel} Experiences in ${race.city} During F1 ${race.season}`
+      : `Things to Do in ${race.city} During F1 ${race.season}`);
+
+  const description = categoryCopy?.description
+    ?? (categoryLabel
+      ? `The best ${categoryLabel.toLowerCase()} experiences in ${race.city} for the ${race.name} weekend at ${race.circuitName}. Curated picks matched to your session gaps.`
+      : `Curated activities, tours, and dining experiences for the ${race.name} weekend at ${race.circuitName}. Filter by category and session gap.`);
 
   return {
     title,
     description,
     alternates: { canonical },
-    openGraph: { title, description, url: canonical, siteName: 'F1 Weekend', type: 'website' },
-    twitter: { card: 'summary_large_image', title, description },
+    robots: { index: true, follow: true },
+    openGraph: {
+      title,
+      description,
+      url: canonical,
+      siteName: 'F1 Weekend',
+      type: 'website',
+      images: [{ url: '/og.png', width: 1200, height: 630, alt: `${race.city} F1 Weekend Experiences` }],
+    },
+    twitter: { card: 'summary_large_image', title, description, images: ['/og.png'] },
   };
 }
 
-export default async function ExperiencesPage({ params }: Props) {
+export default async function ExperiencesPage({ params, searchParams }: Props) {
   const { raceSlug } = await params;
+  const { category } = await searchParams;
   const race = await getRaceBySlug(raceSlug);
   if (!race) notFound();
 
@@ -130,27 +267,43 @@ export default async function ExperiencesPage({ params }: Props) {
     ],
   } : null;
 
+  const breadcrumbLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://f1weekend.co' },
+      { '@type': 'ListItem', position: 2, name: race.city, item: `https://f1weekend.co/races/${raceSlug}` },
+      { '@type': 'ListItem', position: 3, name: 'Experiences', item: `https://f1weekend.co/races/${raceSlug}/experiences` },
+    ],
+  };
+
   const itemListLd = {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
     name: `${race.city} F1 Race Weekend Experiences`,
     url: `https://f1weekend.co/races/${raceSlug}/experiences`,
     numberOfItems: exps.length,
-    itemListElement: exps.map((exp, i) => ({
-      '@type': 'ListItem',
-      position: i + 1,
-      name: exp.title,
-      url: `https://f1weekend.co/races/${raceSlug}/experiences/${exp.slug}`,
-      image: exp.photos?.[0] ?? exp.imageUrl ?? undefined,
-      description: exp.abstract ?? exp.shortDescription,
-    })),
+    itemListElement: exps.map((exp, i) => {
+      const item: Record<string, unknown> = {
+        '@type': 'ListItem',
+        position: i + 1,
+        name: exp.title,
+        url: `https://f1weekend.co/races/${raceSlug}/experiences/${exp.slug}`,
+        description: exp.abstract ?? exp.shortDescription,
+      };
+      const img = exp.photos?.[0] ?? exp.imageUrl;
+      if (img) item.image = img;
+      return item;
+    }),
   };
+
+  // Consolidate all page schemas into single JSON-LD script tag
+  const allSchemas = [breadcrumbLd, itemListLd, ...(expFaqLd ? [expFaqLd] : [])];
 
   return (
     <div className="min-h-screen pt-24 pb-24 px-4">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListLd) }} />
-      {expFaqLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(expFaqLd) }} />}
-      <div className="max-w-6xl mx-auto">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(allSchemas) }} />
+      <div className="max-w-7xl mx-auto">
         <div className="mb-10 flex items-start justify-between gap-4">
           <div>
             <p className="text-xs font-medium uppercase-label text-[var(--accent-red)] mb-2">
@@ -176,6 +329,23 @@ export default async function ExperiencesPage({ params }: Props) {
                 French Concession food tours (A$97–A$124) that fit your Friday morning gap, to full-day
                 Suzhou bullet train day trips (A$307–A$407) perfect for race-day Sunday morning before
                 the 15:00 CST start. Filter by category or session window to find exactly what fits.
+              </p>
+            )}
+            {race.city === 'Suzuka' && (
+              <p className="text-[var(--text-secondary)] text-sm leading-relaxed max-w-xl mt-3">
+                Suzuka offers curated experiences for the 2026 Japanese Grand Prix — from half-day
+                Ise Grand Shrine visits and Nagoya food tours that fit your Friday morning gap, to
+                full-day Kyoto or Nara day trips perfect for Thursday before sessions begin. Filter
+                by category or session window to find exactly what fits your schedule.
+              </p>
+            )}
+            {race.city === 'Sakhir' && (
+              <p className="text-[var(--text-secondary)] text-sm leading-relaxed max-w-xl mt-3">
+                Bahrain offers 30+ curated experiences for the 2026 Bahrain Grand Prix — from desert
+                safaris and dhow dinner cruises that fit your Friday evening gap (4 hrs), to
+                UNESCO-listed Bahrain Fort and Manama souq food walks perfect for the 6-hour Saturday
+                morning window. Session gaps run long here; plenty of time to explore Sakhir and
+                Manama. Filter by category or session window to find exactly what fits.
               </p>
             )}
           </div>

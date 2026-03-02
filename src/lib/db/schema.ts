@@ -155,3 +155,22 @@ export const schedule_entries = mysqlTable("schedule_entries", {
     sort_order: int("sort_order"),
     created_at: timestamp("created_at").defaultNow(),
 });
+
+export const race_content = mysqlTable('race_content', {
+    id:               int('id').primaryKey().autoincrement(),
+    race_id:          int('race_id').notNull(),
+    page_title:       varchar('page_title', { length: 255 }),
+    page_description: text('page_description'),
+    page_keywords:    json('page_keywords').$type<string[]>(),
+    meta_json:        json('meta_json'),
+    how_it_works_text: text('how_it_works_text'),
+    why_city_text:    text('why_city_text'),
+    circuit_map_src:  varchar('circuit_map_src', { length: 500 }),
+    tips_content:     json('tips_content'),
+    faq_items:        json('faq_items'),
+    faq_ld:           json('faq_ld'),
+    currency:         varchar('currency', { length: 10 }),
+    open_f1:          json('open_f1'),
+    first_day_offset: int('first_day_offset'),
+    created_at:       timestamp('created_at').defaultNow(),
+});

@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
-import { getActiveRaceSlug } from '@/lib/activeRace';
 import { RACES } from '@/lib/constants/races';
 
 function extractRaceSlug(pathname: string): string | null {
@@ -11,15 +10,24 @@ function extractRaceSlug(pathname: string): string | null {
   return match ? match[1] : null;
 }
 
-export default function Nav() {
+export default function Nav({ defaultRaceSlug }: { defaultRaceSlug: string }) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [raceDropdownOpen, setRaceDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const raceSlug = extractRaceSlug(pathname);
-  const displayRaceSlug = raceSlug ?? getActiveRaceSlug();
+  const displayRaceSlug = raceSlug ?? defaultRaceSlug;
   const displayRace = RACES[displayRaceSlug] ?? null;
+
+  // Raw sub-route (everything after /races/[slug])
+  const rawSubRoute = raceSlug ? pathname.slice(`/races/${raceSlug}`.length) : '';
+  // When on an experience detail page (/experiences/[slug]), collapse to /experiences
+  // so switching races lands on the list, not a non-existent slug on the new race.
+  // Exception: /experiences/map is a shared page that should be preserved.
+  const subRoute = /^\/experiences\/(?!map(?:\/|$)).+/.test(rawSubRoute)
+    ? '/experiences'
+    : rawSubRoute;
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -81,68 +89,75 @@ export default function Nav() {
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setRaceDropdownOpen((o) => !o)}
-                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-secondary)] text-sm font-medium text-white hover:border-[var(--border-medium)] transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-secondary)] text-sm font-medium text-white hover:border-[var(--border-medium)] transition-colors"
                 >
                   <span>{displayRace.flag}</span>
                   <span className="text-[var(--accent-red)] font-bold">{displayRace.short}</span>
-                  <span className="text-[var(--text-secondary)]">·</span>
-                  <span>{displayRace.city}</span>
+                  <span className="hidden sm:inline text-[var(--text-secondary)]">·</span>
+                  <span className="hidden sm:inline">{displayRace.city}</span>
                   <span className="text-[var(--text-secondary)] ml-0.5">▾</span>
                 </button>
 
-                {raceDropdownOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-72 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-primary)] shadow-xl z-50 overflow-hidden">
-                    {Object.entries(RACES).map(([slug, meta]) => (
-                      <div key={slug}>
-                        {meta.available ? (
-                          <Link
-                            href={`/races/${slug}`}
-                            onClick={() => setRaceDropdownOpen(false)}
-                            className={`flex items-center gap-3 px-4 py-3 hover:bg-[var(--bg-secondary)] transition-colors ${
-                              slug === displayRaceSlug ? 'bg-[var(--bg-secondary)]' : ''
-                            }`}
-                          >
-                            <span className="text-xl">{meta.flag}</span>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-white">{meta.country}</p>
-                              <p className="text-xs text-[var(--text-secondary)]">
-                                {meta.city} · {meta.dates}
-                              </p>
-                            </div>
-                            {slug === displayRaceSlug && (
-                              <span className="text-xs text-[var(--accent-teal)] font-bold">✓</span>
-                            )}
-                          </Link>
-                        ) : (
-                          <div className="flex items-center gap-3 px-4 py-3 opacity-50 cursor-not-allowed">
-                            <span className="text-xl">{meta.flag}</span>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-white">{meta.country}</p>
-                              <p className="text-xs text-[var(--text-secondary)]">
-                                {meta.city} · {meta.dates}
-                              </p>
-                            </div>
-                            <span className="text-xs text-[var(--text-secondary)] font-medium px-2 py-0.5 rounded-full border border-[var(--border-subtle)]">
-                              Soon
-                            </span>
-                          </div>
-                        )}
+                {raceDropdownOpen && (() => {
+                  const today = new Date().toISOString().slice(0, 10);
+                  const allAvailable = Object.entries(RACES).filter(([, m]) => m.available);
+                  // Upcoming = endDate >= today, sorted chronologically (already in order)
+                  const upcoming = allAvailable.filter(([, m]) => m.endDate >= today);
+                  // Mobile shows first 2 upcoming; sm+ shows all available
+                  const mobileRaces = upcoming.slice(0, 2);
+
+                  const renderRaceItem = (slug: string, meta: typeof RACES[string]) => (
+                    <Link
+                      key={slug}
+                      href={`/races/${slug}${subRoute}`}
+                      onClick={() => setRaceDropdownOpen(false)}
+                      className={`flex items-center gap-3 px-4 py-2.5 hover:bg-[var(--bg-secondary)] transition-colors ${
+                        slug === displayRaceSlug ? 'bg-[var(--bg-secondary)]' : ''
+                      }`}
+                    >
+                      <span className="text-lg">{meta.flag}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-white leading-tight">{meta.country}</p>
+                        <p className="text-xs text-[var(--text-secondary)]">{meta.city} · {meta.dates}</p>
                       </div>
-                    ))}
-                    <div className="border-t border-[var(--border-subtle)]">
-                      <Link
-                        href="/f1-2026"
-                        onClick={() => setRaceDropdownOpen(false)}
-                        className="flex items-center gap-3 px-4 py-3 hover:bg-[var(--bg-secondary)] transition-colors"
-                      >
-                        <span className="text-xl">📅</span>
-                        <p className="text-sm font-medium text-[var(--text-secondary)] hover:text-white">
-                          View Full 2026 Calendar →
-                        </p>
-                      </Link>
+                      {slug === displayRaceSlug && (
+                        <span className="text-xs text-[var(--accent-teal)] font-bold">✓</span>
+                      )}
+                    </Link>
+                  );
+
+                  const calendarLink = (
+                    <Link
+                      href="/f1-2026"
+                      onClick={() => setRaceDropdownOpen(false)}
+                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-[var(--bg-secondary)] transition-colors"
+                    >
+                      <span className="text-lg">📅</span>
+                      <p className="text-sm font-medium text-[var(--text-secondary)] hover:text-white">
+                        View Full 2026 Calendar →
+                      </p>
+                    </Link>
+                  );
+
+                  return (
+                    <div className="absolute right-0 top-full mt-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-primary)] shadow-xl z-50 overflow-hidden
+                      w-64 sm:w-auto sm:min-w-[480px]">
+                      {/* Mobile: 2 upcoming races only */}
+                      <div className="sm:hidden">
+                        {mobileRaces.map(([slug, meta]) => renderRaceItem(slug, meta))}
+                        <div className="border-t border-[var(--border-subtle)]">{calendarLink}</div>
+                      </div>
+
+                      {/* sm+: all available races in a 2-column grid */}
+                      <div className="hidden sm:block">
+                        <div className="grid grid-cols-2">
+                          {allAvailable.map(([slug, meta]) => renderRaceItem(slug, meta))}
+                        </div>
+                        <div className="border-t border-[var(--border-subtle)]">{calendarLink}</div>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
               </div>
             )}
 
@@ -200,13 +215,12 @@ export default function Nav() {
               </Link>
             </div>
 
-            {/* Itinerary — always visible */}
+            {/* Itinerary — desktop only (moved to hamburger on mobile) */}
             <Link
               href="/itinerary"
-              className="text-sm font-medium px-3 sm:px-4 py-1.5 bg-[var(--accent-red)] hover:bg-[var(--accent-red-hover)] text-white rounded-full transition-colors whitespace-nowrap"
+              className="hidden sm:flex text-sm font-medium px-4 py-1.5 bg-[var(--accent-red)] hover:bg-[var(--accent-red-hover)] text-white rounded-full transition-colors whitespace-nowrap"
             >
-              <span className="sm:hidden">Itinerary</span>
-              <span className="hidden sm:inline">Build Itinerary</span>
+              Build Itinerary
             </Link>
 
             {/* Hamburger — mobile only */}
@@ -225,31 +239,6 @@ export default function Nav() {
       {isOpen && (
         <div className="sm:hidden fixed top-14 left-0 right-0 z-40 bg-[var(--bg-primary)] border-b border-[var(--border-subtle)]">
           <div className="max-w-6xl mx-auto px-4 py-3 flex flex-col gap-1">
-            {/* Race switcher — mobile menu */}
-            <div className="pb-2 mb-1 border-b border-[var(--border-subtle)]">
-              <p className="text-[10px] font-bold uppercase-label text-[var(--text-secondary)] tracking-widest mb-2">
-                SWITCH RACE
-              </p>
-              {Object.entries(RACES).map(([slug, meta]) =>
-                meta.available ? (
-                  <Link
-                    key={slug}
-                    href={`/races/${slug}`}
-                    onClick={() => setIsOpen(false)}
-                    className={`flex items-center gap-3 py-2 ${slug === displayRaceSlug ? 'text-white' : 'text-[var(--text-secondary)]'}`}
-                  >
-                    <span>{meta.flag}</span>
-                    <span className="text-sm font-medium flex-1">
-                      {meta.city}{' '}
-                      <span className="font-normal text-xs">· {meta.dates}</span>
-                    </span>
-                    {slug === displayRaceSlug && (
-                      <span className="text-xs text-[var(--accent-teal)] font-bold">✓</span>
-                    )}
-                  </Link>
-                ) : null,
-              )}
-            </div>
             <Link
               href={scheduleHref}
               onClick={() => setIsOpen(false)}
@@ -301,6 +290,15 @@ export default function Nav() {
             >
               📅 2026 Calendar
             </Link>
+            <div className="pt-2 mt-1 border-t border-[var(--border-subtle)]">
+              <Link
+                href="/itinerary"
+                onClick={() => setIsOpen(false)}
+                className="block text-sm font-medium py-2.5 px-4 bg-[var(--accent-red)] hover:bg-[var(--accent-red-hover)] text-white rounded-lg transition-colors text-center"
+              >
+                Build Itinerary
+              </Link>
+            </div>
           </div>
         </div>
       )}

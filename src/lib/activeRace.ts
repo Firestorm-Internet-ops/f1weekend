@@ -1,13 +1,34 @@
-// Returns the slug for the currently active race based on current time.
-// Melbourne ends at 23:59:59 AEDT on Mar 8 2026, then Shanghai becomes active.
-export function getActiveRaceSlug(): string {
-  const now = new Date();
-  const MELBOURNE_END = new Date('2026-03-08T23:59:59+11:00');
-  return now < MELBOURNE_END ? 'melbourne-2026' : 'shanghai-2026';
+import { getActiveRace, getNextRace } from '@/services/race.service';
+
+// ── Active Race Override ──────────────────────────────────────────────────────
+// To pin the site to a specific race (e.g. for a launch or preview), set
+// ACTIVE_RACE_SLUG in .env and uncomment the two lines below.
+// Remove the comment to activate, re-comment to go back to DB-driven mode.
+//
+// import { RACES } from '@/lib/constants/races';
+// if (process.env.ACTIVE_RACE_SLUG && RACES[process.env.ACTIVE_RACE_SLUG]) {
+//   const pinned = process.env.ACTIVE_RACE_SLUG;
+//   export async function getActiveRaceSlug() { return pinned; }
+//   export async function getNextRaceSlug() { return null; }
+// }
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Returns the slug for the currently active race, derived from DB race_date.
+// "Active" = race happening now or in the future (with 1-day grace period after race day).
+// Falls back to the last seeded race if all races are complete.
+export async function getActiveRaceSlug(): Promise<string> {
+  // Uncomment to pin to a specific race (set ACTIVE_RACE_SLUG in .env):
+  if (process.env.ACTIVE_RACE_SLUG) return process.env.ACTIVE_RACE_SLUG;
+
+  const race = await getActiveRace();
+  return race?.slug ?? 'melbourne-2026';
 }
 
-export function getNextRaceSlug(): string | null {
-  const now = new Date();
-  const MELBOURNE_END = new Date('2026-03-08T23:59:59+11:00');
-  return now < MELBOURNE_END ? 'shanghai-2026' : null;
+// Returns the slug of the race immediately after the active one, or null.
+export async function getNextRaceSlug(): Promise<string | null> {
+  // Uncomment to pin to a specific race (set ACTIVE_RACE_SLUG in .env):
+  if (process.env.ACTIVE_RACE_SLUG) return null;
+
+  const race = await getNextRace();
+  return race?.slug ?? null;
 }

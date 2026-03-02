@@ -1,20 +1,53 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { getRaceBySlug, getSessionsByRace, getWindowsByRace } from '@/services/race.service';
+import { getRaceBySlug, getSessionsByRace, getWindowsByRace, getRaceContent } from '@/services/race.service';
 import { CATEGORY_COLORS } from '@/lib/constants/categories';
 import { getExperiencesByWindow, getFeaturedExperiences } from '@/services/experience.service';
 import RaceSchedule from '@/components/race/RaceSchedule';
 import RaceCountdown from '@/components/race/RaceCountdown';
 import CircuitMap from '@/components/race/CircuitMap';
 import { getActiveRaceSlug } from '@/lib/activeRace';
-import { RACE_CONTENT } from '@/data/race-content';
 
 export const dynamic = 'force-dynamic';
 
-export async function generateMetadata(): Promise<Metadata> {
-  const activeRaceSlug = getActiveRaceSlug();
-  return RACE_CONTENT[activeRaceSlug]?.meta ?? {};
-}
+export const metadata: Metadata = {
+  title: 'F1 Weekend — Race Weekend Travel Companion | Experiences, Schedule & Itinerary',
+  description:
+    'The smartest way to experience a Formula 1 race weekend. Curated local experiences matched to your session gaps, AI itinerary builder, circuit guides, and insider tips for every F1 race city.',
+  alternates: { canonical: 'https://f1weekend.co' },
+  keywords: [
+    'F1 travel guide',
+    'Formula 1 race weekend experiences',
+    'F1 weekend itinerary',
+    'things to do at F1 race',
+    'F1 race city guide',
+    'Formula 1 travel companion',
+    'F1 session gap activities',
+    'Grand Prix travel',
+  ],
+  openGraph: {
+    title: 'F1 Weekend — Race Weekend Travel Companion',
+    description:
+      'Curated local experiences matched to your F1 session gaps. Plan your perfect race weekend in 60 seconds.',
+    url: 'https://f1weekend.co',
+    type: 'website',
+    images: [
+      {
+        url: 'https://f1weekend.co/og/home.png',
+        width: 1200,
+        height: 630,
+        alt: 'F1 Weekend — Race Weekend Travel Companion',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'F1 Weekend — Race Weekend Travel Companion',
+    description:
+      'Curated local experiences matched to your F1 session gaps. Plan your perfect race weekend in 60 seconds.',
+    images: ['https://f1weekend.co/og/home.png'],
+  },
+};
 
 const homepageBreadcrumbLd: object = {
   '@context': 'https://schema.org',
@@ -46,9 +79,11 @@ function getTzOffsetStr(ianaTimezone: string, dateStr: string): string {
 }
 
 export default async function HomePage() {
-  const activeRaceSlug = getActiveRaceSlug();
-  const raceContent = RACE_CONTENT[activeRaceSlug];
-  const race = await getRaceBySlug(activeRaceSlug);
+  const activeRaceSlug = await getActiveRaceSlug();
+  const [raceContent, race] = await Promise.all([
+    getRaceContent(activeRaceSlug),
+    getRaceBySlug(activeRaceSlug),
+  ]);
 
   if (!race) {
     return (
@@ -162,22 +197,48 @@ export default async function HomePage() {
     })),
   };
 
+  // ItemList structured data for featured experiences (Top Picks)
+  const featuredItemListLd = featuredExps.length > 0 ? {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: `Top ${race.city} F1 Weekend Experiences`,
+    url: `https://f1weekend.co/races/${activeRaceSlug}/experiences`,
+    numberOfItems: Math.min(featuredExps.length, 6),
+    itemListElement: featuredExps.slice(0, 6).map((exp, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      url: `https://f1weekend.co/races/${activeRaceSlug}/experiences/${exp.slug}`,
+      item: {
+        '@type': 'TouristAttraction',
+        name: exp.title,
+        description: exp.abstract ?? exp.shortDescription,
+        touristType: 'F1 race fan',
+        ...(exp.priceLabel ? { priceRange: exp.priceLabel } : {}),
+        containedInPlace: {
+          '@type': 'City',
+          name: race.city,
+          addressCountry: race.countryCode,
+        },
+      },
+    })),
+  } : null;
+
   const expBasePath = `/races/${activeRaceSlug}/experiences`;
 
   const SEASON_PREVIEW = [
     { round: 1, flag: '🇦🇺', short: 'AUS', dates: 'Mar 5–8',   slug: 'melbourne-2026' },
     { round: 2, flag: '🇨🇳', short: 'CHN', dates: 'Mar 13–15', slug: 'shanghai-2026' },
-    { round: 3, flag: '🇯🇵', short: 'JPN', dates: 'Mar 27–29', slug: null },
-    { round: 4, flag: '🇧🇭', short: 'BHR', dates: 'Apr 16–19', slug: null },
-    { round: 5, flag: '🇸🇦', short: 'SAU', dates: 'Apr 23–26', slug: null },
+    { round: 4, flag: '🇯🇵', short: 'JPN', dates: 'Mar 27–29', slug: 'japan-2026' },
+    { round: 5, flag: '🇧🇭', short: 'BHR', dates: 'Apr 9–11',  slug: 'bahrain-2026' },
+    { round: 6, flag: '🇸🇦', short: 'SAU', dates: 'Apr 23–26', slug: null },
   ].map((r) => ({ ...r, active: r.slug === activeRaceSlug }));
+
+  // Consolidate all page schemas into single JSON-LD script tag
+  const allSchemas = [websiteLd, eventLd, homepageFaqLd, homepageBreadcrumbLd, ...(featuredItemListLd ? [featuredItemListLd] : [])];
 
   return (
     <div className="min-h-screen">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteLd) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(eventLd) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(homepageFaqLd) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(homepageBreadcrumbLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(allSchemas) }} />
       {/* ── Hero ── */}
       <section className="relative overflow-hidden pt-20 pb-12 px-4">
         {/* Background layers */}
@@ -195,12 +256,14 @@ export default async function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center min-h-[420px]">
             {/* Left: text + countdown */}
             <div className="flex flex-col justify-center py-8">
-              <p className="text-xs font-medium uppercase-label text-[var(--accent-red)] mb-5 tracking-widest flex items-center gap-2 flex-wrap">
-                <span className="px-2 py-0.5 rounded-full bg-[var(--accent-red)] text-white text-[10px] font-bold tracking-wider">
+              <div className="flex flex-col gap-1.5 mb-5">
+                <span className="px-2 py-0.5 rounded-full bg-[var(--accent-red)] text-white text-[10px] font-bold tracking-wider w-fit">
                   NEXT RACE
                 </span>
-                <span className="whitespace-nowrap">🏎 {race.name} · {race.city} · {heroDateRange}</span>
-              </p>
+                <p className="text-xs font-medium uppercase-label text-[var(--accent-red)] tracking-widest leading-snug">
+                  🏎 {race.name} · {race.city} · {heroDateRange}
+                </p>
+              </div>
 
               <h1 className="font-display font-black text-5xl md:text-6xl text-white uppercase-heading leading-tight mb-4">
                 {race.city} has
@@ -271,7 +334,7 @@ export default async function HomePage() {
                 }}
               />
               <CircuitMap
-                src={raceContent?.circuitMapSrc}
+                src={raceContent?.circuitMapSrc ?? undefined}
                 alt={`${race.circuitName} — Circuit Map`}
                 className="w-full max-w-2xl opacity-90"
               />
@@ -293,13 +356,18 @@ export default async function HomePage() {
       {/* ── Featured Experiences ── */}
       {featuredExps.length > 0 && (
         <section className="max-w-6xl mx-auto px-4 py-10">
-          <div className="flex items-center justify-between mb-5">
-            <h2 className="font-display font-black text-xl text-white uppercase-heading">
-              Top Picks
-            </h2>
+          <div className="flex items-start justify-between mb-5">
+            <div>
+              <h2 className="font-display font-black text-xl text-white uppercase-heading">
+                Best Things to Do in {race.city} During the F1 Race
+              </h2>
+              <p className="text-sm text-[var(--text-secondary)] mt-1.5">
+                Curated for the {race.city} Grand Prix weekend — activities matched to every session gap.
+              </p>
+            </div>
             <Link
               href={expBasePath}
-              className="text-sm font-medium text-[var(--accent-teal)] hover:text-white transition-colors"
+              className="text-sm font-medium text-[var(--accent-teal)] hover:text-white transition-colors shrink-0 mt-1"
             >
               View all →
             </Link>
@@ -311,12 +379,22 @@ export default async function HomePage() {
               return (
                 <Link
                   key={exp.id}
-                  href={`/experiences/${exp.slug}`}
-                  className="group shrink-0 w-48 sm:w-44 p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-subtle)] hover:border-[var(--accent-teal)]/50 hover:bg-[var(--bg-surface)] transition-all"
+                  href={`/races/${activeRaceSlug}/experiences/${exp.slug}`}
+                  className="group shrink-0 w-52 sm:w-48 p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--accent-red)]/20 hover:border-[var(--accent-red)]/50 hover:bg-[var(--bg-surface)] transition-all"
                 >
-                  <div className="text-3xl mb-3">{exp.imageEmoji}</div>
+                  {exp.tag && (
+                    <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full bg-[var(--accent-red)]/12 text-[var(--accent-red)] uppercase-label mb-3 tracking-widest">
+                      {exp.tag}
+                    </span>
+                  )}
+                  <div className="text-2xl mb-2">{exp.imageEmoji}</div>
                   <p className="text-sm font-semibold text-white group-hover:text-[var(--accent-teal)] transition-colors line-clamp-2 leading-tight mb-2">
                     {exp.title}
+                  </p>
+                  <p className="text-xs mb-2">
+                    <span className="text-yellow-400">★</span>
+                    <span className="text-white font-medium ml-0.5">{exp.rating.toFixed(1)}</span>
+                    <span className="text-[var(--text-secondary)] ml-1">({exp.reviewCount.toLocaleString()})</span>
                   </p>
                   <p className="text-xs font-medium mb-1" style={{ color }}>
                     {exp.category.charAt(0).toUpperCase() + exp.category.slice(1)}

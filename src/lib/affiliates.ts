@@ -8,7 +8,7 @@ const GYG_PARTNER_ID = process.env.GYG_PARTNER_ID ?? 'PLACEHOLDER';
 export function buildAffiliateUrl(
   baseUrl: string,
   experienceId: number,
-  source: 'feed' | 'itinerary' | 'featured'
+  source: 'feed' | 'itinerary' | 'featured' | 'map' | 'guide'
 ): string {
   const url = new URL(baseUrl);
   url.searchParams.set('partner_id', GYG_PARTNER_ID);

@@ -5,7 +5,7 @@ import { RACES } from '@/lib/constants/races';
 
 interface Props {
   raceSlug: string;
-  pageType: 'schedule' | 'experiences' | 'getting-there';
+  pageType: 'schedule' | 'experiences' | 'getting-there' | 'tips';
 }
 
 export default function RaceSwitcher({ raceSlug, pageType }: Props) {

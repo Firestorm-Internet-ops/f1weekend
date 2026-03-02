@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 import { experiences, experience_windows, experience_windows_map } from '@/lib/db/schema';
-import { eq, and, asc, desc, inArray } from 'drizzle-orm';
+import { eq, and, asc, desc, inArray, ne } from 'drizzle-orm';
 import { redis } from '@/lib/redis';
 import { getRaceBySlug } from '@/services/race.service';
 import type { Experience, Category, ExperienceFilter, FAQItem } from '@/types/experience';
@@ -80,6 +80,16 @@ function mapExperience(r: typeof experiences.$inferSelect): Experience {
   };
 }
 
+function popularityScore(r: typeof experiences.$inferSelect): number {
+  let score = 0;
+  if (r.is_featured) score += 1000;
+  if (r.bestseller) score += 300;
+  score += Math.min((r.review_count ?? 0) / 10, 200);
+  score += (Number(r.rating) ?? 0) * 20;
+  score -= (r.sort_order ?? 99) * 2;
+  return score;
+}
+
 function applySortOrder(query: typeof experiences.$inferSelect[], sort?: ExperienceFilter['sort']) {
   switch (sort) {
     case 'price-low':
@@ -92,12 +102,7 @@ function applySortOrder(query: typeof experiences.$inferSelect[], sort?: Experie
       return [...query].sort((a, b) => Number(b.rating) - Number(a.rating));
     case 'popular':
     default:
-      return [...query].sort((a, b) => {
-        if ((b.is_featured ? 1 : 0) !== (a.is_featured ? 1 : 0)) {
-          return (b.is_featured ? 1 : 0) - (a.is_featured ? 1 : 0);
-        }
-        return (a.sort_order ?? 0) - (b.sort_order ?? 0);
-      });
+      return [...query].sort((a, b) => popularityScore(b) - popularityScore(a));
   }
 }
 
@@ -218,6 +223,27 @@ export async function getExperiencesByCategory(
   sort?: ExperienceFilter['sort']
 ): Promise<Experience[]> {
   return getExperiencesByRace(raceId, { category, sort });
+}
+
+export async function getSuggestedExperiences(
+  raceId: number,
+  excludeSlug: string,
+  limit = 4
+): Promise<Experience[]> {
+  return cached(`suggestions:${raceId}:${excludeSlug}`, () =>
+    db
+      .select()
+      .from(experiences)
+      .where(
+        and(
+          eq(experiences.race_id, raceId),
+          eq(experiences.is_active, true),
+          ne(experiences.slug, excludeSlug)
+        )
+      )
+      .orderBy(desc(experiences.is_featured), asc(experiences.sort_order))
+      .limit(limit)
+  ).then((rows) => rows.map(mapExperience));
 }
 
 export async function queryExperiences(filter: ExperienceFilter): Promise<Experience[]> {

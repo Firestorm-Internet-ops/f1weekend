@@ -36,15 +36,16 @@ interface Race {
   flag: string;
   circuit: string;
   dates: string;
+  raceEnd?: string; // ISO date of race Sunday, for upcoming filtering
   slug: string | null;
   hasGuide: boolean;
 }
 
 const F1_2026: Race[] = [
-  { round: 1,  name: 'Australian Grand Prix',      city: 'Melbourne',    country: 'Australia',      flag: '🇦🇺', circuit: 'Albert Park Circuit',               dates: 'Mar 5–8',     slug: 'melbourne-2026', hasGuide: true  },
-  { round: 2,  name: 'Chinese Grand Prix',          city: 'Shanghai',     country: 'China',           flag: '🇨🇳', circuit: 'Shanghai International Circuit',    dates: 'Mar 13–15',   slug: 'shanghai-2026',  hasGuide: true  },
-  { round: 3,  name: 'Japanese Grand Prix',         city: 'Suzuka',       country: 'Japan',           flag: '🇯🇵', circuit: 'Suzuka Circuit',                    dates: 'Mar 27–29',   slug: null,             hasGuide: false },
-  { round: 4,  name: 'Bahrain Grand Prix',          city: 'Sakhir',       country: 'Bahrain',         flag: '🇧🇭', circuit: 'Bahrain International Circuit',     dates: 'Apr 16–19',   slug: null,             hasGuide: false },
+  { round: 1,  name: 'Australian Grand Prix',      city: 'Melbourne',    country: 'Australia',      flag: '🇦🇺', circuit: 'Albert Park Circuit',               dates: 'Mar 5–8',     raceEnd: '2026-03-08', slug: 'melbourne-2026', hasGuide: true  },
+  { round: 2,  name: 'Chinese Grand Prix',          city: 'Shanghai',     country: 'China',           flag: '🇨🇳', circuit: 'Shanghai International Circuit',    dates: 'Mar 13–15',   raceEnd: '2026-03-15', slug: 'shanghai-2026',  hasGuide: true  },
+  { round: 3,  name: 'Japanese Grand Prix',         city: 'Suzuka',       country: 'Japan',           flag: '🇯🇵', circuit: 'Suzuka International Racing Course', dates: 'Mar 27–29',   raceEnd: '2026-03-29', slug: 'japan-2026',     hasGuide: true  },
+  { round: 4,  name: 'Bahrain Grand Prix',          city: 'Sakhir',       country: 'Bahrain',         flag: '🇧🇭', circuit: 'Bahrain International Circuit',     dates: 'Apr 10–12',   raceEnd: '2026-04-12', slug: 'bahrain-2026',   hasGuide: true  },
   { round: 5,  name: 'Saudi Arabian Grand Prix',    city: 'Jeddah',       country: 'Saudi Arabia',    flag: '🇸🇦', circuit: 'Jeddah Corniche Circuit',           dates: 'Apr 23–26',   slug: null,             hasGuide: false },
   { round: 6,  name: 'Miami Grand Prix',            city: 'Miami',        country: 'USA',             flag: '🇺🇸', circuit: 'Miami International Autodrome',     dates: 'May 7–10',    slug: null,             hasGuide: false },
   { round: 7,  name: 'Emilia Romagna Grand Prix',   city: 'Imola',        country: 'Italy',           flag: '🇮🇹', circuit: 'Autodromo Enzo e Dino Ferrari',     dates: 'May 21–24',   slug: null,             hasGuide: false },
@@ -130,7 +131,12 @@ const faqLd = {
 };
 
 export default function F12026Page() {
-  const guideRaces = F1_2026.filter((r) => r.hasGuide);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  // Next 2 upcoming guide races (race weekend not yet over)
+  const guideRaces = F1_2026
+    .filter((r) => r.hasGuide && r.raceEnd && new Date(r.raceEnd) >= today)
+    .slice(0, 2);
 
   return (
     <>
@@ -280,16 +286,22 @@ export default function F12026Page() {
             </p>
             <div className="flex flex-wrap gap-4">
               <Link
-                href="/races/melbourne-2026"
+                href="/itinerary?race=melbourne-2026"
                 className="px-6 py-3 rounded-xl bg-[var(--accent-red)] hover:bg-[var(--accent-red-hover)] text-white font-display font-bold transition-colors"
               >
                 🇦🇺 Melbourne GP Guide
               </Link>
               <Link
-                href="/races/shanghai-2026"
+                href="/itinerary?race=shanghai-2026"
                 className="px-6 py-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] font-display font-bold hover:text-white hover:border-[var(--border-medium)] transition-colors"
               >
                 🇨🇳 Shanghai GP Guide
+              </Link>
+              <Link
+                href="/itinerary?race=japan-2026"
+                className="px-6 py-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] font-display font-bold hover:text-white hover:border-[var(--border-medium)] transition-colors"
+              >
+                🇯🇵 Japanese GP Guide
               </Link>
             </div>
           </section>

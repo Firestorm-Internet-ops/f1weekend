@@ -4,7 +4,7 @@ import { affiliate_clicks } from '@/lib/db/schema';
 import { getExperienceById } from '@/services/experience.service';
 import { buildAffiliateUrl } from '@/lib/affiliates';
 
-const VALID_SOURCES = ['feed', 'itinerary', 'featured'] as const;
+const VALID_SOURCES = ['feed', 'itinerary', 'featured', 'map', 'guide'] as const;
 type Source = typeof VALID_SOURCES[number];
 
 function getBaseUrl(trackedUrl: string): string {

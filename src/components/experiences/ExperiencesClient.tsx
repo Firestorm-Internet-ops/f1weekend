@@ -1,12 +1,11 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { Experience } from '@/types/experience';
 import ExperienceCard from './ExperienceCard';
-import CategoryTabs from './CategoryTabs';
 import SortSelector, { type SortOption } from './SortSelector';
-import { CATEGORY_LABELS } from '@/lib/constants/categories';
+import { CATEGORY_LABELS, CATEGORY_COLORS } from '@/lib/constants/categories';
 
 const SESSION_KEY = 'pitlane-session';
 
@@ -16,10 +15,50 @@ const WINDOW_LABELS: Record<string, string> = {
   'fri-gap':     'Friday Afternoon — Between Sessions',
   'fri-evening': 'Friday Evening — After FP2',
   'sat-morning': 'Saturday Morning — Before FP3',
+  'sat-gap':     'Saturday Afternoon — Between Sessions',
   'sat-evening': 'Saturday Evening — After Qualifying',
   'sun-morning': 'Sunday Morning — Race Day',
   'sun-evening': 'Sunday Evening — Post-Race',
+  'post-race':   'Sunday Evening — Post-Race',
 };
+
+const CATEGORY_ORDER = ['food', 'culture', 'adventure', 'daytrip', 'nightlife'] as const;
+
+const CATEGORY_EMOJIS: Record<string, string> = {
+  food: '🍜',
+  culture: '⛩️',
+  adventure: '🏔️',
+  daytrip: '✈️',
+  nightlife: '🌙',
+};
+
+interface SessionWindow {
+  slug: string;
+  label: string;
+  sublabel: string;
+}
+
+function getSessionWindows(raceSlug: string): SessionWindow[] {
+  const isMelbourne = raceSlug.startsWith('melbourne');
+  const base: SessionWindow[] = [
+    { slug: 'fri-morning', label: 'Fri Morning',  sublabel: 'Before FP1 · 3.5h' },
+    { slug: 'fri-gap',     label: 'Fri Midday',   sublabel: 'Between Sessions · 2h' },
+    { slug: 'fri-evening', label: 'Fri Evening',  sublabel: 'After FP2 · 4h' },
+    { slug: 'sat-morning', label: 'Sat Morning',  sublabel: isMelbourne ? 'Before Qualifying · 3.5h' : 'Before FP3 · 3.5h' },
+    ...(isMelbourne ? [] : [{ slug: 'sat-gap', label: 'Sat Midday', sublabel: 'Between Sessions · 2h' }] as SessionWindow[]),
+    { slug: 'sat-evening', label: 'Sat Evening',  sublabel: 'After Qualifying · 4h' },
+    { slug: 'sun-morning', label: 'Race Day AM',  sublabel: '6h before Race' },
+    {
+      slug: isMelbourne ? 'sun-evening' : 'post-race',
+      label: 'Post-Race',
+      sublabel: 'After the flag',
+    },
+  ];
+  if (isMelbourne) {
+    return [{ slug: 'thu-full', label: 'Thursday', sublabel: 'Full free day' }, ...base];
+  }
+  return base;
+}
 
 function getSessionId(): string {
   if (typeof window === 'undefined') return '';
@@ -50,7 +89,17 @@ export default function ExperiencesClient({
   const [loading, setLoading] = useState(false);
   const isFirstRender = useRef(true);
   const [bookingId, setBookingId] = useState<number | null>(null);
-  const [windowLabel, setWindowLabel] = useState(windowSlug);
+
+  const sessionWindows = useMemo(() => getSessionWindows(raceSlug), [raceSlug]);
+
+  // Stable category counts from initial data (don't change with filter)
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const exp of initialExperiences) {
+      counts[exp.category] = (counts[exp.category] ?? 0) + 1;
+    }
+    return counts;
+  }, [initialExperiences]);
 
   const buildUrl = useCallback(
     (newCat: string, newSort: SortOption, win: string) => {
@@ -72,6 +121,10 @@ export default function ExperiencesClient({
   const handleSortChange = (s: SortOption) => {
     setSort(s);
     router.replace(buildUrl(category, s, windowSlug), { scroll: false });
+  };
+
+  const handleWindowChange = (win: string) => {
+    router.replace(buildUrl(category, sort, win), { scroll: false });
   };
 
   const clearWindow = () => {
@@ -96,7 +149,6 @@ export default function ExperiencesClient({
       .then((r) => r.json())
       .then((data) => {
         setExperiences(data.data ?? []);
-        setWindowLabel(windowSlug);
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -126,43 +178,99 @@ export default function ExperiencesClient({
 
   return (
     <div>
-      {/* Active window pill */}
-      {windowLabel && (
-        <div className="mb-6 flex items-center gap-3 flex-wrap">
-          <span className="text-base px-5 py-2.5 rounded-full bg-[var(--accent-teal-muted)] text-[var(--accent-teal)] border border-[var(--accent-teal)]/30">
-            {WINDOW_LABELS[windowLabel] ?? windowLabel}
-            {!loading && ` · ${experiences.length} experience${experiences.length !== 1 ? 's' : ''}`}
-          </span>
-          <button
-            onClick={clearWindow}
-            className="text-sm text-[var(--text-secondary)] hover:text-white transition-colors"
-          >
-            ✕ Clear
-          </button>
-        </div>
-      )}
+      {/* ── FILTER BAR ──────────────────────────────────────────────── */}
+      <div className="sticky top-16 z-20 bg-[var(--bg-primary)]/95 backdrop-blur-sm border-b border-[var(--border-subtle)] -mx-4 px-4 py-3 mb-6">
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 justify-between mb-4">
-        <CategoryTabs active={category} onChange={handleCategoryChange} />
-        <SortSelector active={sort} onChange={handleSortChange} />
+        {/* Row 1: Category pills + Sort */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* All pill */}
+          <button
+            onClick={() => handleCategoryChange('')}
+            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-150 border ${
+              category === ''
+                ? 'bg-[var(--accent-red)] text-white border-[var(--accent-red)]'
+                : 'border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-white hover:border-[var(--border-medium)]'
+            }`}
+          >
+            All <span className="opacity-60 ml-1 text-xs">{initialExperiences.length}</span>
+          </button>
+
+          {/* Category pills */}
+          {CATEGORY_ORDER.map(cat => {
+            const isActive = category === cat;
+            const color = CATEGORY_COLORS[cat];
+            const count = categoryCounts[cat] ?? 0;
+            return (
+              <button
+                key={cat}
+                onClick={() => handleCategoryChange(cat)}
+                style={isActive ? { borderColor: color, color, backgroundColor: `${color}18` } : {}}
+                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-150 border ${
+                  isActive
+                    ? ''
+                    : 'border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-white hover:border-[var(--border-medium)]'
+                }`}
+              >
+                {CATEGORY_EMOJIS[cat]}{' '}
+                <span className="hidden sm:inline">{CATEGORY_LABELS[cat]}</span>
+                <span className="opacity-60 ml-1 text-xs">{count}</span>
+              </button>
+            );
+          })}
+
+          {/* Sort — pushed to right */}
+          <div className="ml-auto">
+            <SortSelector active={sort} onChange={handleSortChange} />
+          </div>
+        </div>
+
+        {/* Row 2: Session window chips (horizontal scroll) */}
+        {sessionWindows.length > 0 && (
+          <div className="flex items-center gap-2 mt-2.5 overflow-x-auto pb-0.5 scrollbar-hide">
+            {sessionWindows.map(w => {
+              const isActive = windowSlug === w.slug;
+              return (
+                <button
+                  key={w.slug}
+                  onClick={() => isActive ? clearWindow() : handleWindowChange(w.slug)}
+                  className={`flex-shrink-0 px-3 py-1 rounded-full text-xs font-medium transition-all duration-150 border whitespace-nowrap ${
+                    isActive
+                      ? 'border-[var(--accent-teal)]/50 bg-[var(--accent-teal-muted)] text-[var(--accent-teal)]'
+                      : 'border-[var(--border-subtle)] text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] hover:border-[var(--border-medium)]'
+                  }`}
+                >
+                  {w.label}
+                  {isActive && <span className="ml-1 opacity-70">✕</span>}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {/* Result count */}
-      {!loading && experiences.length > 0 && (
-        <p className="text-sm text-[var(--text-secondary)] mb-5">
-          {experiences.length} experience{experiences.length !== 1 ? 's' : ''}
-          {category ? ` · ${CATEGORY_LABELS[category] ?? category}` : ''}
+      {/* Active window label */}
+      {windowSlug && !loading && (
+        <p className="text-sm text-[var(--text-secondary)] mb-4">
+          {experiences.length} experience{experiences.length !== 1 ? 's' : ''} during{' '}
+          <span className="text-[var(--accent-teal)]">{WINDOW_LABELS[windowSlug] ?? windowSlug}</span>
         </p>
       )}
 
-      {/* Grid */}
+      {/* Result count */}
+      {!loading && !windowSlug && experiences.length > 0 && category && (
+        <p className="text-sm text-[var(--text-secondary)] mb-4">
+          {experiences.length} {CATEGORY_LABELS[category] ?? category} experience{experiences.length !== 1 ? 's' : ''}
+        </p>
+      )}
+
+      {/* ── Grid ──────────────────────────────────────────────────────── */}
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="h-72 rounded-xl shimmer" />
           ))}
         </div>
+
       ) : experiences.length === 0 ? (
         <div className="text-center py-20">
           <p className="text-4xl mb-4">🏎</p>
@@ -171,6 +279,7 @@ export default function ExperiencesClient({
             Try a different filter or time window.
           </p>
         </div>
+
       ) : (
         <div
           key={`${category}-${sort}-${windowSlug}`}

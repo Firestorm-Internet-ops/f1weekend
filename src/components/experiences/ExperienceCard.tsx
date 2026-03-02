@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import type { Experience } from '@/types/experience';
 import { CATEGORY_COLORS, CATEGORY_LABELS } from '@/lib/constants/categories';
+import { formatPrice } from '@/lib/utils';
 
 interface Props {
   experience: Experience;
@@ -131,8 +132,25 @@ export default function ExperienceCard({ experience, onBook, loading, index = 0,
         {/* Price + CTAs */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <span className="text-xl font-display font-bold text-white">{experience.priceLabel}</span>
-            <span className="text-base text-[var(--text-secondary)] ml-1">per person</span>
+            <div className="flex items-baseline gap-2">
+              <span className="text-xl font-display font-bold text-white">{experience.priceLabel}</span>
+              {experience.originalPrice && experience.discountPct && (
+                <span className="text-sm text-[var(--text-secondary)] line-through">
+                  {formatPrice(Math.round(experience.originalPrice * 100), experience.priceCurrency)}
+                </span>
+              )}
+              {experience.discountPct && (
+                <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-green-500/15 text-green-400">
+                  -{experience.discountPct}%
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-base text-[var(--text-secondary)]">per person</span>
+              {experience.bestseller && (
+                <span className="text-xs text-amber-400">⚡ Race-week favourite</span>
+              )}
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <Link

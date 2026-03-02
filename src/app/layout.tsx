@@ -3,6 +3,7 @@ import { Titillium_Web, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import Nav from "@/components/layout/Nav";
 import Footer from "@/components/layout/Footer";
+import { getActiveRaceSlug } from "@/lib/activeRace";
 import { Analytics } from "@vercel/analytics/react";
 import Script from "next/script";
 
@@ -58,11 +59,12 @@ const organizationSchema = {
   sameAs: [],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const activeRaceSlug = await getActiveRaceSlug();
   return (
     <html lang="en">
       <head>
@@ -93,7 +95,7 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
         />
-        <Nav />
+        <Nav defaultRaceSlug={activeRaceSlug} />
         <main>{children}</main>
         <Footer />
         <Analytics />

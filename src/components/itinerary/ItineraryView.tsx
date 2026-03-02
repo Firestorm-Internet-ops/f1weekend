@@ -13,16 +13,30 @@ interface Props {
 
 export default function ItineraryView({ itinerary, experiences }: Props) {
     const [activeDay, setActiveDay] = useState(0);
+    const [copied, setCopied] = useState(false);
     const expMap = Object.fromEntries(experiences.map(e => [e.id, e]));
     const day: ItineraryDay | undefined = itinerary.days[activeDay];
 
+    // Collect all unique suggested experience IDs across all days/gaps
+    const allSuggestedIds = Array.from(
+        new Set(
+            itinerary.days
+                .flatMap(d => d.slots)
+                .filter((s): s is GapSlot => s.type === 'gap')
+                .flatMap(s => s.suggestionIds ?? [])
+        )
+    );
+    const allSuggestedExps = allSuggestedIds
+        .map(id => expMap[id])
+        .filter((e): e is Experience => Boolean(e));
+
     const handleShare = async () => {
-        const nav = navigator as Navigator & { share?: (data?: ShareData) => Promise<void> };
-        if (nav.share) {
-            await nav.share({ title: itinerary.title, url: window.location.href });
-        } else {
+        try {
             await navigator.clipboard.writeText(window.location.href);
-            alert('Link copied!');
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } catch {
+            // clipboard API not available
         }
     };
 
@@ -40,7 +54,7 @@ export default function ItineraryView({ itinerary, experiences }: Props) {
                     onClick={handleShare}
                     className="mt-4 text-sm px-4 py-1.5 rounded-full border border-[var(--border-medium)] text-[var(--text-secondary)] hover:text-white transition-colors"
                 >
-                    Share Itinerary ↗
+                    {copied ? '✓ Copied!' : 'Share Itinerary ↗'}
                 </button>
             </div>
 
@@ -104,6 +118,40 @@ export default function ItineraryView({ itinerary, experiences }: Props) {
                 </div>
             ) : (
                 <p className="text-[var(--text-secondary)] text-sm">No slots for this day.</p>
+            )}
+
+            {/* Book All section */}
+            {allSuggestedExps.length > 0 && (
+                <div className="mt-10 pt-8 border-t border-[var(--border-subtle)]">
+                    <h2 className="font-display font-bold text-white text-xl mb-1">Your Experiences</h2>
+                    <p className="text-sm text-[var(--text-secondary)] mb-5">
+                        Lock in your plan — book before race week sells out
+                    </p>
+                    <div className="space-y-3">
+                        {allSuggestedExps.map(exp => (
+                            <div
+                                key={exp.id}
+                                className="flex items-center justify-between gap-3 p-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)]"
+                            >
+                                <div className="flex items-center gap-3 min-w-0">
+                                    <span className="text-2xl leading-none shrink-0">{exp.imageEmoji}</span>
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-medium text-white truncate">{exp.title}</p>
+                                        <p className="text-xs text-[var(--text-secondary)]">
+                                            {exp.priceLabel} · {exp.durationLabel}
+                                        </p>
+                                    </div>
+                                </div>
+                                <BookButton
+                                    experience={exp}
+                                    source="itinerary"
+                                    label="Book →"
+                                    className="shrink-0 px-4 py-2 rounded-full text-sm font-medium bg-[var(--accent-red)] hover:bg-[var(--accent-red-hover)] text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                />
+                            </div>
+                        ))}
+                    </div>
+                </div>
             )}
         </div>
     );

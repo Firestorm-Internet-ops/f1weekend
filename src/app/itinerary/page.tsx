@@ -1,21 +1,37 @@
 import ItineraryForm from '@/components/itinerary/ItineraryForm';
-import { getRaceBySlug, getSessionsByRace } from '@/services/race.service';
+import { getAllRaces, getSessionsByRace } from '@/services/race.service';
 import { getActiveRaceSlug } from '@/lib/activeRace';
-import type { Session } from '@/types/race';
+import type { Race, Session } from '@/types/race';
 
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
     title: 'Build Itinerary | F1 Weekend',
-    description: 'Pick your F1 sessions and we\'ll fill the gaps with the best Melbourne experiences.',
+    description: 'Pick your F1 sessions and we\'ll fill the gaps with the best race city experiences.',
     robots: { index: false, follow: true },
 };
 
-export default async function ItineraryPage() {
-    const race = await getRaceBySlug(getActiveRaceSlug());
-    const allSessions: Session[] = race ? await getSessionsByRace(race.id) : [];
-    const sessions = allSessions.filter(s =>
-        ['practice', 'qualifying', 'sprint', 'race'].includes(s.sessionType)
+interface Props {
+    searchParams: Promise<{ race?: string }>;
+}
+
+export default async function ItineraryPage({ searchParams }: Props) {
+    const { race: raceParam } = await searchParams;
+    const [races, activeRaceSlug] = await Promise.all([
+        getAllRaces(),
+        getActiveRaceSlug(),
+    ]);
+    const defaultRaceSlug = raceParam ?? activeRaceSlug;
+
+    // For each race, fetch sessions and build a slug → sessions map
+    const sessionsByRace: Record<string, Session[]> = {};
+    await Promise.all(
+        races.map(async (race: Race) => {
+            const all = await getSessionsByRace(race.id);
+            sessionsByRace[race.slug] = all.filter(s =>
+                ['practice', 'qualifying', 'sprint', 'race'].includes(s.sessionType)
+            );
+        })
     );
 
     return (
@@ -29,12 +45,16 @@ export default async function ItineraryPage() {
                         Build Your<br />Itinerary
                     </h1>
                     <p className="text-[var(--text-secondary)] mt-3">
-                        Pick your sessions and we&apos;ll fill the gaps with the best Melbourne experiences.
+                        Pick your race, select your sessions, and we&apos;ll fill the gaps with the best experiences.
                     </p>
                 </div>
 
                 <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] p-6 md:p-8">
-                    <ItineraryForm sessions={sessions} />
+                    <ItineraryForm
+                        races={races}
+                        sessionsByRace={sessionsByRace}
+                        defaultRaceSlug={defaultRaceSlug}
+                    />
                 </div>
             </div>
         </div>

@@ -5,6 +5,7 @@ import { GoogleMap, useJsApiLoader, Marker, InfoWindow, Polyline } from '@react-
 import type { Experience } from '@/types/experience';
 import { ALBERT_PARK_CIRCUIT } from '@/data/circuit-path';
 import { CATEGORY_COLORS } from '@/lib/constants/categories';
+import BookButton from '@/components/experiences/BookButton';
 
 const CIRCUIT = { lat: -37.8497, lng: 144.968 };
 
@@ -33,9 +34,10 @@ const DARK_MAP_STYLE: google.maps.MapTypeStyle[] = [
 interface Props {
   experiences: Experience[];
   height?: string;
+  raceSlug?: string;
 }
 
-export default function ExperienceMap({ experiences, height = '500px' }: Props) {
+export default function ExperienceMap({ experiences, height = '500px', raceSlug }: Props) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
   const { isLoaded, loadError } = useJsApiLoader({
     id: 'google-map',
@@ -225,9 +227,9 @@ export default function ExperienceMap({ experiences, height = '500px' }: Props) 
                   <span>·</span>
                   <span>{activeExp.durationLabel}</span>
                 </div>
-                <div style={{ display: 'flex', gap: '6px' }}>
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
                   <a
-                    href={`/experiences/${activeExp.slug}`}
+                    href={raceSlug ? `/races/${raceSlug}/experiences/${activeExp.slug}` : `/experiences/${activeExp.slug}`}
                     style={{ fontSize: '12px', color: '#00D2BE', textDecoration: 'none', fontWeight: 500 }}
                   >
                     View →
@@ -241,6 +243,14 @@ export default function ExperienceMap({ experiences, height = '500px' }: Props) 
                   >
                     Directions
                   </a>
+                </div>
+                <div style={{ marginTop: '8px' }}>
+                  <BookButton
+                    experience={activeExp}
+                    source="map"
+                    label="Book →"
+                    className="w-full py-1.5 rounded-lg text-xs font-medium bg-[#E10600] hover:bg-[#c00500] text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
                 </div>
               </div>
             </div>

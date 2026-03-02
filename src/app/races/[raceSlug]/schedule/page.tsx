@@ -50,8 +50,9 @@ export default async function SchedulePage({ params }: Props) {
 
   const isMelbourne = raceSlug === 'melbourne-2026';
   const isShanghai = raceSlug === 'shanghai-2026';
-  // Shanghai starts Friday, Melbourne starts Thursday
-  const firstDayOffset = isShanghai ? -2 : -3;
+  const isBahrain = raceSlug === 'bahrain-2026';
+  // Shanghai and Bahrain start Friday, Melbourne starts Thursday
+  const firstDayOffset = (isShanghai || isBahrain) ? -2 : -3;
   const firstDate = offsetDate(race.raceDate, firstDayOffset);
   const sunDate = race.raceDate;
 
@@ -59,6 +60,7 @@ export default async function SchedulePage({ params }: Props) {
   function tzToOffset(tz: string): string {
     if (tz === 'Asia/Shanghai') return '+08:00';
     if (tz === 'Australia/Melbourne') return '+11:00';
+    if (tz === 'Asia/Bahrain') return '+03:00';
     return '+00:00';
   }
   const tzOffset = tzToOffset(race.timezone);
@@ -128,10 +130,19 @@ export default async function SchedulePage({ params }: Props) {
             and historic water towns are within reach of every session gap.
           </p>
         )}
+        {isBahrain && (
+          <p className="text-[var(--text-secondary)] text-base leading-relaxed max-w-2xl mb-8">
+            The 2026 Bahrain Grand Prix runs three days at the Bahrain International Circuit in Sakhir (April 10–12).
+            Friday and Saturday host practice sessions — the long Friday morning window (8+ hours before FP1 at 14:30 AST)
+            is ideal for exploring Manama&apos;s souks, fort, and food scene. Saturday evening after qualifying
+            under the floodlights gives 3+ hours for Adliya dining. Race day on Sunday begins at 18:00 AST,
+            leaving the entire morning and afternoon free.
+          </p>
+        )}
         <ScheduleView
           schedule={schedule}
           initialDay="Friday"
-          tzLabel={isShanghai ? 'CST' : 'AEDT'}
+          tzLabel={isBahrain ? 'AST' : isShanghai ? 'CST' : 'AEDT'}
           raceDate={race.raceDate}
           timezone={race.timezone}
         />
@@ -273,6 +284,55 @@ export default async function SchedulePage({ params }: Props) {
               className="inline-block mt-6 text-sm font-medium text-[var(--accent-teal)] hover:text-white transition-colors"
             >
               Browse all Shanghai experiences →
+            </Link>
+          </section>
+        )}
+        {isBahrain && (
+          <section className="mt-12 border-t border-[var(--border-subtle)] pt-8">
+            <h2 className="font-display font-bold text-xl text-white uppercase-heading mb-4">
+              Make the Most of Your Session Gaps
+            </h2>
+            <p className="text-[var(--text-secondary)] text-sm leading-relaxed mb-6">
+              Bahrain sessions run from late afternoon into the evening — giving long daytime windows for
+              exploring Manama and the desert, with evenings free for nightlife after qualifying.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="p-5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
+                <p className="text-xs font-medium uppercase-label text-[var(--accent-teal)] mb-2">BEFORE FP1 · 6 HRS</p>
+                <p className="font-display font-bold text-white mb-2">Friday Morning</p>
+                <p className="text-xs text-[var(--text-secondary)] mb-4">
+                  Long 08:00–14:00 window. Bahrain Fort (UNESCO), Gold Souk, or a desert safari before FP1 at 14:30 AST.
+                </p>
+                <Link href="/races/bahrain-2026/experiences?category=culture" className="text-xs font-medium text-[var(--accent-teal)] hover:text-white transition-colors">
+                  Browse culture experiences →
+                </Link>
+              </div>
+              <div className="p-5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
+                <p className="text-xs font-medium uppercase-label text-[var(--accent-red)] mb-2">SATURDAY MORNING · 7 HRS</p>
+                <p className="font-display font-bold text-white mb-2">Full Day Before FP3</p>
+                <p className="text-xs text-[var(--text-secondary)] mb-4">
+                  08:00–15:00 open. Longest window of the weekend — full Manama day trip, desert drive, or Bahrain waterpark.
+                </p>
+                <Link href="/races/bahrain-2026/experiences?category=adventure" className="text-xs font-medium text-[var(--accent-teal)] hover:text-white transition-colors">
+                  Browse adventure experiences →
+                </Link>
+              </div>
+              <div className="p-5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
+                <p className="text-xs font-medium uppercase-label mb-2" style={{ color: '#9B59B6' }}>SAT EVENING · 3 HRS</p>
+                <p className="font-display font-bold text-white mb-2">After Qualifying</p>
+                <p className="text-xs text-[var(--text-secondary)] mb-4">
+                  20:00–23:00 after qualifying. Adliya restaurant strip, rooftop bars, or waterfront dining — electric race-night atmosphere.
+                </p>
+                <Link href="/races/bahrain-2026/experiences?category=nightlife" className="text-xs font-medium text-[var(--accent-teal)] hover:text-white transition-colors">
+                  Browse nightlife experiences →
+                </Link>
+              </div>
+            </div>
+            <Link
+              href="/races/bahrain-2026/experiences"
+              className="inline-block mt-6 text-sm font-medium text-[var(--accent-teal)] hover:text-white transition-colors"
+            >
+              Browse all Bahrain experiences →
             </Link>
           </section>
         )}

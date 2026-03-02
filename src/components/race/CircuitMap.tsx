@@ -2,7 +2,7 @@ import Image from 'next/image';
 
 export default function CircuitMap({
   className,
-  src = '/Australia_Circuit.avif',
+  src = '/tracks/Australia_Circuit.avif',
   alt = 'Albert Park Circuit — Melbourne',
   width = 1920,
   height = 1080,

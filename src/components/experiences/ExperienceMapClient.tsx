@@ -45,7 +45,7 @@ export default function ExperienceMapClient({ raceSlug }: { raceSlug: string }) 
       {loading ? (
         <div className="w-full h-[600px] rounded-2xl shimmer" />
       ) : (
-        <ExperienceMap experiences={experiences} height="600px" />
+        <ExperienceMap experiences={experiences} height="600px" raceSlug={raceSlug} />
       )}
     </div>
   );

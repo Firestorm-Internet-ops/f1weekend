@@ -58,6 +58,14 @@ const MELBOURNE_TRANSPORT = [
 
 const MELBOURNE_MAPS_URL = 'https://www.google.com/maps/dir/?api=1&destination=-37.8497,144.968&travelmode=transit';
 const SHANGHAI_MAPS_URL = 'https://www.google.com/maps/dir/?api=1&destination=31.3385,121.2200&travelmode=transit';
+const BAHRAIN_MAPS_URL = 'https://www.google.com/maps/dir/?api=1&destination=26.0325,50.5106&travelmode=transit';
+
+const BAHRAIN_TRANSPORT = [
+  { icon: '🚌', title: 'Official Shuttle Bus', desc: 'Shuttle services run from designated Manama hotel pick-up points directly to the circuit. Journey ~30–40 minutes. Highly recommended on race day.', badge: 'Recommended', badgeColor: 'var(--accent-teal)' },
+  { icon: '🚕', title: 'Taxi / Careem',         desc: 'Taxis and Careem (the regional Uber equivalent) are widely available in Manama. Pre-book for race day — demand surges after sessions. Wait times can exceed 45 minutes.' },
+  { icon: '🚗', title: 'Hire Car',              desc: 'Car hire is available at Bahrain International Airport. Road signage is good but race-day traffic is severe and circuit parking is very limited. Not recommended on race day.' },
+  { icon: '✈️', title: 'From the Airport',      desc: 'Bahrain International Airport is ~40 km from the circuit. Take a taxi to your Manama hotel first, then use the official shuttle to the circuit.' },
+];
 
 const SHANGHAI_TRANSPORT = [
   {
@@ -99,9 +107,10 @@ export default async function GettingTherePage({ params }: Props) {
 
   const isMelbourne = raceSlug === 'melbourne-2026';
   const isShanghai = raceSlug === 'shanghai-2026';
-  const transport = isMelbourne ? MELBOURNE_TRANSPORT : isShanghai ? SHANGHAI_TRANSPORT : [];
-  const mapsUrl = isShanghai ? SHANGHAI_MAPS_URL : isMelbourne ? MELBOURNE_MAPS_URL : null;
-  const tzLabel = isShanghai ? 'CST' : 'AEDT';
+  const isBahrain = raceSlug === 'bahrain-2026';
+  const transport = isMelbourne ? MELBOURNE_TRANSPORT : isShanghai ? SHANGHAI_TRANSPORT : isBahrain ? BAHRAIN_TRANSPORT : [];
+  const mapsUrl = isShanghai ? SHANGHAI_MAPS_URL : isMelbourne ? MELBOURNE_MAPS_URL : isBahrain ? BAHRAIN_MAPS_URL : null;
+  const tzLabel = isShanghai ? 'CST' : isBahrain ? 'AST' : 'AEDT';
 
   const howToSchema = isMelbourne ? {
     '@context': 'https://schema.org',
@@ -123,6 +132,16 @@ export default async function GettingTherePage({ params }: Props) {
       { '@type': 'HowToStep', name: 'Shuttle bus from Anting', text: 'Shuttle buses run from Anting Station to the circuit on event days.' },
       { '@type': 'HowToStep', name: 'DiDi or taxi', text: 'DiDi drop-off near circuit entrances. Expect surge pricing at session times.' },
       { '@type': 'HowToStep', name: 'Drive', text: 'Limited race-day parking. Metro is strongly recommended.' },
+    ],
+  } : isBahrain ? {
+    '@context': 'https://schema.org',
+    '@type': 'HowTo',
+    name: 'How to get to Bahrain International Circuit for Bahrain GP 2026',
+    description: 'Transport options for getting to the Bahrain International Circuit, Sakhir for the 2026 Formula 1 Gulf Air Bahrain Grand Prix.',
+    step: [
+      { '@type': 'HowToStep', name: 'Take the official shuttle bus', text: 'Board shuttle buses from designated Manama hotel pick-up points. Journey approximately 30–40 minutes.' },
+      { '@type': 'HowToStep', name: 'Book a Careem or taxi', text: 'Careem and taxis available from Manama. Pre-book ahead of race day to avoid surge delays.' },
+      { '@type': 'HowToStep', name: 'Use a hire car', text: 'Drive from your hotel. Road signs are clear but traffic is severe on race day — not recommended.' },
     ],
   } : null;
 
@@ -174,6 +193,14 @@ export default async function GettingTherePage({ params }: Props) {
                 45–60 minutes from Puxi or Pudong. DiDi is widely available for direct circuit drop-off.
               </p>
             )}
+            {isBahrain && (
+              <p className="text-[var(--text-secondary)] text-base leading-relaxed max-w-2xl mt-4">
+                The Bahrain International Circuit is located in Sakhir, approximately 30 km south of Manama city centre.
+                The fastest and most stress-free option on race day is the official shuttle bus from your hotel.
+                Journey time is approximately 30–40 minutes. Careem and taxis are available but expect high demand
+                after sessions end.
+              </p>
+            )}
           </div>
         </div>
 
@@ -185,8 +212,19 @@ export default async function GettingTherePage({ params }: Props) {
         {isShanghai && (
           <div className="mb-12 max-w-5xl mx-auto">
             <CircuitMap
-              src="/Shanghai_Circuit.avif"
+              src="/tracks/Shanghai_Circuit.avif"
               alt="Shanghai International Circuit — Track Map"
+              width={1252}
+              height={704}
+              className="rounded-xl overflow-hidden border border-[var(--border-subtle)]"
+            />
+          </div>
+        )}
+        {isBahrain && (
+          <div className="mb-12 max-w-5xl mx-auto">
+            <CircuitMap
+              src="/tracks/Bahrain_Circuit.avif"
+              alt="Bahrain International Circuit — Track Map"
               width={1252}
               height={704}
               className="rounded-xl overflow-hidden border border-[var(--border-subtle)]"

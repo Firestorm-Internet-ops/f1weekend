@@ -7,26 +7,28 @@ import { computeISODayDates, getUtcOffsetHours, getSessionStatus, getSessionProg
 // ─── Series config ───────────────────────────────────────────────
 
 const SERIES_CONFIG: Record<SeriesKey, { color: string; label: string; shortLabel: string }> = {
-  f1:          { color: '#E10600', label: 'Formula 1',               shortLabel: 'F1'       },
-  f2:          { color: '#FF6B35', label: 'FIA Formula 2',           shortLabel: 'F2'       },
-  f3:          { color: '#FFB800', label: 'FIA Formula 3',           shortLabel: 'F3'       },
-  supercars:   { color: '#6E6E82', label: 'Supercars Championship',  shortLabel: 'SC'       },
-  porsche:     { color: '#A855F7', label: 'Porsche Carrera Cup',     shortLabel: 'PCC'      },
-  press:       { color: '#00D2BE', label: 'Press Conference',        shortLabel: 'PRESS'    },
-  promoter:    { color: '#3B82F6', label: 'Promoter Activity',       shortLabel: 'EVENT'    },
-  experiences: { color: '#22C55E', label: 'F1 Experiences',          shortLabel: 'EXP'      },
+  f1:                { color: '#E10600', label: 'Formula 1',               shortLabel: 'F1'    },
+  f2:                { color: '#FF6B35', label: 'FIA Formula 2',           shortLabel: 'F2'    },
+  f3:                { color: '#FFB800', label: 'FIA Formula 3',           shortLabel: 'F3'    },
+  supercars:         { color: '#6E6E82', label: 'Supercars Championship',  shortLabel: 'SC'    },
+  porsche:           { color: '#A855F7', label: 'Porsche Carrera Cup',     shortLabel: 'PCC'   },
+  ferrari_challenge: { color: '#FF2800', label: 'Ferrari Challenge',       shortLabel: 'FC'    },
+  press:             { color: '#00D2BE', label: 'Press Conference',        shortLabel: 'PRESS' },
+  promoter:          { color: '#3B82F6', label: 'Promoter Activity',       shortLabel: 'EVENT' },
+  experiences:       { color: '#22C55E', label: 'F1 Experiences',          shortLabel: 'EXP'   },
 };
 
 const FILTER_CHIPS: { key: SeriesKey | 'all'; label: string }[] = [
-  { key: 'all',         label: 'All'       },
-  { key: 'f1',          label: '🔴 F1'     },
-  { key: 'f2',          label: 'F2'        },
-  { key: 'f3',          label: 'F3'        },
-  { key: 'supercars',   label: '🚗 SC'     },
-  { key: 'porsche',     label: 'PCC'       },
-  { key: 'press',       label: '📋 Press'  },
-  { key: 'promoter',    label: 'Events'    },
-  { key: 'experiences', label: '🎟 Exp'   },
+  { key: 'all',               label: 'All'       },
+  { key: 'f1',                label: '🔴 F1'     },
+  { key: 'f2',                label: 'F2'        },
+  { key: 'f3',                label: 'F3'        },
+  { key: 'supercars',         label: '🚗 SC'     },
+  { key: 'porsche',           label: 'PCC'       },
+  { key: 'ferrari_challenge', label: 'Ferrari'   },
+  { key: 'press',             label: '📋 Press'  },
+  { key: 'promoter',          label: 'Events'    },
+  { key: 'experiences',       label: '🎟 Exp'   },
 ];
 
 // ─── Types ───────────────────────────────────────────────────────

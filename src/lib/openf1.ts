@@ -12,8 +12,11 @@ export async function fetchOpenF1(endpoint: string, params: Record<string, strin
         const res = await fetch(url, { next: { revalidate: 604800 } }); // 1 week
 
         if (!res.ok) {
-            // Don't throw, just log and return null so the page can render without this data.
-            console.error(`OpenF1 API error for ${endpoint}: ${res.status} ${res.statusText}`);
+            // 404 = OpenF1 has no data for this query (expected for future/missing sessions).
+            // Only log unexpected server errors.
+            if (res.status !== 404) {
+                console.error(`OpenF1 API error for ${endpoint}: ${res.status} ${res.statusText}`);
+            }
             return null;
         }
 

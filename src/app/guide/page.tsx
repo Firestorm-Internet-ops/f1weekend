@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getActiveRaceSlug } from '@/lib/activeRace';
 
-export default function GuideRedirect() {
-  redirect(`/races/${getActiveRaceSlug()}/guide`);
+export default async function GuideRedirect() {
+  redirect(`/races/${await getActiveRaceSlug()}/guide`);
 }

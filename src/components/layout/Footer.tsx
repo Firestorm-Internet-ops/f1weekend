@@ -1,8 +1,6 @@
 import Link from 'next/link';
-import { getActiveRaceSlug } from '@/lib/activeRace';
 
 export default function Footer() {
-  const activeRaceSlug = getActiveRaceSlug();
   return (
     <footer className="border-t border-[var(--border-subtle)] mt-20 py-10">
       <div className="max-w-6xl mx-auto px-4 space-y-6">
@@ -28,15 +26,7 @@ export default function Footer() {
           <Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
         </nav>
 
-        {/* Row 3: Race nav links */}
-        <nav className="flex flex-wrap gap-x-6 gap-y-2 text-base text-[var(--text-secondary)]">
-          <Link href={`/races/${activeRaceSlug}/schedule`} className="hover:text-white transition-colors">Schedule</Link>
-          <Link href={`/races/${activeRaceSlug}/experiences`} className="hover:text-white transition-colors">Experiences</Link>
-          <Link href={`/races/${activeRaceSlug}/getting-there`} className="hover:text-white transition-colors">Getting There</Link>
-          <Link href={`/races/${activeRaceSlug}/tips`} className="hover:text-white transition-colors">Tips</Link>
-        </nav>
-
-        {/* Row 4: Legal */}
+        {/* Row 3: Legal */}
         <div className="flex flex-col sm:flex-row gap-2 text-base text-[var(--text-secondary)] pt-2 border-t border-[var(--border-subtle)]">
           <p>© 2026 Firestorm Internet. Affiliate links may earn a commission.</p>
         </div>

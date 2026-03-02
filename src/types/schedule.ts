@@ -4,6 +4,7 @@ export type SeriesKey =
   | 'f3'
   | 'supercars'
   | 'porsche'
+  | 'ferrari_challenge'
   | 'press'
   | 'promoter'
   | 'experiences';

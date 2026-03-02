@@ -15,9 +15,16 @@ function getSessionId(): string {
   return id;
 }
 
+function deriveLabel(experience: Pick<Experience, 'skipTheLine' | 'instantConfirmation' | 'reviewCount'>): string {
+  if (experience.skipTheLine) return 'Skip the Queue — Book Now →';
+  if (experience.instantConfirmation) return 'Book Instantly →';
+  if ((experience.reviewCount ?? 0) >= 500) return `Book · ${(experience.reviewCount ?? 0).toLocaleString()}+ Reviews →`;
+  return 'Book on GetYourGuide →';
+}
+
 interface Props {
-  experience: Pick<Experience, 'id' | 'affiliateUrl'>;
-  source?: 'feed' | 'itinerary' | 'featured';
+  experience: Pick<Experience, 'id' | 'affiliateUrl' | 'instantConfirmation' | 'skipTheLine' | 'reviewCount' | 'rating'>;
+  source?: 'feed' | 'itinerary' | 'featured' | 'map' | 'guide';
   className?: string;
   label?: string;
 }
@@ -26,9 +33,10 @@ export default function BookButton({
   experience,
   source = 'feed',
   className = '',
-  label = 'Book on GetYourGuide →',
+  label,
 }: Props) {
   const [loading, setLoading] = useState(false);
+  const displayLabel = label ?? deriveLabel(experience);
 
   const handleBook = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -58,7 +66,7 @@ export default function BookButton({
       disabled={loading}
       className={className || 'px-6 py-3 rounded-full font-medium bg-[var(--accent-red)] hover:bg-[var(--accent-red-hover)] text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed'}
     >
-      {loading ? 'Opening…' : label}
+      {loading ? 'Opening…' : displayLabel}
     </button>
   );
 }

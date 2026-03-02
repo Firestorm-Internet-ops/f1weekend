@@ -1,10 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getRaceBySlug } from '@/services/race.service';
+import { getRaceBySlug, getRaceContent } from '@/services/race.service';
 import CircuitMap from '@/components/race/CircuitMap';
 import DataInsights from '@/components/DataInsights';
-import { RACE_CONTENT } from '@/data/race-content';
 
 interface Props {
   params: Promise<{ raceSlug: string }>;
@@ -12,9 +11,11 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { raceSlug } = await params;
-  const race = await getRaceBySlug(raceSlug);
+  const [race, raceContent] = await Promise.all([
+    getRaceBySlug(raceSlug),
+    getRaceContent(raceSlug),
+  ]);
   if (!race) return {};
-  const raceContent = RACE_CONTENT[raceSlug];
   return {
     title: raceContent?.pageTitle ?? `${race.name} Travel Guide | F1 Weekend`,
     description: raceContent?.pageDescription ?? `Your complete travel companion for the ${race.name} at ${race.circuitName}, ${race.city}. Schedule, experiences, and transport guide.`,
@@ -32,11 +33,13 @@ const NAV_ITEMS: { href: string; label: string; icon: string; desc: string }[] =
 
 export default async function RaceLandingPage({ params }: Props) {
   const { raceSlug } = await params;
-  const race = await getRaceBySlug(raceSlug);
+  const [race, raceContent] = await Promise.all([
+    getRaceBySlug(raceSlug),
+    getRaceContent(raceSlug),
+  ]);
   if (!race) notFound();
 
   // Compute first–last day dates from raceDate (Sunday = race day)
-  const raceContent = RACE_CONTENT[raceSlug];
   const raceDay = new Date(race.raceDate + 'T00:00:00Z');
   const firstDayOffset = raceContent?.firstDayOffset ?? -2;
   const firstDate = new Date(raceDay);
@@ -76,7 +79,7 @@ export default async function RaceLandingPage({ params }: Props) {
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {NAV_ITEMS.filter(item => item.href !== 'tips' || !!raceContent?.tips).map(({ href, label, icon, desc }) => (
+          {NAV_ITEMS.filter(item => item.href !== 'tips' || !!raceContent?.tipsContent).map(({ href, label, icon, desc }) => (
             <Link
               key={href}
               href={`/races/${raceSlug}/${href}`}

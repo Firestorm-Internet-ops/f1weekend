@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  transpilePackages: ['@pitlane/gyg'],
   reactCompiler: true,
   compress: true,
   images: {

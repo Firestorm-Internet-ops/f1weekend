@@ -2,8 +2,36 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Breadcrumb from '@/components/Breadcrumb';
-import { getRaceBySlug } from '@/services/race.service';
-import { RACE_CONTENT } from '@/data/race-content';
+import RaceSwitcher from '@/components/race/RaceSwitcher';
+import { getRaceBySlug, getRaceContent } from '@/services/race.service';
+
+// Inline TipsContent type (was previously in src/data/race-content.ts)
+interface TipsContent {
+  meta: {
+    title: string;
+    description: string;
+    keywords: string[];
+  };
+  heroSubtitle: string;
+  categories: Array<{
+    title: string;
+    color: string;
+    description: string;
+    linkHref: string;
+    linkLabel: string;
+  }>;
+  travelTips: Array<{
+    heading: string;
+    body: string;
+  }>;
+  gettingThere: {
+    heading: string;
+    intro: string;
+    options: Array<{ icon: string; title: string; desc: string }>;
+    fullGuideHref: string;
+  };
+  faq: Array<{ q: string; a: string }>;
+}
 
 export const revalidate = 604800; // 1 week
 
@@ -13,7 +41,8 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { raceSlug } = await params;
-  const tipsContent = RACE_CONTENT[raceSlug]?.tips;
+  const raceContentRow = await getRaceContent(raceSlug);
+  const tipsContent = raceContentRow?.tipsContent as TipsContent | null | undefined;
   if (!tipsContent) return {};
   const canonical = `https://f1weekend.co/races/${raceSlug}/tips`;
   return {
@@ -32,10 +61,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function TipsPage({ params }: Props) {
   const { raceSlug } = await params;
-  const tipsContent = RACE_CONTENT[raceSlug]?.tips;
+  const [raceContentRow, race] = await Promise.all([
+    getRaceContent(raceSlug),
+    getRaceBySlug(raceSlug),
+  ]);
+  const tipsContent = raceContentRow?.tipsContent as TipsContent | null | undefined;
   if (!tipsContent) notFound();
-
-  const race = await getRaceBySlug(raceSlug);
   if (!race) notFound();
 
   const faqLd = {
@@ -69,6 +100,8 @@ export default async function TipsPage({ params }: Props) {
           { label: race.name, href: `/races/${raceSlug}` },
           { label: 'Tips & FAQ' },
         ]} />
+
+        <RaceSwitcher raceSlug={raceSlug} pageType="tips" />
 
         <p className="text-xs font-medium uppercase-label text-[var(--accent-red)] mb-2 tracking-widest">
           Round {race.round} · {race.season} Season
