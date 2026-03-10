@@ -1,5 +1,9 @@
 export type SeriesKey =
   | 'f1'
+  | 'f1-academy'
+  | 'porsche-cup'
+  | 'sro-gt'
+  | 'f1-exp'
   | 'f2'
   | 'f3'
   | 'supercars'
