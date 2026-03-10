@@ -4,6 +4,7 @@ import "./globals.css";
 import Nav from "@/components/layout/Nav";
 import Footer from "@/components/layout/Footer";
 import { getActiveRaceSlug } from "@/lib/activeRace";
+import { getRacesWithExperiences } from "@/services/race.service";
 import { Analytics } from "@vercel/analytics/react";
 import Script from "next/script";
 
@@ -65,6 +66,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const activeRaceSlug = await getActiveRaceSlug();
+  const races = await getRacesWithExperiences();
   return (
     <html lang="en">
       <head>
@@ -95,7 +97,7 @@ export default async function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
         />
-        <Nav defaultRaceSlug={activeRaceSlug} />
+        <Nav defaultRaceSlug={activeRaceSlug} races={races} />
         <main>{children}</main>
         <Footer />
         <Analytics />

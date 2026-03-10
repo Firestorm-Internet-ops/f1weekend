@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getItinerary } from '@/services/itinerary.service';
-import { getRaceBySlug } from '@/services/race.service';
+import { getRaceBySlug, getRaceById, getActiveRace } from '@/services/race.service';
 import { getExperiencesByRace } from '@/services/experience.service';
 import ItineraryView from '@/components/itinerary/ItineraryView';
 
@@ -16,8 +16,11 @@ export async function generateMetadata({ params }: Props) {
   const itinerary = await getItinerary(id);
   if (!itinerary) return { title: 'Itinerary | F1 Weekend' };
 
+  const race = itinerary.raceId ? await getRaceById(itinerary.raceId) : await getActiveRace();
+  const raceName = race?.name ?? '2026 Australian Grand Prix';
+
   const description = itinerary.summary
-    ?? `Custom F1 race weekend itinerary for the 2026 Australian Grand Prix — ${itinerary.title}.`;
+    ?? `Custom F1 race weekend itinerary for the ${raceName} — ${itinerary.title}.`;
 
   return {
     title: itinerary.title,
@@ -43,7 +46,7 @@ export default async function ItineraryDetailPage({ params }: Props) {
 
   if (!itinerary) notFound();
 
-  const race = await getRaceBySlug('melbourne-2026');
+  const race = itinerary.raceId ? await getRaceById(itinerary.raceId) : await getActiveRace();
   const experiences = race ? await getExperiencesByRace(race.id) : [];
 
   return (

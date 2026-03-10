@@ -1,5 +1,24 @@
 import { nanoid } from 'nanoid';
 import { fromZonedTime, toZonedTime, format as formatTz } from 'date-fns-tz';
+import { subDays, format as formatDateFns } from 'date-fns';
+
+/**
+ * Format race dates: "2026-03-08" → "Mar 5–8"
+ */
+export function formatRaceDates(raceDate: string | Date, hasThursday = false): string {
+  const end = typeof raceDate === 'string' ? new Date(`${raceDate}T00:00:00`) : raceDate;
+  const start = subDays(end, hasThursday ? 3 : 2);
+
+  const startMonth = formatDateFns(start, 'MMM');
+  const endMonth = formatDateFns(end, 'MMM');
+  const startDay = formatDateFns(start, 'd');
+  const endDay = formatDateFns(end, 'd');
+
+  if (startMonth === endMonth) {
+    return `${startMonth} ${startDay}–${endDay}`;
+  }
+  return `${startMonth} ${startDay} – ${endMonth} ${endDay}`;
+}
 
 /** Format lap/sector time in seconds to "M:SS.mmm" (e.g. 83.456 → "1:23.456") */
 export function formatLapTime(seconds: number): string {

@@ -13,6 +13,8 @@ const DB_PASS = process.env.DATABASE_PASSWORD ?? '';
 const DB_NAME = process.env.DATABASE_NAME ?? 'pitlane';
 const GYG_API_KEY = process.env.GYG_API_KEY ?? '';
 const GYG_BASE = 'https://api.getyourguide.com/1';
+const raceArg = process.argv.find((_, i) => process.argv[i - 1] === '--race');
+const RACE_SLUG = raceArg ?? null;
 
 // GYG format_id 97 = 1024×500 wide landscape (ideal hero banner)
 const PHOTO_FORMAT = '97';
@@ -200,6 +202,11 @@ async function main() {
   });
 
   console.log(`[enrich] Connected to ${DB_HOST}:${DB_PORT}/${DB_NAME}`);
+  if (RACE_SLUG) {
+    console.log(`[enrich] Race filter: ${RACE_SLUG}`);
+  } else {
+    console.log('[enrich] Race filter: none (all races)');
+  }
 
   type ExperienceRow = {
     id: number;
@@ -210,11 +217,19 @@ async function main() {
     image_url: string | null;
   };
 
+  const where = RACE_SLUG
+    ? `WHERE affiliate_product_id IS NOT NULL
+         AND affiliate_product_id != ''
+         AND race_id = (SELECT id FROM races WHERE slug = ?)`
+    : `WHERE affiliate_product_id IS NOT NULL
+         AND affiliate_product_id != ''`;
+
   const [rows] = await conn.execute<mysql.RowDataPacket[]>(
     `SELECT id, title, duration_label, category, affiliate_product_id, image_url, abstract
      FROM experiences
-     WHERE affiliate_product_id IS NOT NULL AND affiliate_product_id != ''
-     ORDER BY sort_order ASC`
+     ${where}
+     ORDER BY sort_order ASC`,
+    RACE_SLUG ? [RACE_SLUG] : []
   );
 
   const experiences = rows as ExperienceRow[];

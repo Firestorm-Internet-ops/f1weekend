@@ -2,8 +2,12 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getRaceBySlug, getRaceContent } from '@/services/race.service';
+import { getExperiencesByWindow } from '@/services/experience.service';
 import CircuitMap from '@/components/race/CircuitMap';
 import DataInsights from '@/components/DataInsights';
+import Breadcrumb from '@/components/Breadcrumb';
+import RaceSwitcher from '@/components/race/RaceSwitcher';
+import { getAvailableRaces } from '@/services/race.service';
 
 interface Props {
   params: Promise<{ raceSlug: string }>;
@@ -33,11 +37,15 @@ const NAV_ITEMS: { href: string; label: string; icon: string; desc: string }[] =
 
 export default async function RaceLandingPage({ params }: Props) {
   const { raceSlug } = await params;
-  const [race, raceContent] = await Promise.all([
+  const [race, raceContent, availableRaces] = await Promise.all([
     getRaceBySlug(raceSlug),
     getRaceContent(raceSlug),
+    getAvailableRaces(),
   ]);
   if (!race) notFound();
+
+  // Fetch Thursday experiences if they exist
+  const thursdayExperiences = await getExperiencesByWindow('thursday', race.id);
 
   // Compute first–last day dates from raceDate (Sunday = race day)
   const raceDay = new Date(race.raceDate + 'T00:00:00Z');
@@ -58,16 +66,26 @@ export default async function RaceLandingPage({ params }: Props) {
     ],
   };
 
-  const isMelbourne = raceSlug === 'melbourne-2026';
+  const hasThursdayFreeDay = raceContent?.hasThursdayFreeDay ?? false;
 
   return (
     <div className="min-h-screen pt-24 pb-24 px-4">
       {faqLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }} />}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
       <div className="max-w-3xl mx-auto">
-        <p className="text-xs font-medium uppercase-label text-[var(--accent-red)] mb-2">
+        <Breadcrumb items={[
+          { label: 'Home', href: '/' },
+          { label: race.name },
+        ]} />
+        
+        <p className="text-xs font-medium uppercase-label text-[var(--accent-red)] mb-2 mt-6">
           Round {race.round} · {race.season}
         </p>
+        
+        <div className="mb-4">
+          <RaceSwitcher currentRace={race} availableRaces={availableRaces} pageType="schedule" />
+        </div>
+
         <h1 className="font-display font-black text-4xl sm:text-5xl text-white uppercase-heading leading-none mb-3">
           {race.name}
         </h1>
@@ -119,12 +137,19 @@ export default async function RaceLandingPage({ params }: Props) {
                 className="rounded-xl overflow-hidden border border-[var(--border-subtle)] mb-6"
               />
             )}
+            
+            {/* Quick Facts Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
                 { label: 'Round', value: `${race.round} of 24` },
                 { label: 'Dates', value: `${firstDateStr}–${sunStr}` },
                 { label: 'Circuit', value: race.circuitName },
                 { label: 'City', value: `${race.city}, ${race.countryCode}` },
+                // Extra facts from metaJson
+                ...Object.entries((raceContent.metaJson?.circuit_facts as Record<string, string>) || {}).map(([label, value]) => ({
+                  label,
+                  value
+                }))
               ].map(({ label, value }) => (
                 <div key={label} className="p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
                   <p className="text-xs font-medium uppercase-label text-[var(--text-secondary)] mb-1">{label}</p>
@@ -135,45 +160,44 @@ export default async function RaceLandingPage({ params }: Props) {
           </section>
         )}
 
-        {/* Race Weekend Format — Melbourne only */}
-        {isMelbourne && (
+        {/* Race Weekend Format — if has Thursday free day */}
+        {hasThursdayFreeDay && (
           <section className="mt-12 pt-8 border-t border-[var(--border-subtle)]">
             <h2 className="font-display font-bold text-2xl text-white uppercase-heading mb-4">
               Race Weekend Format
             </h2>
             <p className="text-[var(--text-secondary)] text-base leading-relaxed mb-6">
-              The 2026 Australian Grand Prix follows the Sprint weekend format, compressing qualifying,
-              a Sprint shootout, and a Sprint race into Saturday alongside the main qualifying session.
+              The {race.season} {race.name} runs across four days. 
               Here is how the four days break down, and where the gaps fall.
             </p>
             <div className="space-y-4">
               {[
                 {
-                  day: 'Thursday, March 5',
+                  day: 'Thursday',
                   badge: 'FREE DAY',
                   badgeColor: 'var(--accent-teal)',
-                  desc: 'Fan activations at the circuit and Central Business District. No competitive sessions. Best day for a full Great Ocean Road trip or Yarra Valley wine tour. Gates open but no timing pressure.',
+                  desc: `Fan activations at the circuit and ${race.city} city centre. No competitive sessions. Best day for full-day excursions or local tours. Gates open but no timing pressure.`,
                   gap: 'All day — 10+ hours available',
                 },
                 {
-                  day: 'Friday, March 6',
-                  badge: 'FP1 + FP2',
+                  day: 'Friday',
+                  badge: 'PRACTICE',
                   badgeColor: 'var(--accent-red)',
-                  desc: 'FP1 at 11:30 AEDT (gates open ~09:30). FP2 in the afternoon. Morning gap of 3.5 hours before gates open — ideal for a laneway food tour. Evening gap of 4+ hours after FP2 for dinner.',
-                  gap: 'Morning: 3.5 hrs · Evening: 4+ hrs',
+                  desc: 'Typically two practice sessions. Morning gap before gates open and evening gap after sessions end for dining and nightlife.',
+                  gap: 'Morning: 3+ hrs · Evening: 4+ hrs',
                 },
                 {
-                  day: 'Saturday, March 7',
-                  badge: 'SPRINT + QUALI',
+                  day: 'Saturday',
+                  badge: 'QUALI / SPRINT',
                   badgeColor: 'var(--accent-red)',
-                  desc: 'Sprint Shootout in the morning, F1 Sprint in the afternoon, main Qualifying in the evening. Gaps are shorter — ideal for quick St Kilda foreshore walks or nearby café visits.',
-                  gap: 'Morning: 2.5 hrs · Between sessions: 1.5 hrs',
+                  desc: 'Qualifying or Sprint sessions. Gaps are typically shorter between high-stakes sessions.',
+                  gap: 'Morning: 2+ hrs · Between sessions: 1–2 hrs',
                 },
                 {
-                  day: 'Sunday, March 8',
+                  day: 'Sunday',
                   badge: 'RACE DAY',
                   badgeColor: 'var(--accent-red)',
-                  desc: 'Race start at 15:00 AEDT. Morning free until ~11:00 when gates open — 3+ hours for the South Melbourne Market, St Kilda beach, or a relaxed Central Business District brunch before the main event.',
+                  desc: 'Main race start. Morning typically free until gates open — ideal for a relaxed city brunch or market visit.',
                   gap: 'Morning: 3+ hrs before gates open',
                 },
               ].map(({ day, badge, badgeColor, desc, gap }) => (
@@ -195,57 +219,43 @@ export default async function RaceLandingPage({ params }: Props) {
           </section>
         )}
 
-        {/* Thursday Free Day — Melbourne only */}
-        {isMelbourne && (
+        {/* Thursday Free Day — if has Thursday free day */}
+        {hasThursdayFreeDay && (
           <section id="thursday" className="mt-12 pt-8 border-t border-[var(--border-subtle)]">
             <h2 className="font-display font-bold text-2xl text-white uppercase-heading mb-4">
-              Thursday March 5 — Your Free Day
+              Thursday — Your Free Day
             </h2>
             <p className="text-[var(--text-secondary)] text-base leading-relaxed mb-6">
-              Thursday is the only day with no competitive sessions on track. If you hold a 4-day or
-              Thursday pass, this is your day to explore. Use it for experiences that need a full day
-              — the Great Ocean Road, Yarra Valley, or an early hot air balloon flight before Friday.
+              Thursday is typically the only day with no competitive sessions on track. If you hold a 4-day or
+              Thursday pass, this is your day to explore. Use it for experiences that need a full day.
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-              <div className="p-5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
-                <p className="text-xs font-medium uppercase-label text-[var(--accent-teal)] mb-2">FULL DAY · 10 HRS</p>
-                <p className="font-display font-bold text-white mb-2">Great Ocean Road</p>
-                <p className="text-xs text-[var(--text-secondary)] mb-4">
-                  12 Apostles, rainforest gorges, Lorne — the definitive Melbourne day trip.
-                  Departs ~07:30, returns ~19:30. From A$115.
-                </p>
-                <Link href="/races/melbourne-2026/experiences/great-ocean-road-day-trip" className="text-xs font-medium text-[var(--accent-teal)] hover:text-white transition-colors">
-                  See experience →
-                </Link>
+            {thursdayExperiences.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                {thursdayExperiences.slice(0, 3).map((exp) => (
+                  <div key={exp.id} className="p-5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
+                    <p className="text-xs font-medium uppercase-label text-[var(--accent-teal)] mb-2">
+                      {exp.durationLabel}
+                    </p>
+                    <p className="font-display font-bold text-white mb-2">{exp.title}</p>
+                    <p className="text-xs text-[var(--text-secondary)] mb-4 line-clamp-3">
+                      {exp.abstract ?? exp.shortDescription}
+                    </p>
+                    <Link href={`/races/${raceSlug}/experiences/${exp.slug}`} className="text-xs font-medium text-[var(--accent-teal)] hover:text-white transition-colors">
+                      See experience →
+                    </Link>
+                  </div>
+                ))}
               </div>
-              <div className="p-5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
-                <p className="text-xs font-medium uppercase-label text-[var(--accent-red)] mb-2">MORNING · 3–4 HRS</p>
-                <p className="font-display font-bold text-white mb-2">Hot Air Balloon</p>
-                <p className="text-xs text-[var(--text-secondary)] mb-4">
-                  Dawn flight over the Yarra Valley — a unique perspective on Victoria.
-                  Departs at sunrise (~05:30), returns by 09:30. From A$365.
-                </p>
-                <Link href="/races/melbourne-2026/experiences/hot-air-balloon-yarra-valley" className="text-xs font-medium text-[var(--accent-teal)] hover:text-white transition-colors">
-                  See experience →
-                </Link>
-              </div>
-              <div className="p-5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
-                <p className="text-xs font-medium uppercase-label mb-2" style={{ color: '#E67E22' }}>HALF DAY · 3 HRS</p>
-                <p className="font-display font-bold text-white mb-2">Melbourne Laneways Food Tour</p>
-                <p className="text-xs text-[var(--text-secondary)] mb-4">
-                  10 tastings across the CBD laneways — espresso, dumplings, baklava, craft beer.
-                  Perfect Thursday introduction to Melbourne. From A$99.
-                </p>
-                <Link href="/races/melbourne-2026/experiences/melbourne-laneways-food-tour" className="text-xs font-medium text-[var(--accent-teal)] hover:text-white transition-colors">
-                  See experience →
-                </Link>
-              </div>
-            </div>
+            ) : (
+              <p className="text-sm text-[var(--text-secondary)] italic mb-6">
+                Full-day experiences for Thursday will be available here soon.
+              </p>
+            )}
             <Link
-              href="/races/melbourne-2026/experiences?category=daytrip"
+              href={`/races/${raceSlug}/experiences?window=thursday`}
               className="inline-block text-sm font-medium text-[var(--accent-teal)] hover:text-white transition-colors"
             >
-              Browse all Thursday day trips →
+              Browse all Thursday options →
             </Link>
           </section>
         )}

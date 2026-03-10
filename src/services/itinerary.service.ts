@@ -146,7 +146,7 @@ export async function buildManualItinerary(input: ManualItineraryInput): Promise
 
     const id = generateId();
     const title = `${race.city} ${race.season} — ${input.arrivalDay} to ${input.departureDay}`;
-    const itinerary: Itinerary = { id, title, days };
+    const itinerary: Itinerary = { id, title, days, raceId: race.id };
 
     await db.insert(itineraries).values({
         id,
@@ -178,5 +178,7 @@ export async function getItinerary(id: string): Promise<Itinerary | null> {
         .where(eq(itineraries.id, id))
         .catch(() => {});
 
-    return result[0].itinerary_json as Itinerary;
+    const itinerary = result[0].itinerary_json as Itinerary;
+    if (result[0].race_id) itinerary.raceId = result[0].race_id;
+    return itinerary;
 }

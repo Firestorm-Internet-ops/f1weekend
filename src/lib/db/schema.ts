@@ -14,6 +14,9 @@ export const races = mysqlTable("races", {
     circuit_lng: decimal("circuit_lng", { precision: 10, scale: 6 }),
     timezone: varchar("timezone", { length: 50 }),
     race_date: date("race_date"),
+    flag: varchar("flag", { length: 10 }),
+    short_code: char("short_code", { length: 3 }),
+    available: boolean("available").default(false),
     created_at: timestamp("created_at").defaultNow(),
 });
 
@@ -158,7 +161,7 @@ export const schedule_entries = mysqlTable("schedule_entries", {
 
 export const race_content = mysqlTable('race_content', {
     id:               int('id').primaryKey().autoincrement(),
-    race_id:          int('race_id').notNull(),
+    race_id:          int('race_id').notNull().unique().references(() => races.id),
     page_title:       varchar('page_title', { length: 255 }),
     page_description: text('page_description'),
     page_keywords:    json('page_keywords').$type<string[]>(),
@@ -172,5 +175,18 @@ export const race_content = mysqlTable('race_content', {
     currency:         varchar('currency', { length: 10 }),
     open_f1:          json('open_f1'),
     first_day_offset: int('first_day_offset'),
+    has_thursday_free_day: boolean("has_thursday_free_day").default(false),
+    homepage_intro:   text('homepage_intro'),
+    category_meta:    json('category_meta'),
+    transport_guide:  json('transport_guide'),
+    schedule_intro:   text('schedule_intro'),
+    session_gap_copy: json('session_gap_copy'),
+    homepage_copy:    json('homepage_copy').$type<{
+        heroHeading: string;
+        heroSubtitle: string;
+        featuredHeading: string;
+        featuredDescription: string;
+        windowsDescription: string;
+    }>(),
     created_at:       timestamp('created_at').defaultNow(),
 });

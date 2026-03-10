@@ -12,6 +12,10 @@ export interface Race {
     circuitLng: number
     timezone: string
     raceDate: string
+    flag?: string
+    shortCode?: string
+    available?: boolean
+    hasThursdayFreeDay?: boolean
 }
 
 export interface Session {

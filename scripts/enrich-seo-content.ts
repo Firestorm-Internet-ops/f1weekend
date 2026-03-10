@@ -87,7 +87,11 @@ interface RaceMeta {
 }
 
 function buildSystemPrompt(race: RaceMeta): string {
-  const raceDay = new Date(race.race_date + 'T00:00:00Z');
+  const raceDateRaw = race.race_date instanceof Date
+    ? race.race_date.toISOString().slice(0, 10)
+    : String(race.race_date);
+  const raceDateOnly = raceDateRaw.includes('T') ? raceDateRaw.slice(0, 10) : raceDateRaw;
+  const raceDay = new Date(`${raceDateOnly}T00:00:00Z`);
   const sunStr = raceDay.toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
   return `You are an SEO specialist for F1 Weekend, an F1 travel companion app for the ${race.name} (${race.city}, ${race.circuit_name}, ending ${sunStr}). Audience: F1 fans planning activities around race sessions. Return ONLY valid JSON, no markdown fences.`;
 }
@@ -251,23 +255,32 @@ async function main() {
       console.warn(`  ⚠ abstract length ${abstractLen} chars (target 140–160)`);
     }
 
+    const abstract = typeof content.abstract === 'string' ? content.abstract.trim() : null;
+    const f1Context = typeof content.f1_context === 'string' ? content.f1_context.trim() : null;
+    const seoKeywords = Array.isArray(content.seo_keywords)
+      ? content.seo_keywords.filter((k): k is string => typeof k === 'string' && k.trim().length > 0)
+      : [];
+    const windowsLabel = typeof content.f1_windows_label === 'string' && content.f1_windows_label.trim().length > 0
+      ? content.f1_windows_label.trim()
+      : (windowLabels.length > 0 ? windowLabels.join(' · ') : null);
+
     await conn.execute(
       `UPDATE experiences
        SET abstract = ?, f1_context = ?, seo_keywords = ?, f1_windows_label = ?
        WHERE id = ?`,
       [
-        content.abstract,
-        content.f1_context,
-        JSON.stringify(content.seo_keywords),
-        content.f1_windows_label,
+        abstract,
+        f1Context,
+        JSON.stringify(seoKeywords),
+        windowsLabel,
         exp.id,
       ],
     );
 
     processed++;
     console.log(
-      `  ✓ abstract:${abstractLen}ch | f1_context:${content.f1_context?.length ?? 0}ch` +
-      ` | keywords:${content.seo_keywords?.length ?? 0} | label:"${content.f1_windows_label}"\n`,
+      `  ✓ abstract:${abstractLen}ch | f1_context:${f1Context?.length ?? 0}ch` +
+      ` | keywords:${seoKeywords.length} | label:"${windowsLabel ?? ''}"\n`,
     );
 
     await delay(500);

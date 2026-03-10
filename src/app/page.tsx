@@ -1,53 +1,69 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { getRaceBySlug, getSessionsByRace, getWindowsByRace, getRaceContent } from '@/services/race.service';
+import { getRaceBySlug, getSessionsByRace, getWindowsByRace, getRaceContent, getAvailableRaces } from '@/services/race.service';
 import { CATEGORY_COLORS } from '@/lib/constants/categories';
-import { getExperiencesByWindow, getFeaturedExperiences } from '@/services/experience.service';
+import { getExperiencesByWindow, getFeaturedExperiences, getMostPopularExperiences, getTopRatedExperiences } from '@/services/experience.service';
 import RaceSchedule from '@/components/race/RaceSchedule';
 import RaceCountdown from '@/components/race/RaceCountdown';
 import CircuitMap from '@/components/race/CircuitMap';
 import { getActiveRaceSlug } from '@/lib/activeRace';
+import { formatRaceDates } from '@/lib/utils';
+import BookButton from '@/components/experiences/BookButton';
+import type { Experience } from '@/types/experience';
+import HomepageExploreSection, { type ExploreDayData } from '@/components/homepage/HomepageExploreSection';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata: Metadata = {
-  title: 'F1 Weekend — Race Weekend Travel Companion | Experiences, Schedule & Itinerary',
-  description:
-    'The smartest way to experience a Formula 1 race weekend. Curated local experiences matched to your session gaps, AI itinerary builder, circuit guides, and insider tips for every F1 race city.',
-  alternates: { canonical: 'https://f1weekend.co' },
-  keywords: [
-    'F1 travel guide',
-    'Formula 1 race weekend experiences',
-    'F1 weekend itinerary',
-    'things to do at F1 race',
-    'F1 race city guide',
-    'Formula 1 travel companion',
-    'F1 session gap activities',
-    'Grand Prix travel',
-  ],
-  openGraph: {
-    title: 'F1 Weekend — Race Weekend Travel Companion',
-    description:
-      'Curated local experiences matched to your F1 session gaps. Plan your perfect race weekend in 60 seconds.',
-    url: 'https://f1weekend.co',
-    type: 'website',
-    images: [
-      {
-        url: 'https://f1weekend.co/og/home.png',
-        width: 1200,
-        height: 630,
-        alt: 'F1 Weekend — Race Weekend Travel Companion',
-      },
+export async function generateMetadata(): Promise<Metadata> {
+  const activeRaceSlug = await getActiveRaceSlug();
+  const [race, raceContent] = await Promise.all([
+    getRaceBySlug(activeRaceSlug),
+    getRaceContent(activeRaceSlug),
+  ]);
+
+  if (!race) {
+    return {
+      title: 'F1 Weekend — Race Weekend Travel Companion',
+      description: 'The smartest way to experience a Formula 1 race weekend.',
+    };
+  }
+
+  const title = raceContent?.pageTitle ?? `${race.city} F1 Weekend Guide — ${race.name} ${race.season} | F1 Weekend`;
+  const description = raceContent?.pageDescription ?? `Plan your perfect ${race.name} weekend in ${race.city}. Curated experiences matched to session gaps, full schedule, and transport guide.`;
+
+  return {
+    title,
+    description,
+    alternates: { canonical: 'https://f1weekend.co' },
+    keywords: [
+      `${race.city} F1 guide`,
+      `${race.name} experiences`,
+      'F1 session gap activities',
+      ...(raceContent?.pageKeywords ?? []),
     ],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'F1 Weekend — Race Weekend Travel Companion',
-    description:
-      'Curated local experiences matched to your F1 session gaps. Plan your perfect race weekend in 60 seconds.',
-    images: ['https://f1weekend.co/og/home.png'],
-  },
-};
+    openGraph: {
+      title,
+      description,
+      url: 'https://f1weekend.co',
+      siteName: 'F1 Weekend',
+      type: 'website',
+      images: [
+        {
+          url: 'https://f1weekend.co/og/home.png',
+          width: 1200,
+          height: 630,
+          alt: `${race.city} F1 Weekend Companion`,
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: ['https://f1weekend.co/og/home.png'],
+    },
+  };
+}
 
 const homepageBreadcrumbLd: object = {
   '@context': 'https://schema.org',
@@ -56,7 +72,6 @@ const homepageBreadcrumbLd: object = {
     { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://f1weekend.co' },
   ],
 };
-
 
 // Compute UTC offset string for a given IANA timezone on a given date.
 function getTzOffsetStr(ianaTimezone: string, dateStr: string): string {
@@ -78,11 +93,49 @@ function getTzOffsetStr(ianaTimezone: string, dateStr: string): string {
   }
 }
 
+function FeaturedCard({ exp, badge, activeRaceSlug }: { exp: Experience, badge?: string, activeRaceSlug: string }) {
+  const color = CATEGORY_COLORS[exp.category] ?? '#6E6E82';
+  return (
+    <Link
+      href={`/races/${activeRaceSlug}/experiences/${exp.slug}`}
+      className="group shrink-0 w-56 lg:w-auto p-5 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)] hover:border-[var(--accent-teal)]/50 transition-all flex flex-col"
+    >
+      {badge && (
+        <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider w-fit mb-3 ${
+          badge === 'Most Popular' ? 'bg-[var(--accent-red)] text-white' :
+          badge === 'Top Rated' ? 'bg-[var(--accent-teal)]/20 text-[var(--accent-teal)]' :
+          'bg-[var(--accent-red)]/20 text-[var(--accent-red)]'
+        }`}>
+          {badge}
+        </span>
+      )}
+      <span className="text-3xl mb-3">{exp.imageEmoji}</span>
+      <h3 className="font-display font-bold text-white group-hover:text-[var(--accent-teal)] transition-colors mb-2 line-clamp-2 min-h-[2.5rem]">
+        {exp.title}
+      </h3>
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-yellow-400 text-xs">★</span>
+        <span className="text-xs font-medium text-white">{exp.rating.toFixed(1)}</span>
+        <span className="text-[var(--text-secondary)] text-xs">({exp.reviewCount.toLocaleString()})</span>
+      </div>
+      <div className="mt-auto pt-3 space-y-1">
+        <p className="text-xs font-bold uppercase tracking-wider" style={{ color }}>
+          {exp.category}
+        </p>
+        <p className="text-xs text-[var(--text-secondary)] mono-data">
+          {exp.durationLabel} · {exp.priceLabel}
+        </p>
+      </div>
+    </Link>
+  );
+}
+
 export default async function HomePage() {
   const activeRaceSlug = await getActiveRaceSlug();
-  const [raceContent, race] = await Promise.all([
+  const [raceContent, race, availableRaces] = await Promise.all([
     getRaceContent(activeRaceSlug),
     getRaceBySlug(activeRaceSlug),
+    getAvailableRaces(),
   ]);
 
   if (!race) {
@@ -93,11 +146,42 @@ export default async function HomePage() {
     );
   }
 
-  const [sessions, windows, featuredExps] = await Promise.all([
+  const [sessions, windows, featuredExps, popularExps, topRatedExps] = await Promise.all([
     getSessionsByRace(race.id),
     getWindowsByRace(race.id),
     getFeaturedExperiences(race.id),
+    getMostPopularExperiences(race.id, 5), // Fetch more to allow for dedup
+    getTopRatedExperiences(race.id, 5),    // Fetch more to allow for dedup
   ]);
+
+  // Deduplication logic
+  const seenIds = new Set<number>();
+  const dedupedPopular: Experience[] = [];
+  for (const exp of popularExps) {
+    if (dedupedPopular.length >= 2) break;
+    if (!seenIds.has(exp.id)) {
+      seenIds.add(exp.id);
+      dedupedPopular.push(exp);
+    }
+  }
+
+  const dedupedFeatured: Experience[] = [];
+  for (const exp of featuredExps) {
+    if (dedupedFeatured.length >= 1) break;
+    if (!seenIds.has(exp.id)) {
+      seenIds.add(exp.id);
+      dedupedFeatured.push(exp);
+    }
+  }
+
+  const dedupedTopRated: Experience[] = [];
+  for (const exp of topRatedExps) {
+    if (dedupedTopRated.length >= 2) break;
+    if (!seenIds.has(exp.id)) {
+      seenIds.add(exp.id);
+      dedupedTopRated.push(exp);
+    }
+  }
 
   const windowData = await Promise.all(
     windows.map(async (w) => {
@@ -105,7 +189,14 @@ export default async function HomePage() {
       return {
         slug: w.slug,
         count: exps.length,
+        label: w.label,
+        dayOfWeek: w.dayOfWeek,
+        startTime: w.startTime,
+        endTime: w.endTime,
+        maxDurationHours: w.maxDurationHours,
         experiences: exps.slice(0, 4).map((e) => ({
+          id: e.id,
+          slug: e.slug,
           title: e.title,
           imageEmoji: e.imageEmoji,
           durationLabel: e.durationLabel,
@@ -115,51 +206,73 @@ export default async function HomePage() {
   );
 
   // Compute FP1 target date for countdown
-  const fp1 = sessions.find((s) => s.dayOfWeek === 'Friday' && s.sessionType === 'practice');
+  const fp1 = sessions.find((s) => s.sessionType === 'practice');
   const raceDayDate = new Date(race.raceDate + 'T00:00:00Z');
-  raceDayDate.setUTCDate(raceDayDate.getUTCDate() - 2); // Friday
-  const fridayDate = raceDayDate.toISOString().split('T')[0];
-  // Dynamic fallback: Friday 11:30 local time in race timezone
-  const fallbackFriDate = new Date(race.raceDate + 'T00:00:00Z');
-  fallbackFriDate.setUTCDate(fallbackFriDate.getUTCDate() - 2);
-  const fallbackFriStr = fallbackFriDate.toISOString().split('T')[0];
-  const fallbackTzOffset = getTzOffsetStr(race.timezone, fallbackFriStr);
-  let fp1IsoString = `${fallbackFriStr}T11:30:00${fallbackTzOffset}`;
+  const DAY_OFFSETS: Record<string, number> = { Thursday: -3, Friday: -2, Saturday: -1, Sunday: 0 };
+  const firstSessionDay = sessions[0]?.dayOfWeek ?? 'Friday';
+  const offset = DAY_OFFSETS[firstSessionDay] ?? -2;
+  
+  const targetDateObj = new Date(raceDayDate);
+  targetDateObj.setUTCDate(raceDayDate.getUTCDate() + offset);
+  const targetDateStr = targetDateObj.toISOString().split('T')[0];
+  const tzOffset = getTzOffsetStr(race.timezone, targetDateStr);
+  
+  let fp1IsoString = `${targetDateStr}T11:30:00${tzOffset}`;
   if (fp1?.startTime) {
-    // MySQL TIME columns return "HH:MM:SS" — slice to "HH:MM" before constructing ISO string
     const startHHMM = fp1.startTime.slice(0, 5);
-    const tzOffset = getTzOffsetStr(race.timezone, fridayDate);
-    const candidate = `${fridayDate}T${startHHMM}:00${tzOffset}`;
-    if (!isNaN(new Date(candidate).getTime())) {
-      fp1IsoString = candidate;
-    }
+    fp1IsoString = `${targetDateStr}T${startHHMM}:00${tzOffset}`;
   }
 
-  // Compute first day and date range for hero badge
-  const hasThursday = sessions.some((s) => s.dayOfWeek === 'Thursday');
-  const firstDayOffset = hasThursday ? -3 : -2;
-  const firstDay = new Date(race.raceDate + 'T00:00:00Z');
-  firstDay.setUTCDate(firstDay.getUTCDate() + firstDayOffset);
-  const monthStr = firstDay.toLocaleDateString('en-AU', { month: 'short', timeZone: 'UTC' });
-  const firstDayNum = firstDay.getUTCDate();
-  const lastDayNum = new Date(race.raceDate + 'T00:00:00Z').getUTCDate();
-  const heroDateRange = `${monthStr} ${firstDayNum}–${lastDayNum}`;
+  const heroDateRange = formatRaceDates(race.raceDate, sessions.some(s => s.dayOfWeek === 'Thursday'));
+  const expBasePath = `/races/${activeRaceSlug}/experiences`;
 
-  // Dynamic schemas
+  // Timezone label for explore section (e.g. "GMT+11")
+  const tzLabel = 'GMT' + tzOffset.replace(/:00$/, '');
+
+  // Build per-day data for the explore section
+  const DAY_ORDER = ['Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
+  const DAY_SHORT: Record<string, string> = { Thursday: 'Thu', Friday: 'Fri', Saturday: 'Sat', Sunday: 'Sun' };
+  const DAY_RACE_OFFSET: Record<string, number> = { Thursday: -3, Friday: -2, Saturday: -1, Sunday: 0 };
+  const raceDateObj2 = new Date(race.raceDate + 'T00:00:00Z');
+
+  const exploreDays: ExploreDayData[] = DAY_ORDER
+    .filter(d => sessions.some(s => s.dayOfWeek === d) || windowData.some(w => w.dayOfWeek === d))
+    .map(day => {
+      const d = new Date(raceDateObj2);
+      d.setUTCDate(raceDateObj2.getUTCDate() + DAY_RACE_OFFSET[day]);
+      const month = d.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' });
+      const dayNum = d.getUTCDate();
+      return {
+        dayOfWeek: day,
+        label: DAY_SHORT[day],
+        dateLabel: `${month} ${dayNum}`,
+        sessions: sessions.filter(s => s.dayOfWeek === day).map(s => ({
+          name: s.name,
+          startTime: s.startTime,
+          endTime: s.endTime,
+        })),
+        windows: windowData.filter(w => w.dayOfWeek === day),
+      };
+    });
+
+  const SEASON_PREVIEW = availableRaces.slice(0, 5).map((r) => ({
+    round: r.round,
+    flag: r.flag,
+    short: r.shortCode,
+    dates: formatRaceDates(r.raceDate, r.hasThursdayFreeDay),
+    slug: r.slug,
+    active: r.slug === activeRaceSlug
+  }));
+
+  const HOME_FAQ = raceContent?.faqItems ?? [];
+
+  // Structured Data
   const websiteLd = {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
     name: 'F1 Weekend',
     url: 'https://f1weekend.co',
     description: `F1 race weekend companion — curated ${race.city} experiences for the ${race.season} ${race.name}`,
-    potentialAction: {
-      '@type': 'SearchAction',
-      target: {
-        '@type': 'EntryPoint',
-        urlTemplate: `https://f1weekend.co/races/${activeRaceSlug}/experiences?q={search_term_string}`,
-      },
-      'query-input': 'required name=search_term_string',
-    },
   };
 
   const eventLd = {
@@ -167,10 +280,8 @@ export default async function HomePage() {
     '@type': 'SportsEvent',
     name: `${race.season} ${race.name}`,
     alternateName: race.name,
-    startDate: firstDay.toISOString().split('T')[0],
+    startDate: race.raceDate, // simplified
     endDate: race.raceDate,
-    eventStatus: 'https://schema.org/EventScheduled',
-    eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
     location: {
       '@type': 'Place',
       name: race.circuitName,
@@ -179,82 +290,27 @@ export default async function HomePage() {
         addressLocality: race.city,
         addressCountry: race.countryCode,
       },
-      geo: { '@type': 'GeoCoordinates', latitude: race.circuitLat, longitude: race.circuitLng },
     },
-    organizer: { '@type': 'Organization', name: 'Formula One Management', url: 'https://www.formula1.com' },
-    sport: 'Motorsport',
-    url: 'https://f1weekend.co',
   };
 
-  const HOME_FAQ = raceContent?.faqItems ?? [];
-  const homepageFaqLd = {
-    '@context': 'https://schema.org',
-    '@type': 'FAQPage',
-    mainEntity: HOME_FAQ.map(({ q, a }) => ({
-      '@type': 'Question',
-      name: q,
-      acceptedAnswer: { '@type': 'Answer', text: a },
-    })),
-  };
-
-  // ItemList structured data for featured experiences (Top Picks)
-  const featuredItemListLd = featuredExps.length > 0 ? {
-    '@context': 'https://schema.org',
-    '@type': 'ItemList',
-    name: `Top ${race.city} F1 Weekend Experiences`,
-    url: `https://f1weekend.co/races/${activeRaceSlug}/experiences`,
-    numberOfItems: Math.min(featuredExps.length, 6),
-    itemListElement: featuredExps.slice(0, 6).map((exp, i) => ({
-      '@type': 'ListItem',
-      position: i + 1,
-      url: `https://f1weekend.co/races/${activeRaceSlug}/experiences/${exp.slug}`,
-      item: {
-        '@type': 'TouristAttraction',
-        name: exp.title,
-        description: exp.abstract ?? exp.shortDescription,
-        touristType: 'F1 race fan',
-        ...(exp.priceLabel ? { priceRange: exp.priceLabel } : {}),
-        containedInPlace: {
-          '@type': 'City',
-          name: race.city,
-          addressCountry: race.countryCode,
-        },
-      },
-    })),
-  } : null;
-
-  const expBasePath = `/races/${activeRaceSlug}/experiences`;
-
-  const SEASON_PREVIEW = [
-    { round: 1, flag: '🇦🇺', short: 'AUS', dates: 'Mar 5–8',   slug: 'melbourne-2026' },
-    { round: 2, flag: '🇨🇳', short: 'CHN', dates: 'Mar 13–15', slug: 'shanghai-2026' },
-    { round: 4, flag: '🇯🇵', short: 'JPN', dates: 'Mar 27–29', slug: 'japan-2026' },
-    { round: 5, flag: '🇧🇭', short: 'BHR', dates: 'Apr 9–11',  slug: 'bahrain-2026' },
-    { round: 6, flag: '🇸🇦', short: 'SAU', dates: 'Apr 23–26', slug: null },
-  ].map((r) => ({ ...r, active: r.slug === activeRaceSlug }));
-
-  // Consolidate all page schemas into single JSON-LD script tag
-  const allSchemas = [websiteLd, eventLd, homepageFaqLd, homepageBreadcrumbLd, ...(featuredItemListLd ? [featuredItemListLd] : [])];
+  const allSchemas = [websiteLd, eventLd, homepageBreadcrumbLd];
 
   return (
     <div className="min-h-screen">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(allSchemas) }} />
       {/* ── Hero ── */}
       <section className="relative overflow-hidden pt-20 pb-12 px-4">
-        {/* Background layers */}
         <div className="absolute inset-0 carbon-texture" />
         <div
           className="absolute inset-0"
           style={{
-            background:
-              'radial-gradient(ellipse 80% 60% at 70% 50%, rgba(225,6,0,0.06) 0%, transparent 70%)',
+            background: 'radial-gradient(ellipse 80% 60% at 70% 50%, rgba(225,6,0,0.06) 0%, transparent 70%)',
           }}
         />
         <div className="absolute bottom-0 left-0 right-0 h-24 hero-gradient" />
 
         <div className="relative max-w-6xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center min-h-[420px]">
-            {/* Left: text + countdown */}
             <div className="flex flex-col justify-center py-8">
               <div className="flex flex-col gap-1.5 mb-5">
                 <span className="px-2 py-0.5 rounded-full bg-[var(--accent-red)] text-white text-[10px] font-bold tracking-wider w-fit">
@@ -266,17 +322,17 @@ export default async function HomePage() {
               </div>
 
               <h1 className="font-display font-black text-5xl md:text-6xl text-white uppercase-heading leading-tight mb-4">
-                {race.city} has
-                <br />
-                <span className="text-[var(--accent-red)]">more to offer.</span>
+                {raceContent?.homepageCopy?.heroHeading ? (
+                  raceContent.homepageCopy.heroHeading
+                ) : (
+                  <>{race.city} has<br /><span className="text-[var(--accent-red)]">more to offer.</span></>
+                )}
               </h1>
 
               <p className="text-[var(--text-secondary)] text-base md:text-lg max-w-sm">
-                Discover the best of {race.city} — curated experiences for every session gap of the
-                race weekend.
+                {raceContent?.homepageCopy?.heroSubtitle ?? `Discover the best of ${race.city} — curated experiences for every session gap of the race weekend.`}
               </p>
 
-              {/* CTAs */}
               <div className="flex flex-wrap gap-3 mb-8 mt-6">
                 <Link
                   href={expBasePath}
@@ -292,47 +348,15 @@ export default async function HomePage() {
                 </Link>
               </div>
 
-              {/* Countdown */}
               <div>
                 <p className="text-xs font-medium uppercase-label text-[var(--text-secondary)] mb-3 tracking-widest">
                   LIGHTS OUT IN
                 </p>
                 <RaceCountdown targetDate={fp1IsoString} />
               </div>
-
-              {/* Category pills — mobile only */}
-              <div className="flex flex-wrap gap-2 mt-6 md:hidden">
-                {[
-                  { label: 'Food',      cat: 'food' },
-                  { label: 'Culture',   cat: 'culture' },
-                  { label: 'Adventure', cat: 'adventure' },
-                  { label: 'Day Trip',  cat: 'daytrip' },
-                  { label: 'Nightlife', cat: 'nightlife' },
-                ].map(({ label, cat }) => {
-                  const color = CATEGORY_COLORS[cat] ?? '#6E6E82';
-                  return (
-                    <Link
-                      key={cat}
-                      href={`${expBasePath}?category=${cat}`}
-                      className="px-3 py-1 rounded-full text-xs font-semibold uppercase-label transition-colors"
-                      style={{ background: `${color}22`, color, border: `1px solid ${color}44` }}
-                    >
-                      {label}
-                    </Link>
-                  );
-                })}
-              </div>
             </div>
 
-            {/* Right: circuit map */}
             <div className="hidden md:flex items-center justify-center relative">
-              <div
-                className="absolute w-64 h-64 rounded-full pointer-events-none"
-                style={{
-                  background:
-                    'radial-gradient(circle, rgba(225,6,0,0.12) 0%, transparent 70%)',
-                }}
-              />
               <CircuitMap
                 src={raceContent?.circuitMapSrc ?? undefined}
                 alt={`${race.circuitName} — Circuit Map`}
@@ -343,77 +367,61 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ── How it works ── */}
+      {/* ── SEO Intro Section ── */}
       <section className="max-w-6xl mx-auto px-4 py-10 border-b border-[var(--border-subtle)]">
-        <h2 className="font-display font-black text-xl text-white uppercase-heading mb-4">
-          Plan Your {race.city} F1 Weekend Around the Sessions
-        </h2>
-        <p className="text-[var(--text-secondary)] text-base leading-relaxed max-w-3xl">
-          {raceContent?.howItWorksText}
-        </p>
+        <div className="text-[var(--text-secondary)] text-base leading-relaxed max-w-4xl prose prose-invert">
+          {raceContent?.homepageIntro ? (
+            <div className="space-y-4">
+              <h2 className="font-display font-black text-2xl text-white uppercase-heading">
+                {raceContent.homepageIntro.split('\n')[0]}
+              </h2>
+              <p>{raceContent.homepageIntro.split('\n').slice(1).join('\n')}</p>
+            </div>
+          ) : (
+            <>
+              <h2 className="font-display font-black text-xl text-white uppercase-heading mb-4">
+                Plan Your {race.city} F1 Weekend Around the Sessions
+              </h2>
+              <p>{raceContent?.howItWorksText}</p>
+            </>
+          )}
+        </div>
       </section>
 
-      {/* ── Featured Experiences ── */}
-      {featuredExps.length > 0 && (
-        <section className="max-w-6xl mx-auto px-4 py-10">
-          <div className="flex items-start justify-between mb-5">
-            <div>
-              <h2 className="font-display font-black text-xl text-white uppercase-heading">
-                Best Things to Do in {race.city} During the F1 Race
-              </h2>
-              <p className="text-sm text-[var(--text-secondary)] mt-1.5">
-                Curated for the {race.city} Grand Prix weekend — activities matched to every session gap.
-              </p>
-            </div>
-            <Link
-              href={expBasePath}
-              className="text-sm font-medium text-[var(--accent-teal)] hover:text-white transition-colors shrink-0 mt-1"
-            >
-              View all →
-            </Link>
+      {/* ── Featured / Popular Section ── */}
+      <section className="max-w-6xl mx-auto px-4 py-10">
+        <div className="flex items-start justify-between mb-5">
+          <div>
+            <h2 className="font-display font-black text-xl text-white uppercase-heading">
+              {raceContent?.homepageCopy?.featuredHeading ?? `Best Things to Do in ${race.city} During the F1 Race`}
+            </h2>
+            <p className="text-sm text-[var(--text-secondary)] mt-1.5">
+              {raceContent?.homepageCopy?.featuredDescription ?? `Curated for the ${race.city} Grand Prix weekend — activities matched to every session gap.`}
+            </p>
           </div>
+          <Link href={expBasePath} className="text-sm font-medium text-[var(--accent-teal)] hover:text-white transition-colors shrink-0 mt-1">
+            View all →
+          </Link>
+        </div>
 
-          <div className="flex gap-4 overflow-x-auto pb-2 sm:flex-wrap sm:overflow-visible scrollbar-hide">
-            {featuredExps.slice(0, 6).map((exp) => {
-              const color = CATEGORY_COLORS[exp.category] ?? '#6E6E82';
-              return (
-                <Link
-                  key={exp.id}
-                  href={`/races/${activeRaceSlug}/experiences/${exp.slug}`}
-                  className="group shrink-0 w-52 sm:w-48 p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--accent-red)]/20 hover:border-[var(--accent-red)]/50 hover:bg-[var(--bg-surface)] transition-all"
-                >
-                  {exp.tag && (
-                    <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full bg-[var(--accent-red)]/12 text-[var(--accent-red)] uppercase-label mb-3 tracking-widest">
-                      {exp.tag}
-                    </span>
-                  )}
-                  <div className="text-2xl mb-2">{exp.imageEmoji}</div>
-                  <p className="text-sm font-semibold text-white group-hover:text-[var(--accent-teal)] transition-colors line-clamp-2 leading-tight mb-2">
-                    {exp.title}
-                  </p>
-                  <p className="text-xs mb-2">
-                    <span className="text-yellow-400">★</span>
-                    <span className="text-white font-medium ml-0.5">{exp.rating.toFixed(1)}</span>
-                    <span className="text-[var(--text-secondary)] ml-1">({exp.reviewCount.toLocaleString()})</span>
-                  </p>
-                  <p className="text-xs font-medium mb-1" style={{ color }}>
-                    {exp.category.charAt(0).toUpperCase() + exp.category.slice(1)}
-                  </p>
-                  <p className="text-xs text-[var(--text-secondary)] mono-data">
-                    {exp.durationLabel} · {exp.priceLabel}
-                  </p>
-                </Link>
-              );
-            })}
-          </div>
-        </section>
-      )}
+        <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide lg:grid lg:grid-cols-5 lg:overflow-visible">
+          {dedupedPopular.map((exp) => (
+            <FeaturedCard key={`pop-${exp.id}`} exp={exp} badge="Most Popular" activeRaceSlug={activeRaceSlug} />
+          ))}
+          {dedupedFeatured.map((exp) => (
+            <FeaturedCard key={`feat-${exp.id}`} exp={exp} activeRaceSlug={activeRaceSlug} />
+          ))}
+          {dedupedTopRated.map((exp) => (
+            <FeaturedCard key={`top-${exp.id}`} exp={exp} badge="Top Rated" activeRaceSlug={activeRaceSlug} />
+          ))}
+        </div>
+      </section>
 
       {/* ── Season Preview Strip ── */}
       <section className="max-w-6xl mx-auto px-4 pb-10">
         <div className="flex items-center justify-between mb-3">
           <p className="text-xs font-medium uppercase-label text-[var(--text-secondary)] tracking-widest">
-            2026 SEASON · 24 RACES
+            {new Date().getFullYear()} SEASON · {availableRaces.length} RACES
           </p>
           <Link href="/f1-2026" className="text-xs font-medium text-[var(--accent-teal)] hover:text-white transition-colors">
             Full calendar →
@@ -422,70 +430,59 @@ export default async function HomePage() {
         <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
           {SEASON_PREVIEW.map((r) => {
             const tileClass = `shrink-0 flex flex-col items-center gap-1 px-3 py-2.5 rounded-lg border transition-colors min-w-[56px] ${
-              r.active
-                ? 'border-[var(--accent-red)]/60 bg-[var(--accent-red)]/8'
-                : 'border-[var(--border-subtle)]'
+              r.active ? 'border-[var(--accent-red)]/60 bg-[var(--accent-red)]/8' : 'border-[var(--border-subtle)]'
             }`;
-            const inner = (
-              <>
+            return (
+              <Link key={r.slug} href={`/races/${r.slug}`} className={tileClass}>
                 <span className="text-lg leading-none">{r.flag}</span>
                 <span className={`text-[10px] font-bold uppercase-label tracking-wider ${r.active ? 'text-white' : 'text-[var(--text-secondary)]'}`}>
                   {r.short}
                 </span>
-                {r.active
-                  ? <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[var(--accent-red)] text-white leading-tight">NOW</span>
-                  : <span className="text-[10px] mono-data text-[var(--text-secondary)] opacity-60">{r.dates}</span>
-                }
-              </>
-            );
-            return r.slug ? (
-              <Link key={r.round} href={`/races/${r.slug}`} className={tileClass}>
-                {inner}
+                {r.active ? (
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[var(--accent-red)] text-white leading-tight">NOW</span>
+                ) : (
+                  <span className="text-[10px] mono-data text-[var(--text-secondary)] opacity-60">{r.dates}</span>
+                )}
               </Link>
-            ) : (
-              <div key={r.round} className={tileClass}>
-                {inner}
-              </div>
             );
           })}
           <Link
             href="/f1-2026"
             className="shrink-0 flex flex-col items-center justify-center gap-1 px-3 py-2.5 rounded-lg border border-dashed border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-white hover:border-[var(--border-medium)] transition-colors min-w-[56px]"
           >
-            <span className="text-base font-bold">+19</span>
+            <span className="text-base font-bold">+{availableRaces.length - 5}</span>
             <span className="text-[10px] uppercase-label tracking-wider">more</span>
           </Link>
         </div>
       </section>
 
-      {/* ── Race schedule + gap cards ── */}
-      <section className="max-w-3xl mx-auto px-4 pb-24">
-        <div className="racing-stripe mb-8" />
-        <RaceSchedule
-          sessions={sessions}
-          windows={windows}
-          windowData={windowData}
-          basePath={expBasePath}
-          schedulePath={`/races/${activeRaceSlug}/schedule`}
-          race={{ city: race.city, raceDate: race.raceDate, timezone: race.timezone }}
-          initialDay="Friday"
-        />
-      </section>
+      {/* ── Explore City (Session-based) ── */}
+      <HomepageExploreSection
+        city={race.city}
+        days={exploreDays}
+        expBasePath={expBasePath}
+        tzLabel={tzLabel}
+        scheduleHref={`/races/${activeRaceSlug}/schedule`}
+      />
 
       {/* ── FAQ ── */}
-      <section className="max-w-3xl mx-auto px-4 pb-16">
-        <h2 className="font-display font-black text-xl text-white uppercase-heading mb-6">
+      <section className="max-w-3xl mx-auto px-4 pb-24">
+        <h2 className="font-display font-black text-2xl text-white uppercase-heading mb-8">
           Frequently Asked Questions
         </h2>
-        {HOME_FAQ.map(({ q, a }) => (
-          <details key={q} className="border-b border-[var(--border-subtle)] py-4">
-            <summary className="font-display font-bold text-white cursor-pointer list-none flex items-center justify-between gap-2">
-              {q}
-              <span className="text-[var(--text-secondary)] text-sm shrink-0">+</span>
-            </summary>
-            <p className="text-[var(--text-secondary)] text-sm mt-3 leading-relaxed">{a}</p>
-          </details>
-        ))}
+        <div className="space-y-4">
+          {HOME_FAQ.map(({ q, a }) => (
+            <details key={q} className="group rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] overflow-hidden">
+              <summary className="px-6 py-4 cursor-pointer font-bold text-white list-none flex items-center justify-between gap-4 hover:bg-[var(--bg-surface)] transition-colors">
+                <span>{q}</span>
+                <span className="text-[var(--text-secondary)] group-open:rotate-180 transition-transform">▾</span>
+              </summary>
+              <div className="px-6 pb-5 pt-2 text-[var(--text-secondary)] text-sm leading-relaxed border-t border-[var(--border-subtle)]">
+                {a}
+              </div>
+            </details>
+          ))}
+        </div>
       </section>
     </div>
   );

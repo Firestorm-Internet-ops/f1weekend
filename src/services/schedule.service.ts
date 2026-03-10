@@ -1,29 +1,10 @@
+import { unstable_cache } from 'next/cache';
 import { db } from '@/lib/db';
 import { schedule_entries } from '@/lib/db/schema';
 import { eq, asc } from 'drizzle-orm';
-import { redis } from '@/lib/redis';
 import type { ScheduleDay, ScheduleEntry, SeriesKey } from '@/types/schedule';
 
 const CACHE_TTL = 3600; // 1 hour
-
-async function cached<T>(key: string, fetcher: () => Promise<T>): Promise<T> {
-  try {
-    const hit = await redis.get(key);
-    if (hit) return JSON.parse(hit) as T;
-  } catch {
-    // Redis unavailable — fall through to DB
-  }
-
-  const result = await fetcher();
-
-  try {
-    await redis.set(key, JSON.stringify(result), 'EX', CACHE_TTL);
-  } catch {
-    // Redis unavailable — ignore
-  }
-
-  return result;
-}
 
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -50,13 +31,18 @@ function toHHMM(t: string | null): string {
 }
 
 export async function getScheduleByRace(raceId: number, raceDate?: string): Promise<ScheduleDay[]> {
-  const rows = await cached(`schedule:race:${raceId}`, () =>
-    db
-      .select()
-      .from(schedule_entries)
-      .where(eq(schedule_entries.race_id, raceId))
-      .orderBy(asc(schedule_entries.day_of_week), asc(schedule_entries.sort_order))
+  const fetch = unstable_cache(
+    async () =>
+      db
+        .select()
+        .from(schedule_entries)
+        .where(eq(schedule_entries.race_id, raceId))
+        .orderBy(asc(schedule_entries.day_of_week), asc(schedule_entries.sort_order)),
+    [`schedule:race:${raceId}`],
+    { revalidate: CACHE_TTL, tags: ['schedule', `schedule:race:${raceId}`] }
   );
+
+  const rows = await fetch();
 
   // Compute day dates — dynamically from raceDate when provided
   const DAY_DATES = raceDate

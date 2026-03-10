@@ -1,5 +1,5 @@
 import ItineraryForm from '@/components/itinerary/ItineraryForm';
-import { getAllRaces, getSessionsByRace } from '@/services/race.service';
+import { getAvailableRaces, getSessionsByRace } from '@/services/race.service';
 import { getActiveRaceSlug } from '@/lib/activeRace';
 import type { Race, Session } from '@/types/race';
 
@@ -18,7 +18,7 @@ interface Props {
 export default async function ItineraryPage({ searchParams }: Props) {
     const { race: raceParam } = await searchParams;
     const [races, activeRaceSlug] = await Promise.all([
-        getAllRaces(),
+        getAvailableRaces(),
         getActiveRaceSlug(),
     ]);
     const defaultRaceSlug = raceParam ?? activeRaceSlug;

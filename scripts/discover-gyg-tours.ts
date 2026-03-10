@@ -222,6 +222,53 @@ const CONFIGS: Record<string, DiscoveryConfig> = {
     },
   },
 
+  'saudi-2026': {
+    city:     'Jeddah',
+    currency: 'SAR',
+    raceSlug: 'saudi-2026',
+    sessionWindows: {
+      'fri-morning': { label: 'Friday Morning — Before FP1',                 maxDuration: 8.0 },
+      'fri-gap':     { label: 'Friday Afternoon — Between FP1/FP2',          maxDuration: 2.0 },
+      'fri-evening': { label: 'Friday Night — After FP2',                    maxDuration: 2.0 },
+      'sat-morning': { label: 'Saturday Morning — Before FP3',               maxDuration: 8.0 },
+      'sat-gap':     { label: 'Saturday Afternoon — Between FP3/Quali',      maxDuration: 2.0 },
+      'sat-evening': { label: 'Saturday Night — After Qualifying',           maxDuration: 2.0 },
+      'sun-morning': { label: 'Race Day Morning — Before the Grand Prix',    maxDuration: 10.0 },
+      'sun-evening': { label: 'Post-Race Night — Corniche Celebrations',     maxDuration: 2.0 },
+    },
+    searches: [
+      { query: 'Jeddah food tour',                             category: 'food'      },
+      { query: 'Jeddah seafood restaurant experience',         category: 'food'      },
+      { query: 'Saudi Arabia traditional food tour',           category: 'food'      },
+      { query: 'Al Balad Jeddah tour',                         category: 'culture'   },
+      { query: 'Jeddah historical tour',                       category: 'culture'   },
+      { query: 'Jeddah city tour UNESCO',                      category: 'culture'   },
+      { query: 'Jeddah old town walking tour',                 category: 'culture'   },
+      { query: 'King Fahd Fountain Jeddah',                    category: 'culture'   },
+      { query: 'Red Sea diving Jeddah',                        category: 'adventure' },
+      { query: 'Red Sea snorkeling Jeddah',                    category: 'adventure' },
+      { query: 'Saudi desert safari Jeddah',                   category: 'adventure' },
+      { query: 'Jeddah boat tour Red Sea',                     category: 'adventure' },
+      { query: 'Jeddah Corniche sunset cruise',                category: 'adventure' },
+      { query: 'Jeddah nightlife Corniche',                    category: 'nightlife' },
+      { query: 'rooftop bar Jeddah',                           category: 'nightlife' },
+      { query: 'Taif day trip from Jeddah',                    category: 'daytrip'   },
+      { query: 'Jeddah',                                       category: 'culture'   },
+      { query: 'things to do Jeddah',                          category: 'culture'   },
+    ],
+    relevanceKeywords: [
+      'jeddah', 'al balad', 'corniche', 'red sea', 'saudi', 'taif',
+      'king fahd', 'souq', 'souk', 'mangrove', 'pearl', 'gulf',
+    ],
+    categorySignals: {
+      food:      ['food', 'eat', 'seafood', 'restaurant', 'culinary', 'tasting', 'cooking', 'market', 'traditional'],
+      nightlife: ['night', 'bar', 'nightlife', 'evening', 'cocktail', 'rooftop', 'lounge', 'sunset'],
+      adventure: ['adventure', 'dive', 'diving', 'snorkel', 'boat', 'cruise', 'desert', 'safari', 'kayak', 'water'],
+      daytrip:   ['day trip', 'taif', 'full day', 'excursion', 'outside'],
+      culture:   ['museum', 'history', 'fort', 'heritage', 'souq', 'souk', 'walk', 'old town', 'al balad', 'mosque', 'architecture', 'fountain', 'corniche', 'unesco'],
+    },
+  },
+
   'melbourne-2026': {
     city:     'Melbourne',
     currency: 'AUD',
@@ -265,6 +312,8 @@ const CONFIGS: Record<string, DiscoveryConfig> = {
 // ── Parse CLI args ─────────────────────────────────────────────────────────
 const raceArg = process.argv.find((_, i) => process.argv[i - 1] === '--race');
 const raceSlug = raceArg ?? 'japan-2026';
+const autoApproveArg = process.argv.find((_, i) => process.argv[i - 1] === '--auto-approve');
+const autoApproveCount = autoApproveArg ? Math.max(0, Number.parseInt(autoApproveArg, 10) || 0) : 0;
 
 const CONFIG = CONFIGS[raceSlug];
 if (!CONFIG) {
@@ -274,21 +323,31 @@ if (!CONFIG) {
 
 // ── Core API fetch ─────────────────────────────────────────────────────────
 async function gygSearch(query: string, category: string): Promise<Record<string, unknown>[]> {
-  const params = new URLSearchParams({
-    q:             query,
-    cnt_language:  'en',
-    currency:      CONFIG.currency,
-    limit:         '50',
-    sortfield:     'popularity',
-    sortdirection: 'DESC',
-  });
+  const request = async (currency: string) => {
+    const params = new URLSearchParams({
+      q:             query,
+      cnt_language:  'en',
+      currency,
+      limit:         '50',
+      sortfield:     'popularity',
+      sortdirection: 'DESC',
+    });
+    const response = await fetch(`${GYG_BASE_URL}/tours?${params}`, {
+      headers: {
+        'X-ACCESS-TOKEN': GYG_API_KEY,
+        'accept':          'application/json',
+      },
+    });
+    return { response, currency };
+  };
 
-  const res = await fetch(`${GYG_BASE_URL}/tours?${params}`, {
-    headers: {
-      'X-ACCESS-TOKEN': GYG_API_KEY,
-      'accept':          'application/json',
-    },
-  });
+  let { response: res, currency: usedCurrency } = await request(CONFIG.currency);
+  if (!res.ok && res.status === 400 && CONFIG.currency !== 'USD') {
+    ({ response: res, currency: usedCurrency } = await request('USD'));
+    if (res.ok) {
+      console.warn(`  [${category}] "${query}" → fallback currency USD`);
+    }
+  }
 
   if (!res.ok) {
     console.error(`  GYG HTTP ${res.status} for "${query}"`);
@@ -298,7 +357,7 @@ async function gygSearch(query: string, category: string): Promise<Record<string
   const data = await res.json() as Record<string, unknown>;
   const nested = data?.data as Record<string, unknown> | undefined;
   const tours = (nested?.tours ?? data?.tours ?? data?.data ?? []) as Record<string, unknown>[];
-  console.log(`  [${category}] "${query}" → ${Array.isArray(tours) ? tours.length : 0} results`);
+  console.log(`  [${category}] "${query}" → ${Array.isArray(tours) ? tours.length : 0} results (${usedCurrency})`);
   return Array.isArray(tours) ? tours : [];
 }
 
@@ -457,6 +516,25 @@ async function main() {
   candidates.sort((a, b) => b.score - a.score);
   const top120 = candidates.slice(0, 120).map((c, i) => ({ ...c, rank: i + 1 }));
 
+  if (autoApproveCount > 0) {
+    const approvedCount = Math.min(autoApproveCount, top120.length);
+    const featuredCount = Math.min(8, approvedCount);
+
+    for (let i = 0; i < approvedCount; i++) {
+      top120[i].approved = true;
+      if (!top120[i].sort_order_override || top120[i].sort_order_override <= 0) {
+        top120[i].sort_order_override = i + 1;
+      }
+    }
+
+    for (let i = 0; i < featuredCount; i++) {
+      top120[i].is_featured = true;
+    }
+
+    console.log(`[discover] Auto-approved top ${approvedCount} candidates`);
+    console.log(`[discover] Auto-featured top ${featuredCount} approved candidates`);
+  }
+
   // 5. Write output
   const outputFile = path.join(OUTPUT_DIR, `${CONFIG.raceSlug}-candidates.json`);
   fs.writeFileSync(outputFile, JSON.stringify(top120, null, 2));
@@ -500,7 +578,7 @@ async function main() {
   console.log(`  1. Open scripts/output/${CONFIG.raceSlug}-candidates.json`);
   console.log(`  2. Set "approved": true on 40–45 experiences (rating >= 4.5, reviews >= 50)`);
   console.log(`  3. Run: npx tsx --env-file=.env scripts/seed-from-candidates.ts --race ${CONFIG.raceSlug}`);
-  console.log(`  4. Run: npx tsx --env-file=.env scripts/enrich-from-gyg.ts`);
+  console.log(`  4. Run: npx tsx --env-file=.env scripts/enrich-from-gyg.ts --race ${CONFIG.raceSlug}`);
 }
 
 main().catch(err => { console.error('Fatal:', err); process.exit(1); });

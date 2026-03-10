@@ -1,7 +1,10 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { Ollama } from 'ollama';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
 
 const LLM_PROVIDER = process.env.LLM_PROVIDER ?? 'ollama';
+const execFileAsync = promisify(execFile);
 
 /**
  * LLM abstraction layer.
@@ -17,7 +20,7 @@ export async function generateText(
   }
 
   if (LLM_PROVIDER === 'anthropic') {
-    return generateWithAnthropic(systemPrompt, userPrompt);
+    return generateWithClaudeCli(systemPrompt, userPrompt);
   }
 
   throw new Error(`Unknown LLM_PROVIDER: ${LLM_PROVIDER}. Use 'ollama' or 'anthropic'.`);
@@ -67,4 +70,41 @@ async function generateWithAnthropic(
   }
 
   throw new Error('Unexpected response format from Anthropic');
+}
+
+async function generateWithClaudeCli(
+  systemPrompt: string,
+  userPrompt: string
+): Promise<string> {
+  const model = process.env.CLAUDE_MODEL ?? process.env.ANTHROPIC_MODEL ?? 'claude-sonnet-4-6';
+  const timeoutMs = Number(process.env.CLAUDE_CLI_TIMEOUT_MS ?? 120000);
+  const args = [
+    '-p',
+    userPrompt,
+    '--append-system-prompt',
+    systemPrompt,
+    '--model',
+    model,
+    '--permission-mode',
+    'bypassPermissions',
+    '--output-format',
+    'text',
+  ];
+
+  try {
+    const { stdout } = await execFileAsync('claude', args, {
+      maxBuffer: 10 * 1024 * 1024,
+      timeout: timeoutMs,
+    });
+    return stdout.trim();
+  } catch (error) {
+    const e = error as Error & { stderr?: string; stdout?: string; code?: string | number; signal?: string };
+    if (e.signal === 'SIGTERM' || e.code === 'ETIMEDOUT') {
+      throw new Error(`Claude CLI call timed out after ${timeoutMs}ms`);
+    }
+    const stderr = e.stderr ? `\n${e.stderr}` : '';
+    const stdout = e.stdout ? `\nstdout:\n${e.stdout}` : '';
+    const code = e.code !== undefined ? ` (code: ${String(e.code)})` : '';
+    throw new Error(`Claude CLI call failed${code}: ${e.message}${stderr}${stdout}`);
+  }
 }

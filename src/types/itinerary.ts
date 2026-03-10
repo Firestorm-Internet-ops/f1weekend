@@ -34,5 +34,6 @@ export interface Itinerary {
     id: string
     title: string
     summary?: string
+    raceId?: number
     days: ItineraryDay[]
 }

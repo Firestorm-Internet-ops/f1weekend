@@ -4,7 +4,8 @@ import Link from 'next/link';
 import CircuitMap from '@/components/race/CircuitMap';
 import RaceSwitcher from '@/components/race/RaceSwitcher';
 import Breadcrumb from '@/components/Breadcrumb';
-import { getRaceBySlug, getSessionsByRace } from '@/services/race.service';
+import { getRaceBySlug, getSessionsByRace, getAvailableRaces, getRaceContent } from '@/services/race.service';
+import { getTimezoneAbbr } from '@/lib/utils';
 
 export const revalidate = 604800; // 1 week
 
@@ -29,71 +30,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-const MELBOURNE_TRANSPORT = [
-  {
-    icon: '🚃',
-    title: 'Tram',
-    desc: 'Routes 1, 6, 16, 64, and 67 all stop near Albert Park. Take tram 96 to St Kilda Road / Albert Road or Route 1/16 to Fitzroy St.',
-    badge: 'Recommended',
-    badgeColor: 'var(--accent-teal)',
-  },
-  {
-    icon: '🚶',
-    title: 'Walk',
-    desc: '15-minute walk from Flinders Street Station via St Kilda Road. Pleasant route through the Central Business District and along the lake.',
-  },
-  {
-    icon: '🚗',
-    title: 'Rideshare / Taxi',
-    desc: 'Drop-off at Aughtie Drive gates. Expect surge pricing during session start/end. Book in advance or walk a few minutes from nearby drop zones.',
-  },
-  {
-    icon: '🅿️',
-    title: 'Drive',
-    desc: 'Limited race-day parking. We strongly recommend public transport. If driving, book park-and-ride at Royal Botanic Gardens or nearby Central Business District lots.',
-    badge: 'Limited',
-    badgeColor: 'var(--accent-red)',
-  },
-];
-
-const MELBOURNE_MAPS_URL = 'https://www.google.com/maps/dir/?api=1&destination=-37.8497,144.968&travelmode=transit';
-const SHANGHAI_MAPS_URL = 'https://www.google.com/maps/dir/?api=1&destination=31.3385,121.2200&travelmode=transit';
-const BAHRAIN_MAPS_URL = 'https://www.google.com/maps/dir/?api=1&destination=26.0325,50.5106&travelmode=transit';
-
-const BAHRAIN_TRANSPORT = [
-  { icon: '🚌', title: 'Official Shuttle Bus', desc: 'Shuttle services run from designated Manama hotel pick-up points directly to the circuit. Journey ~30–40 minutes. Highly recommended on race day.', badge: 'Recommended', badgeColor: 'var(--accent-teal)' },
-  { icon: '🚕', title: 'Taxi / Careem',         desc: 'Taxis and Careem (the regional Uber equivalent) are widely available in Manama. Pre-book for race day — demand surges after sessions. Wait times can exceed 45 minutes.' },
-  { icon: '🚗', title: 'Hire Car',              desc: 'Car hire is available at Bahrain International Airport. Road signage is good but race-day traffic is severe and circuit parking is very limited. Not recommended on race day.' },
-  { icon: '✈️', title: 'From the Airport',      desc: 'Bahrain International Airport is ~40 km from the circuit. Take a taxi to your Manama hotel first, then use the official shuttle to the circuit.' },
-];
-
-const SHANGHAI_TRANSPORT = [
-  {
-    icon: '🚇',
-    title: 'Metro Line 11',
-    desc: 'Take Metro Line 11 from Jiading North or Jiading Town stations. Shuttle buses run from Anting Station to the circuit on race days. Fastest option from the city centre.',
-    badge: 'Recommended',
-    badgeColor: 'var(--accent-teal)',
-  },
-  {
-    icon: '🚕',
-    title: 'DiDi / Taxi',
-    desc: "DiDi (China's Uber) is widely available. Drop-off near the circuit entrances. Expect surge pricing during session start and end times. Allow extra time on race day.",
-  },
-  {
-    icon: '🚌',
-    title: 'Official Shuttle Bus',
-    desc: 'F1 official shuttle buses operate from People\'s Square and other city-centre hubs on event days. Check the official Chinese GP site for pickup locations and timetables.',
-  },
-  {
-    icon: '🅿️',
-    title: 'Drive',
-    desc: 'Parking is available at the circuit but limited on race day. Expressway G2 and G15 serve the area. Strong traffic delays expected — public transport strongly recommended.',
-    badge: 'Limited',
-    badgeColor: 'var(--accent-red)',
-  },
-];
-
 function formatGateTime(time: string, h: number, tzLabel: string): string {
   const [hh, mm] = time.split(':').map(Number);
   const totalMins = hh * 60 + mm - h * 60;
@@ -102,47 +38,27 @@ function formatGateTime(time: string, h: number, tzLabel: string): string {
 
 export default async function GettingTherePage({ params }: Props) {
   const { raceSlug } = await params;
-  const race = await getRaceBySlug(raceSlug);
+  const [race, raceContent, availableRaces] = await Promise.all([
+    getRaceBySlug(raceSlug),
+    getRaceContent(raceSlug),
+    getAvailableRaces(),
+  ]);
   if (!race) notFound();
 
-  const isMelbourne = raceSlug === 'melbourne-2026';
-  const isShanghai = raceSlug === 'shanghai-2026';
-  const isBahrain = raceSlug === 'bahrain-2026';
-  const transport = isMelbourne ? MELBOURNE_TRANSPORT : isShanghai ? SHANGHAI_TRANSPORT : isBahrain ? BAHRAIN_TRANSPORT : [];
-  const mapsUrl = isShanghai ? SHANGHAI_MAPS_URL : isMelbourne ? MELBOURNE_MAPS_URL : isBahrain ? BAHRAIN_MAPS_URL : null;
-  const tzLabel = isShanghai ? 'CST' : isBahrain ? 'AST' : 'AEDT';
+  const transport = raceContent?.transportGuide?.options ?? [];
+  const mapsUrl = raceContent?.transportGuide?.mapsUrl ?? `https://www.google.com/maps/dir/?api=1&destination=${race.circuitLat},${race.circuitLng}&travelmode=transit`;
+  const tzLabel = getTimezoneAbbr(race.timezone, new Date(race.raceDate));
 
-  const howToSchema = isMelbourne ? {
+  const howToSchema = raceContent?.transportGuide?.howToSteps?.length ? {
     '@context': 'https://schema.org',
     '@type': 'HowTo',
-    name: 'How to get to Albert Park Circuit for Australian GP 2026',
-    description: 'Transport options for getting to Albert Park Circuit, Melbourne for the 2026 Formula 1 Australian Grand Prix.',
-    step: [
-      { '@type': 'HowToStep', name: 'Take the tram', text: 'Board tram routes 1, 6, 16, 64, or 67 toward St Kilda Road.' },
-      { '@type': 'HowToStep', name: 'Walk from the Central Business District', text: 'A 15-minute walk from Flinders Street Station along St Kilda Road.' },
-      { '@type': 'HowToStep', name: 'Rideshare or taxi', text: 'Drop-off at the Aughtie Drive gates. Expect surge pricing at session start and end times.' },
-      { '@type': 'HowToStep', name: 'Drive and park', text: 'Limited race-day parking is available. Public transport is strongly recommended.' },
-    ],
-  } : isShanghai ? {
-    '@context': 'https://schema.org',
-    '@type': 'HowTo',
-    name: 'How to get to Shanghai International Circuit for Chinese GP 2026',
-    step: [
-      { '@type': 'HowToStep', name: 'Take Metro Line 11', text: 'Board Metro Line 11 toward Jiading North or Anting.' },
-      { '@type': 'HowToStep', name: 'Shuttle bus from Anting', text: 'Shuttle buses run from Anting Station to the circuit on event days.' },
-      { '@type': 'HowToStep', name: 'DiDi or taxi', text: 'DiDi drop-off near circuit entrances. Expect surge pricing at session times.' },
-      { '@type': 'HowToStep', name: 'Drive', text: 'Limited race-day parking. Metro is strongly recommended.' },
-    ],
-  } : isBahrain ? {
-    '@context': 'https://schema.org',
-    '@type': 'HowTo',
-    name: 'How to get to Bahrain International Circuit for Bahrain GP 2026',
-    description: 'Transport options for getting to the Bahrain International Circuit, Sakhir for the 2026 Formula 1 Gulf Air Bahrain Grand Prix.',
-    step: [
-      { '@type': 'HowToStep', name: 'Take the official shuttle bus', text: 'Board shuttle buses from designated Manama hotel pick-up points. Journey approximately 30–40 minutes.' },
-      { '@type': 'HowToStep', name: 'Book a Careem or taxi', text: 'Careem and taxis available from Manama. Pre-book ahead of race day to avoid surge delays.' },
-      { '@type': 'HowToStep', name: 'Use a hire car', text: 'Drive from your hotel. Road signs are clear but traffic is severe on race day — not recommended.' },
-    ],
+    name: `How to get to ${race.circuitName} for ${race.name}`,
+    description: `Transport options for getting to ${race.circuitName}, ${race.city} for the ${race.season} Formula 1 ${race.name}.`,
+    step: raceContent.transportGuide.howToSteps.map(step => ({
+      '@type': 'HowToStep',
+      name: step.name,
+      text: step.text
+    })),
   } : null;
 
   const allSessions = await getSessionsByRace(race.id);
@@ -169,7 +85,7 @@ export default async function GettingTherePage({ params }: Props) {
               VENUE GUIDE
             </p>
             <div className="mb-4">
-              <RaceSwitcher raceSlug={raceSlug} pageType="getting-there" />
+              <RaceSwitcher currentRace={race} availableRaces={availableRaces} pageType="getting-there" />
             </div>
             <h1 className="font-display font-black text-4xl sm:text-5xl text-white uppercase-heading leading-none mb-4">
               GETTING<br />THERE
@@ -177,54 +93,25 @@ export default async function GettingTherePage({ params }: Props) {
             <p className="text-[var(--text-secondary)] text-lg leading-relaxed">
               {race.circuitName}, {race.city}
             </p>
-            {isMelbourne && (
+            {raceContent?.howItWorksText ? (
               <p className="text-[var(--text-secondary)] text-base leading-relaxed max-w-2xl mt-4">
-                Albert Park Circuit sits just 3 km south of Melbourne&apos;s Central Business District — one of the most
-                accessible circuits on the F1 calendar. Take tram routes 1, 6, 16, 64, or 67 along
-                St Kilda Road and alight at Albert Road or Fitzroy Street. The walk from Flinders
-                Street Station takes 15 minutes via St Kilda Road. Rideshare drop-off is available
-                at the Aughtie Drive gates.
+                {raceContent.howItWorksText}
               </p>
-            )}
-            {isShanghai && (
+            ) : (
               <p className="text-[var(--text-secondary)] text-base leading-relaxed max-w-2xl mt-4">
-                Shanghai International Circuit is located 30 km west of the city centre in Jiading district.
-                The fastest route is Metro Line 11 to Anting Station, then the F1 shuttle bus. Allow
-                45–60 minutes from Puxi or Pudong. DiDi is widely available for direct circuit drop-off.
-              </p>
-            )}
-            {isBahrain && (
-              <p className="text-[var(--text-secondary)] text-base leading-relaxed max-w-2xl mt-4">
-                The Bahrain International Circuit is located in Sakhir, approximately 30 km south of Manama city centre.
-                The fastest and most stress-free option on race day is the official shuttle bus from your hotel.
-                Journey time is approximately 30–40 minutes. Careem and taxis are available but expect high demand
-                after sessions end.
+                {race.circuitName} is located in {race.city}.
+                The fastest and most stress-free option on race day is typically public transport or the official shuttle bus from your hotel.
+                Allow 45–60 minutes for travel from major hotel districts.
               </p>
             )}
           </div>
         </div>
 
-        {isMelbourne && (
-          <div className="mb-12 max-w-5xl mx-auto">
-            <CircuitMap className="rounded-xl overflow-hidden border border-[var(--border-subtle)]" />
-          </div>
-        )}
-        {isShanghai && (
+        {raceContent?.circuitMapSrc && (
           <div className="mb-12 max-w-5xl mx-auto">
             <CircuitMap
-              src="/tracks/Shanghai_Circuit.avif"
-              alt="Shanghai International Circuit — Track Map"
-              width={1252}
-              height={704}
-              className="rounded-xl overflow-hidden border border-[var(--border-subtle)]"
-            />
-          </div>
-        )}
-        {isBahrain && (
-          <div className="mb-12 max-w-5xl mx-auto">
-            <CircuitMap
-              src="/tracks/Bahrain_Circuit.avif"
-              alt="Bahrain International Circuit — Track Map"
+              src={raceContent.circuitMapSrc}
+              alt={`${race.circuitName} — Track Map`}
               width={1252}
               height={704}
               className="rounded-xl overflow-hidden border border-[var(--border-subtle)]"
@@ -249,20 +136,20 @@ export default async function GettingTherePage({ params }: Props) {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <h3 className="font-display font-bold text-white">{t.title}</h3>
-                          {t.badge && (
+                          {t.bestFor && t.bestFor !== 'General' && (
                             <span
-                              className="text-xs px-2 py-0.5 rounded-full font-medium"
+                              className="text-[10px] px-2 py-0.5 rounded-full font-medium uppercase tracking-wider"
                               style={{
-                                color: t.badgeColor,
-                                backgroundColor: `${t.badgeColor}20`,
-                                border: `1px solid ${t.badgeColor}40`,
+                                color: t.bestFor.toLowerCase().includes('recommend') ? 'var(--accent-teal)' : 'var(--accent-red)',
+                                backgroundColor: t.bestFor.toLowerCase().includes('recommend') ? 'rgba(45, 212, 191, 0.1)' : 'rgba(255, 59, 48, 0.1)',
+                                border: `1px solid ${t.bestFor.toLowerCase().includes('recommend') ? 'rgba(45, 212, 191, 0.2)' : 'rgba(255, 59, 48, 0.2)'}`,
                               }}
                             >
-                              {t.badge}
+                              {t.bestFor}
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{t.desc}</p>
+                        <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{t.details}</p>
                       </div>
                     </div>
                   </div>
@@ -318,9 +205,9 @@ export default async function GettingTherePage({ params }: Props) {
               Things to Do Between Sessions
             </h2>
             <p className="text-[var(--text-secondary)] text-sm leading-relaxed mb-4">
-              {isMelbourne
+              {race.city === 'Melbourne'
                 ? 'Albert Park is 3 km from the CBD — every session gap is an opportunity to explore Melbourne\'s food, culture, and nightlife.'
-                : 'Curated activities matched to every F1 session gap in the race weekend schedule.'}
+                : `Curated activities in ${race.city} matched to every F1 session gap in the race weekend schedule.`}
             </p>
             <Link
               href={`/races/${raceSlug}/experiences`}

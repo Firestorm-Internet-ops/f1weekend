@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Breadcrumb from '@/components/Breadcrumb';
 import RaceSwitcher from '@/components/race/RaceSwitcher';
-import { getRaceBySlug, getRaceContent } from '@/services/race.service';
+import { getRaceBySlug, getRaceContent, getAvailableRaces } from '@/services/race.service';
 
 // Inline TipsContent type (was previously in src/data/race-content.ts)
 interface TipsContent {
@@ -41,10 +41,24 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { raceSlug } = await params;
-  const raceContentRow = await getRaceContent(raceSlug);
+  const [race, raceContentRow] = await Promise.all([
+    getRaceBySlug(raceSlug),
+    getRaceContent(raceSlug),
+  ]);
+  
+  if (!race) return {};
+
   const tipsContent = raceContentRow?.tipsContent as TipsContent | null | undefined;
-  if (!tipsContent) return {};
   const canonical = `https://f1weekend.co/races/${raceSlug}/tips`;
+
+  if (!tipsContent || !tipsContent.meta) {
+    return {
+      title: `${race.city} F1 Travel Tips & FAQ | F1 Weekend`,
+      description: `Everything you need to know for your ${race.city} F1 race weekend. Local tips, FAQ, and transport guides.`,
+      alternates: { canonical },
+    };
+  }
+
   return {
     title: tipsContent.meta.title,
     description: tipsContent.meta.description,
@@ -61,15 +75,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function TipsPage({ params }: Props) {
   const { raceSlug } = await params;
-  const [raceContentRow, race] = await Promise.all([
+  const [raceContentRow, race, availableRaces] = await Promise.all([
     getRaceContent(raceSlug),
     getRaceBySlug(raceSlug),
+    getAvailableRaces(),
   ]);
   const tipsContent = raceContentRow?.tipsContent as TipsContent | null | undefined;
   if (!tipsContent) notFound();
   if (!race) notFound();
 
-  const faqLd = {
+  const faqLd = (tipsContent.faq && tipsContent.faq.length > 0) ? {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
     mainEntity: tipsContent.faq.map(({ q, a }) => ({
@@ -77,7 +92,7 @@ export default async function TipsPage({ params }: Props) {
       name: q,
       acceptedAnswer: { '@type': 'Answer', text: a },
     })),
-  };
+  } : null;
 
   const breadcrumbLd = {
     '@context': 'https://schema.org',
@@ -91,7 +106,7 @@ export default async function TipsPage({ params }: Props) {
 
   return (
     <div className="min-h-screen pt-24 pb-24 px-4">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }} />
+      {faqLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }} />}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
 
       <div className="max-w-3xl mx-auto">
@@ -101,7 +116,7 @@ export default async function TipsPage({ params }: Props) {
           { label: 'Tips & FAQ' },
         ]} />
 
-        <RaceSwitcher raceSlug={raceSlug} pageType="tips" />
+        <RaceSwitcher currentRace={race} availableRaces={availableRaces} pageType="tips" />
 
         <p className="text-xs font-medium uppercase-label text-[var(--accent-red)] mb-2 tracking-widest">
           Round {race.round} · {race.season} Season
@@ -111,88 +126,98 @@ export default async function TipsPage({ params }: Props) {
           <span className="text-[var(--accent-teal)]">Tips &amp; FAQ</span>
         </h1>
         <p className="text-[var(--text-secondary)] text-lg mb-10">
-          {tipsContent.heroSubtitle}
+          {tipsContent.heroSubtitle ?? `Everything you need to know for your ${race.city} F1 race weekend.`}
         </p>
 
         {/* Experiences by Category */}
-        <section className="mb-12">
-          <h2 className="font-display font-bold text-2xl text-white uppercase-heading mb-4">
-            Experiences by Category
-          </h2>
-          <div className="space-y-8">
-            {tipsContent.categories.map(({ title, color, description, linkHref, linkLabel }) => (
-              <div key={title}>
-                <h3 className="font-display font-bold text-lg mb-3" style={{ color }}>
-                  {title}
-                </h3>
-                <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-3">
-                  {description}
-                </p>
-                <Link href={linkHref} className="text-sm font-medium text-[var(--accent-teal)] hover:text-white transition-colors">
-                  {linkLabel}
-                </Link>
-              </div>
-            ))}
-          </div>
-        </section>
+        {tipsContent.categories && tipsContent.categories.length > 0 && (
+          <section className="mb-12">
+            <h2 className="font-display font-bold text-2xl text-white uppercase-heading mb-4">
+              Experiences by Category
+            </h2>
+            <div className="space-y-8">
+              {tipsContent.categories.map(({ title, color, description, linkHref, linkLabel }) => (
+                <div key={title}>
+                  <h3 className="font-display font-bold text-lg mb-3" style={{ color }}>
+                    {title}
+                  </h3>
+                  <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-3">
+                    {description}
+                  </p>
+                  <Link href={linkHref} className="text-sm font-medium text-[var(--accent-teal)] hover:text-white transition-colors">
+                    {linkLabel}
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Travel Tips */}
-        <section className="mb-12 border-t border-[var(--border-subtle)] pt-10">
-          <h2 className="font-display font-bold text-2xl text-white uppercase-heading mb-6">
-            {race.city} Travel Tips
-          </h2>
-          <div className="space-y-4">
-            {tipsContent.travelTips.map(({ heading, body }) => (
-              <div key={heading} className="p-5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
-                <p className="font-medium text-white mb-2">{heading}</p>
-                <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{body}</p>
-              </div>
-            ))}
-          </div>
-        </section>
+        {tipsContent.travelTips && tipsContent.travelTips.length > 0 && (
+          <section className="mb-12 border-t border-[var(--border-subtle)] pt-10">
+            <h2 className="font-display font-bold text-2xl text-white uppercase-heading mb-6">
+              {race.city} Travel Tips
+            </h2>
+            <div className="space-y-4">
+              {tipsContent.travelTips.map(({ heading, body }) => (
+                <div key={heading} className="p-5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
+                  <p className="font-medium text-white mb-2">{heading}</p>
+                  <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{body}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Getting There */}
-        <section className="mb-12 border-t border-[var(--border-subtle)] pt-10">
-          <h2 className="font-display font-bold text-2xl text-white uppercase-heading mb-4">
-            {tipsContent.gettingThere.heading}
-          </h2>
-          <p className="text-[var(--text-secondary)] text-base leading-relaxed mb-4">
-            {tipsContent.gettingThere.intro}
-          </p>
-          <div className="space-y-3 mb-6">
-            {tipsContent.gettingThere.options.map(({ icon, title, desc }) => (
-              <div key={title} className="flex items-start gap-4 p-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
-                <span className="text-xl mt-0.5 shrink-0">{icon}</span>
-                <div>
-                  <p className="font-medium text-white mb-1">{title}</p>
-                  <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{desc}</p>
+        {tipsContent.gettingThere && (
+          <section className="mb-12 border-t border-[var(--border-subtle)] pt-10">
+            <h2 className="font-display font-bold text-2xl text-white uppercase-heading mb-4">
+              {tipsContent.gettingThere.heading}
+            </h2>
+            <p className="text-[var(--text-secondary)] text-base leading-relaxed mb-4">
+              {tipsContent.gettingThere.intro}
+            </p>
+            <div className="space-y-3 mb-6">
+              {tipsContent.gettingThere.options?.map(({ icon, title, desc }) => (
+                <div key={title} className="flex items-start gap-4 p-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
+                  <span className="text-xl mt-0.5 shrink-0">{icon}</span>
+                  <div>
+                    <p className="font-medium text-white mb-1">{title}</p>
+                    <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{desc}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-          <Link
-            href={tipsContent.gettingThere.fullGuideHref}
-            className="text-sm font-medium text-[var(--accent-teal)] hover:text-white transition-colors"
-          >
-            Full transport guide →
-          </Link>
-        </section>
+              ))}
+            </div>
+            {tipsContent.gettingThere.fullGuideHref && (
+              <Link
+                href={tipsContent.gettingThere.fullGuideHref}
+                className="text-sm font-medium text-[var(--accent-teal)] hover:text-white transition-colors"
+              >
+                Full transport guide →
+              </Link>
+            )}
+          </section>
+        )}
 
         {/* FAQ */}
-        <section className="border-t border-[var(--border-subtle)] pt-10">
-          <h2 className="font-display font-bold text-2xl text-white uppercase-heading mb-6">
-            Frequently Asked Questions
-          </h2>
-          {tipsContent.faq.map(({ q, a }) => (
-            <details key={q} className="border-b border-[var(--border-subtle)] py-4">
-              <summary className="font-display font-bold text-white cursor-pointer list-none flex items-center justify-between gap-2">
-                {q}
-                <span className="text-[var(--text-secondary)] text-sm shrink-0">+</span>
-              </summary>
-              <p className="text-[var(--text-secondary)] text-sm mt-3 leading-relaxed">{a}</p>
-            </details>
-          ))}
-        </section>
+        {tipsContent.faq && tipsContent.faq.length > 0 && (
+          <section className="border-t border-[var(--border-subtle)] pt-10">
+            <h2 className="font-display font-bold text-2xl text-white uppercase-heading mb-6">
+              Frequently Asked Questions
+            </h2>
+            {tipsContent.faq.map(({ q, a }) => (
+              <details key={q} className="border-b border-[var(--border-subtle)] py-4">
+                <summary className="font-display font-bold text-white cursor-pointer list-none flex items-center justify-between gap-2">
+                  {q}
+                  <span className="text-[var(--text-secondary)] text-sm shrink-0">+</span>
+                </summary>
+                <p className="text-[var(--text-secondary)] text-sm mt-3 leading-relaxed">{a}</p>
+              </details>
+            ))}
+          </section>
+        )}
 
         {/* CTA */}
         <div className="mt-12 pt-8 border-t border-[var(--border-subtle)] flex flex-wrap gap-4">

@@ -1,5 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { getAllRaces } from '@/services/race.service';
+import { formatRaceDates } from '@/lib/utils';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'F1 2026 Season Travel Guide — All 24 Races, Cities & Dates | F1 Weekend',
@@ -28,46 +32,6 @@ export const metadata: Metadata = {
   },
 };
 
-interface Race {
-  round: number;
-  name: string;
-  city: string;
-  country: string;
-  flag: string;
-  circuit: string;
-  dates: string;
-  raceEnd?: string; // ISO date of race Sunday, for upcoming filtering
-  slug: string | null;
-  hasGuide: boolean;
-}
-
-const F1_2026: Race[] = [
-  { round: 1,  name: 'Australian Grand Prix',      city: 'Melbourne',    country: 'Australia',      flag: '🇦🇺', circuit: 'Albert Park Circuit',               dates: 'Mar 5–8',     raceEnd: '2026-03-08', slug: 'melbourne-2026', hasGuide: true  },
-  { round: 2,  name: 'Chinese Grand Prix',          city: 'Shanghai',     country: 'China',           flag: '🇨🇳', circuit: 'Shanghai International Circuit',    dates: 'Mar 13–15',   raceEnd: '2026-03-15', slug: 'shanghai-2026',  hasGuide: true  },
-  { round: 3,  name: 'Japanese Grand Prix',         city: 'Suzuka',       country: 'Japan',           flag: '🇯🇵', circuit: 'Suzuka International Racing Course', dates: 'Mar 27–29',   raceEnd: '2026-03-29', slug: 'japan-2026',     hasGuide: true  },
-  { round: 4,  name: 'Bahrain Grand Prix',          city: 'Sakhir',       country: 'Bahrain',         flag: '🇧🇭', circuit: 'Bahrain International Circuit',     dates: 'Apr 10–12',   raceEnd: '2026-04-12', slug: 'bahrain-2026',   hasGuide: true  },
-  { round: 5,  name: 'Saudi Arabian Grand Prix',    city: 'Jeddah',       country: 'Saudi Arabia',    flag: '🇸🇦', circuit: 'Jeddah Corniche Circuit',           dates: 'Apr 23–26',   slug: null,             hasGuide: false },
-  { round: 6,  name: 'Miami Grand Prix',            city: 'Miami',        country: 'USA',             flag: '🇺🇸', circuit: 'Miami International Autodrome',     dates: 'May 7–10',    slug: null,             hasGuide: false },
-  { round: 7,  name: 'Emilia Romagna Grand Prix',   city: 'Imola',        country: 'Italy',           flag: '🇮🇹', circuit: 'Autodromo Enzo e Dino Ferrari',     dates: 'May 21–24',   slug: null,             hasGuide: false },
-  { round: 8,  name: 'Monaco Grand Prix',           city: 'Monaco',       country: 'Monaco',          flag: '🇲🇨', circuit: 'Circuit de Monaco',                 dates: 'May 28–31',   slug: null,             hasGuide: false },
-  { round: 9,  name: 'Spanish Grand Prix',          city: 'Barcelona',    country: 'Spain',           flag: '🇪🇸', circuit: 'Circuit de Barcelona-Catalunya',    dates: 'Jun 4–7',     slug: null,             hasGuide: false },
-  { round: 10, name: 'Canadian Grand Prix',         city: 'Montreal',     country: 'Canada',          flag: '🇨🇦', circuit: 'Circuit Gilles Villeneuve',         dates: 'Jun 11–14',   slug: null,             hasGuide: false },
-  { round: 11, name: 'Austrian Grand Prix',         city: 'Spielberg',    country: 'Austria',         flag: '🇦🇹', circuit: 'Red Bull Ring',                     dates: 'Jun 25–28',   slug: null,             hasGuide: false },
-  { round: 12, name: 'British Grand Prix',          city: 'Silverstone',  country: 'Great Britain',   flag: '🇬🇧', circuit: 'Silverstone Circuit',               dates: 'Jul 2–5',     slug: null,             hasGuide: false },
-  { round: 13, name: 'Belgian Grand Prix',          city: 'Spa',          country: 'Belgium',         flag: '🇧🇪', circuit: 'Circuit de Spa-Francorchamps',      dates: 'Jul 17–19',   slug: null,             hasGuide: false },
-  { round: 14, name: 'Hungarian Grand Prix',        city: 'Budapest',     country: 'Hungary',         flag: '🇭🇺', circuit: 'Hungaroring',                       dates: 'Jul 24–26',   slug: null,             hasGuide: false },
-  { round: 15, name: 'Dutch Grand Prix',            city: 'Zandvoort',    country: 'Netherlands',     flag: '🇳🇱', circuit: 'Circuit Zandvoort',                 dates: 'Aug 27–30',   slug: null,             hasGuide: false },
-  { round: 16, name: 'Italian Grand Prix',          city: 'Monza',        country: 'Italy',           flag: '🇮🇹', circuit: 'Autodromo Nazionale Monza',         dates: 'Sep 4–6',     slug: null,             hasGuide: false },
-  { round: 17, name: 'Azerbaijan Grand Prix',       city: 'Baku',         country: 'Azerbaijan',      flag: '🇦🇿', circuit: 'Baku City Circuit',                 dates: 'Sep 17–20',   slug: null,             hasGuide: false },
-  { round: 18, name: 'Singapore Grand Prix',        city: 'Singapore',    country: 'Singapore',       flag: '🇸🇬', circuit: 'Marina Bay Street Circuit',         dates: 'Sep 25–27',   slug: null,             hasGuide: false },
-  { round: 19, name: 'United States Grand Prix',    city: 'Austin',       country: 'USA',             flag: '🇺🇸', circuit: 'Circuit of the Americas',           dates: 'Oct 15–18',   slug: null,             hasGuide: false },
-  { round: 20, name: 'Mexico City Grand Prix',      city: 'Mexico City',  country: 'Mexico',          flag: '🇲🇽', circuit: 'Autodromo Hermanos Rodriguez',      dates: 'Oct 22–25',   slug: null,             hasGuide: false },
-  { round: 21, name: 'São Paulo Grand Prix',        city: 'São Paulo',    country: 'Brazil',          flag: '🇧🇷', circuit: 'Autodromo Jose Carlos Pace',        dates: 'Oct 30–Nov 1',slug: null,             hasGuide: false },
-  { round: 22, name: 'Las Vegas Grand Prix',        city: 'Las Vegas',    country: 'USA',             flag: '🇺🇸', circuit: 'Las Vegas Strip Circuit',           dates: 'Nov 19–22',   slug: null,             hasGuide: false },
-  { round: 23, name: 'Qatar Grand Prix',            city: 'Lusail',       country: 'Qatar',           flag: '🇶🇦', circuit: 'Lusail International Circuit',      dates: 'Nov 27–29',   slug: null,             hasGuide: false },
-  { round: 24, name: 'Abu Dhabi Grand Prix',        city: 'Abu Dhabi',    country: 'UAE',             flag: '🇦🇪', circuit: 'Yas Marina Circuit',                dates: 'Dec 4–6',     slug: null,             hasGuide: false },
-];
-
 const FAQ = [
   {
     q: 'When is the 2026 F1 season?',
@@ -95,47 +59,64 @@ const FAQ = [
   },
 ];
 
-const eventSeriesLd = {
-  '@context': 'https://schema.org',
-  '@type': 'EventSeries',
-  name: '2026 Formula 1 World Championship',
-  url: 'https://f1weekend.co/f1-2026',
-  description: 'The 2026 FIA Formula One World Championship — 24 grands prix across 24 cities.',
-  organizer: { '@type': 'Organization', name: 'Formula One Management', url: 'https://www.formula1.com' },
-  startDate: '2026-03-05',
-  endDate: '2026-12-06',
-};
+export default async function F12026Page() {
+  const allRaces = await getAllRaces();
 
-const itemListLd = {
-  '@context': 'https://schema.org',
-  '@type': 'ItemList',
-  name: '2026 F1 Calendar — All 24 Grands Prix',
-  url: 'https://f1weekend.co/f1-2026',
-  numberOfItems: F1_2026.length,
-  itemListElement: F1_2026.map((race, i) => ({
-    '@type': 'ListItem',
-    position: i + 1,
-    name: race.name,
-    item: race.slug ? `https://f1weekend.co/races/${race.slug}` : `https://f1weekend.co/f1-2026`,
-  })),
-};
-
-const faqLd = {
-  '@context': 'https://schema.org',
-  '@type': 'FAQPage',
-  mainEntity: FAQ.map(({ q, a }) => ({
-    '@type': 'Question',
-    name: q,
-    acceptedAnswer: { '@type': 'Answer', text: a },
-  })),
-};
-
-export default function F12026Page() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+
+  const F1_2026 = allRaces.map(r => ({
+    round: r.round,
+    name: r.name,
+    city: r.city,
+    country: r.country,
+    flag: r.flag ?? '🏁',
+    circuit: r.circuitName,
+    dates: formatRaceDates(r.raceDate, r.hasThursdayFreeDay),
+    raceEnd: r.raceDate,
+    slug: r.slug,
+    hasGuide: !!r.available,  // Only races with experiences show "Guide ->"
+    isAvailable: !!r.available // used for featured section
+  }));
+
+  const eventSeriesLd = {
+    '@context': 'https://schema.org',
+    '@type': 'EventSeries',
+    name: '2026 Formula 1 World Championship',
+    url: 'https://f1weekend.co/f1-2026',
+    description: 'The 2026 FIA Formula One World Championship — 24 grands prix across 24 cities.',
+    organizer: { '@type': 'Organization', name: 'Formula One Management', url: 'https://www.formula1.com' },
+    startDate: '2026-03-05',
+    endDate: '2026-12-06',
+  };
+
+  const itemListLd = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: '2026 F1 Calendar — All 24 Grands Prix',
+    url: 'https://f1weekend.co/f1-2026',
+    numberOfItems: F1_2026.length,
+    itemListElement: F1_2026.map((race, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: race.name,
+      item: race.slug ? `https://f1weekend.co/races/${race.slug}` : `https://f1weekend.co/f1-2026`,
+    })),
+  };
+
+  const faqLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: FAQ.map(({ q, a }) => ({
+      '@type': 'Question',
+      name: q,
+      acceptedAnswer: { '@type': 'Answer', text: a },
+    })),
+  };
+
   // Next 2 upcoming guide races (race weekend not yet over)
   const guideRaces = F1_2026
-    .filter((r) => r.hasGuide && r.raceEnd && new Date(r.raceEnd) >= today)
+    .filter((r) => r.isAvailable && r.raceEnd && new Date(r.raceEnd) >= today)
     .slice(0, 2);
 
   return (
@@ -187,7 +168,7 @@ export default function F12026Page() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
               {guideRaces.map((race) => (
                 <Link
-                  key={race.round}
+                  key={race.slug}
                   href={`/races/${race.slug}`}
                   className="group p-5 rounded-xl border border-[var(--accent-teal)]/30 bg-[var(--bg-secondary)] hover:border-[var(--accent-teal)]/70 hover:bg-[var(--bg-surface)] transition-all"
                 >
@@ -226,7 +207,7 @@ export default function F12026Page() {
             <div className="rounded-xl border border-[var(--border-subtle)] overflow-hidden">
               {F1_2026.map((race, i) => (
                 <div
-                  key={race.round}
+                  key={race.slug}
                   className={`flex items-center gap-4 px-5 py-4 ${
                     i < F1_2026.length - 1 ? 'border-b border-[var(--border-subtle)]' : ''
                   } ${race.hasGuide ? 'bg-[var(--bg-secondary)]' : ''}`}
@@ -247,7 +228,7 @@ export default function F12026Page() {
                       Guide →
                     </Link>
                   ) : (
-                    <span className="shrink-0 text-xs font-medium px-3 py-1.5 rounded-full border border-[var(--border-subtle)] text-[var(--text-secondary)] whitespace-nowrap">
+                    <span className="shrink-0 text-xs font-medium px-3 py-1.5 rounded-full border border-dashed border-[var(--border-subtle)] text-[var(--text-secondary)]/50 whitespace-nowrap cursor-default">
                       Coming Soon
                     </span>
                   )}
@@ -285,24 +266,15 @@ export default function F12026Page() {
               Start Planning
             </p>
             <div className="flex flex-wrap gap-4">
-              <Link
-                href="/itinerary?race=melbourne-2026"
-                className="px-6 py-3 rounded-xl bg-[var(--accent-red)] hover:bg-[var(--accent-red-hover)] text-white font-display font-bold transition-colors"
-              >
-                🇦🇺 Melbourne GP Guide
-              </Link>
-              <Link
-                href="/itinerary?race=shanghai-2026"
-                className="px-6 py-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] font-display font-bold hover:text-white hover:border-[var(--border-medium)] transition-colors"
-              >
-                🇨🇳 Shanghai GP Guide
-              </Link>
-              <Link
-                href="/itinerary?race=japan-2026"
-                className="px-6 py-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] font-display font-bold hover:text-white hover:border-[var(--border-medium)] transition-colors"
-              >
-                🇯🇵 Japanese GP Guide
-              </Link>
+              {F1_2026.filter(r => r.isAvailable).slice(0, 3).map(race => (
+                <Link
+                  key={race.slug}
+                  href={`/itinerary?race=${race.slug}`}
+                  className="px-6 py-3 rounded-xl bg-[var(--accent-red)] hover:bg-[var(--accent-red-hover)] text-white font-display font-bold transition-colors"
+                >
+                  {race.flag} {race.city} GP Guide
+                </Link>
+              ))}
             </div>
           </section>
 

@@ -6,29 +6,30 @@ import { computeISODayDates, getUtcOffsetHours, getSessionStatus, getSessionProg
 
 // ─── Series config ───────────────────────────────────────────────
 
-const SERIES_CONFIG: Record<SeriesKey, { color: string; label: string; shortLabel: string }> = {
+const SERIES_CONFIG: Record<string, { color: string; label: string; shortLabel: string }> = {
   f1:                { color: '#E10600', label: 'Formula 1',               shortLabel: 'F1'    },
   f2:                { color: '#FF6B35', label: 'FIA Formula 2',           shortLabel: 'F2'    },
   f3:                { color: '#FFB800', label: 'FIA Formula 3',           shortLabel: 'F3'    },
   supercars:         { color: '#6E6E82', label: 'Supercars Championship',  shortLabel: 'SC'    },
   porsche:           { color: '#A855F7', label: 'Porsche Carrera Cup',     shortLabel: 'PCC'   },
+  'porsche-cup':     { color: '#A855F7', label: 'Porsche Carrera Cup',     shortLabel: 'PCC'   },
   ferrari_challenge: { color: '#FF2800', label: 'Ferrari Challenge',       shortLabel: 'FC'    },
+  'f1-academy':      { color: '#F61BE0', label: 'F1 Academy',              shortLabel: 'F1A'   },
+  'sro-gt':          { color: '#00D2BE', label: 'SRO GT Cup',              shortLabel: 'GT'    },
   press:             { color: '#00D2BE', label: 'Press Conference',        shortLabel: 'PRESS' },
   promoter:          { color: '#3B82F6', label: 'Promoter Activity',       shortLabel: 'EVENT' },
+  'f1-exp':          { color: '#22C55E', label: 'F1 Experiences',          shortLabel: 'EXP'   },
   experiences:       { color: '#22C55E', label: 'F1 Experiences',          shortLabel: 'EXP'   },
 };
 
-const FILTER_CHIPS: { key: SeriesKey | 'all'; label: string }[] = [
+const FILTER_CHIPS: { key: string; label: string }[] = [
   { key: 'all',               label: 'All'       },
   { key: 'f1',                label: '🔴 F1'     },
-  { key: 'f2',                label: 'F2'        },
-  { key: 'f3',                label: 'F3'        },
-  { key: 'supercars',         label: '🚗 SC'     },
-  { key: 'porsche',           label: 'PCC'       },
-  { key: 'ferrari_challenge', label: 'Ferrari'   },
+  { key: 'f1-academy',        label: '🎀 Academy'},
+  { key: 'sro-gt',            label: '🏁 GT'     },
+  { key: 'porsche-cup',       label: 'PCC'       },
   { key: 'press',             label: '📋 Press'  },
-  { key: 'promoter',          label: 'Events'    },
-  { key: 'experiences',       label: '🎟 Exp'   },
+  { key: 'f1-exp',            label: '🎟 Exp'   },
 ];
 
 // ─── Types ───────────────────────────────────────────────────────
@@ -67,7 +68,7 @@ interface SessionRowProps {
 }
 
 function SessionRow({ entry, status, liveProgress, index, tzLabel }: SessionRowProps) {
-  const cfg = SERIES_CONFIG[entry.seriesKey];
+  const cfg = SERIES_CONFIG[entry.seriesKey || 'promoter'] || SERIES_CONFIG['promoter'];
   const isF1 = entry.seriesKey === 'f1';
   const isCompleted = status === 'completed';
   const isLive = status === 'live';
@@ -89,7 +90,7 @@ function SessionRow({ entry, status, liveProgress, index, tzLabel }: SessionRowP
         className="absolute left-0 top-0 bottom-0"
         style={{
           width: isF1 ? '3px' : '2px',
-          background: isCompleted ? 'var(--text-muted)' : cfg.color,
+          background: isCompleted ? 'var(--text-muted)' : (cfg?.color || '#3B82F6'),
         }}
       />
 
@@ -97,7 +98,7 @@ function SessionRow({ entry, status, liveProgress, index, tzLabel }: SessionRowP
       {isLive && (
         <div
           className="absolute bottom-0 left-0 h-0.5 transition-all duration-1000"
-          style={{ width: `${liveProgress}%`, background: cfg.color }}
+          style={{ width: `${liveProgress}%`, background: (cfg?.color || '#3B82F6') }}
         />
       )}
 
@@ -114,11 +115,11 @@ function SessionRow({ entry, status, liveProgress, index, tzLabel }: SessionRowP
           <span
             className="inline-block text-[10px] font-semibold uppercase-badge px-2 py-0.5 rounded-full mb-1"
             style={{
-              background: `${cfg.color}25`,
-              color: isCompleted ? 'var(--text-muted)' : cfg.color,
+              background: `${cfg?.color || '#3B82F6'}25`,
+              color: isCompleted ? 'var(--text-muted)' : (cfg?.color || '#3B82F6'),
             }}
           >
-            {cfg.shortLabel}
+            {cfg?.shortLabel || 'EVENT'}
           </span>
 
           {/* Session name */}
@@ -286,7 +287,7 @@ export default function ScheduleView({ schedule, initialDay = 'Thursday', tzLabe
         </div>
       ) : (
         <p className="text-[var(--text-secondary)] text-sm py-10 text-center">
-          No {activeFilter === 'all' ? '' : SERIES_CONFIG[activeFilter as SeriesKey].label + ' '}sessions on {activeDay}.
+          No {activeFilter === 'all' ? '' : (SERIES_CONFIG[activeFilter] || SERIES_CONFIG['promoter']).label + ' '}sessions on {activeDay}.
         </p>
       )}
     </div>

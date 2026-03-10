@@ -1,8 +1,8 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { RACES } from '@/lib/constants/races';
 import type { Race } from '@/types/race';
+import { formatRaceDates } from '@/lib/utils';
 
 interface Props {
   races: Race[];
@@ -14,7 +14,7 @@ interface Props {
 
 export default function RaceSwitcher({ races, currentSlug, pathTemplate, label = 'RACE' }: Props) {
   const router = useRouter();
-  const available = races.filter((r) => RACES[r.slug]?.available);
+  const available = races.filter((r) => r.available);
   if (available.length <= 1) return null;
 
   const btnClass = (active: boolean) =>
@@ -31,19 +31,15 @@ export default function RaceSwitcher({ races, currentSlug, pathTemplate, label =
       </p>
       <div className="flex gap-2 flex-wrap">
         {available.map((race) => {
-          const meta = RACES[race.slug];
-          if (!meta) return null;
           return (
             <button
               key={race.slug}
               onClick={() => router.push(pathTemplate.replace('{slug}', race.slug))}
               className={btnClass(race.slug === currentSlug)}
             >
-              {meta.flag && <span>{meta.flag}</span>}
-              <span>{meta.city}</span>
-              {meta.dates && (
-                <span className="text-xs text-[var(--text-secondary)]">{meta.dates}</span>
-              )}
+              {race.flag && <span>{race.flag}</span>}
+              <span>{race.city}</span>
+              <span className="text-xs text-[var(--text-secondary)]">{formatRaceDates(race.raceDate, race.hasThursdayFreeDay)}</span>
             </button>
           );
         })}

@@ -162,7 +162,7 @@ async function main() {
   if (existing[0]) {
     raceId = existing[0].id;
     await db.update(races).set({
-      name: 'Formula 1 Gulf Air Bahrain Grand Prix 2026',
+      name: 'Bahrain Grand Prix',
       season: 2026,
       round: 4,
       circuit_name: 'Bahrain International Circuit',
@@ -178,7 +178,7 @@ async function main() {
   } else {
     const result = await db.insert(races).values({
       slug: SLUG,
-      name: 'Formula 1 Gulf Air Bahrain Grand Prix 2026',
+      name: 'Bahrain Grand Prix',
       season: 2026,
       round: 4,
       circuit_name: 'Bahrain International Circuit',

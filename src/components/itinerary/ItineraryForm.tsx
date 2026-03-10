@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Race, Session } from '@/types/race';
-import { RACES } from '@/lib/constants/races';
+import { formatRaceDates } from '@/lib/utils';
 
 const ARRIVAL_DAYS = ['Wednesday', 'Thursday', 'Friday'] as const;
 const DEPARTURE_DAYS = ['Sunday', 'Monday', 'Tuesday'] as const;
@@ -132,7 +132,7 @@ export default function ItineraryForm({ races, sessionsByRace, defaultRaceSlug }
 
             {/* Race selector — dropdown */}
             {races.length > 1 && (() => {
-                const currentMeta = RACES[selectedRace];
+                const currentRace = races.find(r => r.slug === selectedRace);
                 return (
                     <div>
                         <label className="block text-xs font-medium uppercase-label text-[var(--text-secondary)] mb-3">
@@ -146,12 +146,12 @@ export default function ItineraryForm({ races, sessionsByRace, defaultRaceSlug }
                                 aria-expanded={raceDropOpen}
                                 aria-haspopup="listbox"
                             >
-                                {currentMeta?.flag && <span className="text-base">{currentMeta.flag}</span>}
-                                <span className="font-bold text-[var(--accent-red)]">{currentMeta?.short ?? selectedRace}</span>
+                                {currentRace?.flag && <span className="text-base">{currentRace.flag}</span>}
+                                <span className="font-bold text-[var(--accent-red)]">{currentRace?.shortCode ?? selectedRace}</span>
                                 <span className="text-[var(--text-secondary)]">·</span>
-                                <span>{currentMeta?.city ?? selectedRace}</span>
-                                {currentMeta?.dates && (
-                                    <span className="text-xs text-[var(--text-secondary)]">{currentMeta.dates}</span>
+                                <span>{currentRace?.city ?? selectedRace}</span>
+                                {currentRace?.raceDate && (
+                                    <span className="text-xs text-[var(--text-secondary)]">{formatRaceDates(currentRace.raceDate, currentRace.hasThursdayFreeDay)}</span>
                                 )}
                                 <svg
                                     className={`w-3.5 h-3.5 text-[var(--text-secondary)] transition-transform ${raceDropOpen ? 'rotate-180' : ''}`}
@@ -168,7 +168,6 @@ export default function ItineraryForm({ races, sessionsByRace, defaultRaceSlug }
                                     aria-label="Switch race"
                                 >
                                     {races.map(race => {
-                                        const meta = RACES[race.slug];
                                         const isActive = race.slug === selectedRace;
                                         return (
                                             <button
@@ -179,10 +178,10 @@ export default function ItineraryForm({ races, sessionsByRace, defaultRaceSlug }
                                                 onClick={() => { handleRaceChange(race.slug); setRaceDropOpen(false); }}
                                                 className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-[var(--bg-secondary)] transition-colors ${isActive ? 'bg-[var(--bg-secondary)]' : ''}`}
                                             >
-                                                <span className="text-xl">{meta?.flag}</span>
+                                                <span className="text-xl">{race.flag}</span>
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="text-sm font-medium text-white">{meta?.country ?? race.name}</p>
-                                                    <p className="text-xs text-[var(--text-secondary)]">{meta?.city ?? race.city} · {meta?.dates}</p>
+                                                    <p className="text-sm font-medium text-white">{race.name}</p>
+                                                    <p className="text-xs text-[var(--text-secondary)]">{race.city} · {formatRaceDates(race.raceDate, race.hasThursdayFreeDay)}</p>
                                                 </div>
                                                 {isActive && (
                                                     <span className="text-xs text-[var(--accent-teal)] font-bold">✓</span>

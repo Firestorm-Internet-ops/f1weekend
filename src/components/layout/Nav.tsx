@@ -3,22 +3,31 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
-import { RACES } from '@/lib/constants/races';
+import type { Race } from '@/types/race';
 
 function extractRaceSlug(pathname: string): string | null {
   const match = pathname.match(/^\/races\/([^/]+)/);
   return match ? match[1] : null;
 }
 
-export default function Nav({ defaultRaceSlug }: { defaultRaceSlug: string }) {
+export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: string; races: Race[] }) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [raceDropdownOpen, setRaceDropdownOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onScroll() {
+      setScrolled(window.scrollY > 300);
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   const raceSlug = extractRaceSlug(pathname);
   const displayRaceSlug = raceSlug ?? defaultRaceSlug;
-  const displayRace = RACES[displayRaceSlug] ?? null;
+  const displayRace = races.find(r => r.slug === displayRaceSlug) ?? races[0] ?? null;
 
   // Raw sub-route (everything after /races/[slug])
   const rawSubRoute = raceSlug ? pathname.slice(`/races/${raceSlug}`.length) : '';
@@ -62,7 +71,7 @@ export default function Nav({ defaultRaceSlug }: { defaultRaceSlug: string }) {
   return (
     <>
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-[var(--border-subtle)] bg-[var(--bg-primary)]/95 backdrop-blur-sm">
-        <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between relative">
           <div className="flex items-baseline gap-2">
             <Link
               href="/"
@@ -86,13 +95,13 @@ export default function Nav({ defaultRaceSlug }: { defaultRaceSlug: string }) {
           <div className="flex items-center gap-3">
             {/* Race switcher badge — visible on all non-homepage pages */}
             {displayRace && (
-              <div className="relative" ref={dropdownRef}>
+              <div className="relative sm:static" ref={dropdownRef}>
                 <button
                   onClick={() => setRaceDropdownOpen((o) => !o)}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-secondary)] text-sm font-medium text-white hover:border-[var(--border-medium)] transition-colors"
                 >
                   <span>{displayRace.flag}</span>
-                  <span className="text-[var(--accent-red)] font-bold">{displayRace.short}</span>
+                  <span className="text-[var(--accent-red)] font-bold">{displayRace.shortCode}</span>
                   <span className="hidden sm:inline text-[var(--text-secondary)]">·</span>
                   <span className="hidden sm:inline">{displayRace.city}</span>
                   <span className="text-[var(--text-secondary)] ml-0.5">▾</span>
@@ -100,31 +109,54 @@ export default function Nav({ defaultRaceSlug }: { defaultRaceSlug: string }) {
 
                 {raceDropdownOpen && (() => {
                   const today = new Date().toISOString().slice(0, 10);
-                  const allAvailable = Object.entries(RACES).filter(([, m]) => m.available);
-                  // Upcoming = endDate >= today, sorted chronologically (already in order)
-                  const upcoming = allAvailable.filter(([, m]) => m.endDate >= today);
-                  // Mobile shows first 2 upcoming; sm+ shows all available
+                  const upcoming = races.filter((r) => r.raceDate >= today);
                   const mobileRaces = upcoming.slice(0, 2);
 
-                  const renderRaceItem = (slug: string, meta: typeof RACES[string]) => (
-                    <Link
-                      key={slug}
-                      href={`/races/${slug}${subRoute}`}
-                      onClick={() => setRaceDropdownOpen(false)}
-                      className={`flex items-center gap-3 px-4 py-2.5 hover:bg-[var(--bg-secondary)] transition-colors ${
-                        slug === displayRaceSlug ? 'bg-[var(--bg-secondary)]' : ''
-                      }`}
-                    >
-                      <span className="text-lg">{meta.flag}</span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-white leading-tight">{meta.country}</p>
-                        <p className="text-xs text-[var(--text-secondary)]">{meta.city} · {meta.dates}</p>
-                      </div>
-                      {slug === displayRaceSlug && (
-                        <span className="text-xs text-[var(--accent-teal)] font-bold">✓</span>
-                      )}
-                    </Link>
-                  );
+                  const renderRaceItem = (race: Race) => {
+                    const d = new Date(race.raceDate + 'T00:00:00Z');
+                    const month = d.toLocaleDateString('en-AU', { month: 'short', timeZone: 'UTC' });
+                    const day = d.getUTCDate();
+                    const startOffset = race.hasThursdayFreeDay ? 3 : 2;
+                    const datesStr = `${month} ${day - startOffset}–${day}`;
+
+                    if (!race.available) {
+                      return (
+                        <div
+                          key={race.slug}
+                          className="flex items-center gap-3 px-4 py-2.5 opacity-60 cursor-default"
+                        >
+                          <span className="text-lg">{race.flag}</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-[var(--text-secondary)] leading-tight">{race.name}</p>
+                            <p className="text-xs text-[var(--text-muted)]">{race.city} · {datesStr}</p>
+                          </div>
+                          <span className="text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-wide border border-[var(--border-subtle)] rounded px-1.5 py-0.5">
+                            Soon
+                          </span>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <Link
+                        key={race.slug}
+                        href={scrolled && subRoute ? `/races/${race.slug}${subRoute}` : `/races/${race.slug}`}
+                        onClick={() => setRaceDropdownOpen(false)}
+                        className={`flex items-center gap-3 px-4 py-2.5 hover:bg-[var(--bg-secondary)] transition-colors ${
+                          race.slug === displayRaceSlug ? 'bg-[var(--bg-secondary)]' : ''
+                        }`}
+                      >
+                        <span className="text-lg">{race.flag}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-white leading-tight">{race.name}</p>
+                          <p className="text-xs text-[var(--text-secondary)]">{race.city} · {datesStr}</p>
+                        </div>
+                        {race.slug === displayRaceSlug && (
+                          <span className="text-xs text-[var(--accent-teal)] font-bold">✓</span>
+                        )}
+                      </Link>
+                    );
+                  };
 
                   const calendarLink = (
                     <Link
@@ -140,18 +172,18 @@ export default function Nav({ defaultRaceSlug }: { defaultRaceSlug: string }) {
                   );
 
                   return (
-                    <div className="absolute right-0 top-full mt-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-primary)] shadow-xl z-50 overflow-hidden
-                      w-64 sm:w-auto sm:min-w-[480px]">
+                    <div className="absolute right-0 sm:right-auto sm:left-1/2 sm:-translate-x-1/2 top-full mt-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-primary)] shadow-xl z-50 overflow-hidden
+                      w-64 sm:w-auto sm:min-w-[900px]">
                       {/* Mobile: 2 upcoming races only */}
                       <div className="sm:hidden">
-                        {mobileRaces.map(([slug, meta]) => renderRaceItem(slug, meta))}
+                        {mobileRaces.map((race) => renderRaceItem(race))}
                         <div className="border-t border-[var(--border-subtle)]">{calendarLink}</div>
                       </div>
 
-                      {/* sm+: all available races in a 2-column grid */}
+                      {/* sm+: all upcoming races in a 4-column grid */}
                       <div className="hidden sm:block">
-                        <div className="grid grid-cols-2">
-                          {allAvailable.map(([slug, meta]) => renderRaceItem(slug, meta))}
+                        <div className="grid grid-cols-4">
+                          {upcoming.map((race) => renderRaceItem(race))}
                         </div>
                         <div className="border-t border-[var(--border-subtle)]">{calendarLink}</div>
                       </div>

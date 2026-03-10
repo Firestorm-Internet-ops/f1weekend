@@ -18,7 +18,8 @@
     "select-candidates": "tsx --env-file=.env scripts/select-candidates.ts",
     "seed-candidates": "tsx --env-file=.env scripts/seed-from-candidates.ts",
     "enrich-gyg": "tsx --env-file=.env scripts/enrich-from-gyg.ts",
-    "enrich-seo": "tsx --env-file=.env scripts/enrich-seo-content.ts"
+    "enrich-seo": "tsx --env-file=.env scripts/enrich-seo-content.ts",
+    "patch:miami-schedule": "tsx --env-file=.env scripts/patch-miami-2026-schedule.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",

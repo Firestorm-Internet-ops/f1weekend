@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { marked } from 'marked';
 import { getExperienceBySlug, getExperiencesByRace, getSuggestedExperiences } from '@/services/experience.service';
-import { getRaceBySlug } from '@/services/race.service';
+import { getRaceBySlug, getAllRaces, getAvailableRaces } from '@/services/race.service';
 import BookButton from '@/components/experiences/BookButton';
 import PhotoSlider from '@/components/experiences/PhotoSlider';
 import Breadcrumb from '@/components/Breadcrumb';
@@ -16,6 +16,7 @@ import { CATEGORY_COLORS, CATEGORY_LABELS } from '@/lib/constants/categories';
 import { formatPrice } from '@/lib/utils';
 
 export const revalidate = 86400; // 24 hours
+export const dynamicParams = true; // SSR fallback for new races not yet in generateStaticParams
 
 interface Props {
   params: Promise<{ raceSlug: string; slug: string }>;
@@ -23,11 +24,10 @@ interface Props {
 
 export async function generateStaticParams() {
   try {
-    const slugs = ['melbourne-2026', 'shanghai-2026', 'japan-2026'];
+    const availableRaces = await getAvailableRaces();
     const results = await Promise.all(
-      slugs.map(async (raceSlug) => {
-        const race = await getRaceBySlug(raceSlug);
-        if (!race) return [];
+      availableRaces.map(async (race) => {
+        const raceSlug = race.slug;
         const exps = await getExperiencesByRace(race.id);
         return exps.map((e) => ({ raceSlug, slug: e.slug }));
       })
@@ -364,7 +364,7 @@ export default async function ExperienceDetailPage({ params }: Props) {
                       ? '⚡ Race-week favourite — books out early'
                       : exp.reviewCount >= 1000
                       ? `🔥 Over ${exp.reviewCount.toLocaleString()} fans have done this`
-                      : '⭐ Top-rated F1 experience in Melbourne'}
+                      : '⭐ Top-rated F1 experience'}
                   </p>
                 )}
                 {(!exp.bestseller && exp.reviewCount < 1000 && !(exp.rating >= 4.8 && exp.reviewCount >= 200)) && (

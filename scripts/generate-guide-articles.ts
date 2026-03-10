@@ -1,5 +1,5 @@
 /**
- * Generates SEO guide articles for featured Shanghai + Japan experiences
+ * Generates SEO guide articles for featured race experiences
  * and saves them directly to the guide_article column.
  *
  * Run: npx tsx --env-file=.env scripts/generate-guide-articles.ts
@@ -71,6 +71,20 @@ const RACE_CONTEXT: Record<string, {
     circuit: 'Bahrain International Circuit, Sakhir (about 30 km south of Manama)',
     getting_there: 'Taxi or ride-share from Manama city centre to Sakhir (approximately 30–40 minutes, BHD 5–8). Race-day shuttle buses also run from central Manama hotels.',
     currency_note: 'Prices are listed in USD. Bahrain uses the Bahraini Dinar (BHD); 1 BHD ≈ 2.65 USD.',
+  },
+  'melbourne-2026': {
+    dates: 'March 5–8, 2026',
+    schedule: `The 2026 Australian Grand Prix at Albert Park is a standard three-day race weekend. Friday has FP1 and FP2, Saturday has FP3 and Qualifying, and Sunday is Race Day. The widest free windows are Friday morning before FP1, the evening windows after sessions, and Sunday morning before race build-up.`,
+    circuit: 'Albert Park Grand Prix Circuit, Melbourne',
+    getting_there: 'Tram routes 3/5/6/16/64/67 and event shuttle services from central Melbourne',
+    currency_note: 'Prices are in Australian Dollars (AUD).',
+  },
+  'saudi-2026': {
+    dates: 'April 17–19, 2026',
+    schedule: `The 2026 Saudi Arabian Grand Prix at Jeddah is a night-race weekend. Friday sessions run at 16:30 and 20:00 local time. Saturday follows the same pattern with FP3 and Qualifying. Sunday Race Day lights out at 20:00 local time. This leaves long daytime windows for city experiences before heading to the circuit each evening.`,
+    circuit: 'Jeddah Corniche Circuit',
+    getting_there: 'Official race shuttles, taxis, and Careem from central Jeddah and Corniche hotels',
+    currency_note: 'Prices are in Saudi Riyal (SAR).',
   },
 };
 
@@ -194,7 +208,7 @@ async function main() {
     FROM experiences e
     JOIN races r ON e.race_id = r.id
     WHERE e.is_featured = 1
-      AND r.slug IN ('shanghai-2026', 'japan-2026', 'bahrain-2026')
+      AND r.slug IN ('shanghai-2026', 'japan-2026', 'bahrain-2026', 'melbourne-2026', 'saudi-2026')
     ORDER BY r.slug, e.slug
   `);
 
