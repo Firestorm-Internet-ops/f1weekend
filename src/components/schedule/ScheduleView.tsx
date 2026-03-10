@@ -22,7 +22,7 @@ const SERIES_CONFIG: Record<string, { color: string; label: string; shortLabel: 
   experiences:       { color: '#22C55E', label: 'F1 Experiences',          shortLabel: 'EXP'   },
 };
 
-const FILTER_CHIPS: { key: string; label: string }[] = [
+const FILTER_CHIPS: { key: SeriesKey | 'all'; label: string }[] = [
   { key: 'all',               label: 'All'       },
   { key: 'f1',                label: '🔴 F1'     },
   { key: 'f1-academy',        label: '🎀 Academy'},
@@ -287,7 +287,7 @@ export default function ScheduleView({ schedule, initialDay = 'Thursday', tzLabe
         </div>
       ) : (
         <p className="text-[var(--text-secondary)] text-sm py-10 text-center">
-          No {activeFilter === 'all' ? '' : (SERIES_CONFIG[activeFilter] || SERIES_CONFIG['promoter']).label + ' '}sessions on {activeDay}.
+          No {activeFilter === 'all' ? '' : (SERIES_CONFIG[activeFilter as string] || SERIES_CONFIG['promoter']).label + ' '}sessions on {activeDay}.
         </p>
       )}
     </div>
