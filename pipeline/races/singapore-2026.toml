@@ -1,0 +1,33 @@
+[race]
+slug = "singapore-2026"
+name = "Singapore Grand Prix"
+season = 2026
+round = 18
+circuit_name = "Marina Bay Street Circuit"
+city = "Singapore"
+country = "Singapore"
+country_code = "SG"
+circuit_lat = 1.2914
+circuit_lng = 103.8640
+timezone = "Asia/Singapore"
+race_date = "2026-10-11"
+flag = "🇸🇬"
+short_code = "SGP"
+has_thursday_free_day = false
+
+[gyg]
+search_query = "Singapore things to do"
+location_slug = "singapore-l167"
+pages = 4
+
+[pipeline]
+scoring_agent = "f1-seo"
+content_agent = "seo-aeo-geo-strategist"
+top_n = 47
+
+[schedule]
+string = """
+Friday 9 Oct: FP1 16:30-17:30, Sprint Qualifying 20:30-21:14
+Saturday 10 Oct: Sprint 17:00-18:00, Qualifying 21:00-22:00
+Sunday 11 Oct: Race 20:00-22:00
+"""

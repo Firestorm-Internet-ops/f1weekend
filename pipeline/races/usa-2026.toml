@@ -1,0 +1,33 @@
+[race]
+slug = "usa-2026"
+name = "United States Grand Prix"
+season = 2026
+round = 19
+circuit_name = "Circuit of the Americas"
+city = "Austin"
+country = "United States"
+country_code = "US"
+circuit_lat = 30.1328
+circuit_lng = -97.6411
+timezone = "America/Chicago"
+race_date = "2026-10-25"
+flag = "🇺🇸"
+short_code = "USA"
+has_thursday_free_day = false
+
+[gyg]
+search_query = "Austin Texas things to do"
+location_slug = "austin-l549"
+pages = 4
+
+[pipeline]
+scoring_agent = "f1-seo"
+content_agent = "seo-aeo-geo-strategist"
+top_n = 47
+
+[schedule]
+string = """
+Friday 23 Oct: FP1 12:30-13:30, FP2 16:00-17:00
+Saturday 24 Oct: FP3 12:30-13:30, Qualifying 16:00-17:00
+Sunday 25 Oct: Race 15:00-17:00
+"""

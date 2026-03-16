@@ -1,0 +1,33 @@
+[race]
+slug = "qatar-2026"
+name = "Qatar Grand Prix"
+season = 2026
+round = 23
+circuit_name = "Lusail International Circuit"
+city = "Lusail"
+country = "Qatar"
+country_code = "QA"
+circuit_lat = 25.4900
+circuit_lng = 51.4542
+timezone = "Asia/Qatar"
+race_date = "2026-11-29"
+flag = "🇶🇦"
+short_code = "QAT"
+has_thursday_free_day = false
+
+[gyg]
+search_query = "Doha Qatar things to do"
+location_slug = "doha-l162"
+pages = 3
+
+[pipeline]
+scoring_agent = "f1-seo"
+content_agent = "seo-aeo-geo-strategist"
+top_n = 47
+
+[schedule]
+string = """
+Friday 27 Nov: FP1 16:30-17:30, FP2 20:00-21:00
+Saturday 28 Nov: FP3 17:30-18:30, Qualifying 21:00-22:00
+Sunday 29 Nov: Race 19:00-21:00
+"""

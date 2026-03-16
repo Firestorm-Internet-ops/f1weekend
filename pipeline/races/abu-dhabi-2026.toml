@@ -1,0 +1,33 @@
+[race]
+slug = "abu-dhabi-2026"
+name = "Abu Dhabi Grand Prix"
+season = 2026
+round = 24
+circuit_name = "Yas Marina Circuit"
+city = "Abu Dhabi"
+country = "United Arab Emirates"
+country_code = "AE"
+circuit_lat = 24.4672
+circuit_lng = 54.6031
+timezone = "Asia/Dubai"
+race_date = "2026-12-06"
+flag = "🇦🇪"
+short_code = "ABU"
+has_thursday_free_day = false
+
+[gyg]
+search_query = "Abu Dhabi things to do"
+location_slug = "abu-dhabi-l459"
+pages = 4
+
+[pipeline]
+scoring_agent = "f1-seo"
+content_agent = "seo-aeo-geo-strategist"
+top_n = 47
+
+[schedule]
+string = """
+Friday 4 Dec: FP1 13:30-14:30, FP2 17:00-18:00
+Saturday 5 Dec: FP3 14:30-15:30, Qualifying 18:00-19:00
+Sunday 6 Dec: Race 17:00-19:00
+"""

@@ -1,0 +1,33 @@
+[race]
+slug = "austria-2026"
+name = "Austrian Grand Prix 2026"
+season = 2026
+round = 10
+circuit_name = "Red Bull Ring"
+city = "Spielberg"
+country = "Austria"
+country_code = "AT"
+circuit_lat = 47.2197
+circuit_lng = 14.7647
+timezone = "Europe/Vienna"
+race_date = "2026-06-28"
+flag = "🇦🇹"
+short_code = "AUT"
+has_thursday_free_day = false
+
+[gyg]
+search_query = "Spielberg Graz Austria things to do"
+location_slug = "graz-l481"
+pages = 2
+
+[pipeline]
+scoring_agent = "f1-seo"
+content_agent = "seo-aeo-geo-strategist"
+top_n = 45
+
+[schedule]
+string = """
+Friday 26 Jun: FP1 13:30-14:30, FP2 17:00-18:00
+Saturday 27 Jun: FP3 12:30-13:30, Qualifying 16:00-17:00
+Sunday 28 Jun: Race 15:00-17:00
+"""

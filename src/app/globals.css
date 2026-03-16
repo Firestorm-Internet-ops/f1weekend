@@ -24,13 +24,13 @@
 
   /* Text */
   --color-pit-text: #FFFFFF;
-  --color-pit-text-secondary: #B8B8CC;
-  --color-pit-text-tertiary: #6E6E82;
-  --color-pit-text-muted: #4A4A5C;
+  --color-pit-text-secondary: #D1D1E0;
+  --color-pit-text-tertiary: #A3A3B8;
+  --color-pit-text-muted: #7A7A8C;
 
   /* Borders */
-  --color-pit-border: #2A2A3C;
-  --color-pit-border-medium: #3A3A4C;
+  --color-pit-border: #3A3A4C;
+  --color-pit-border-medium: #4A4A5C;
 
   /* Experience Category Colors */
   --color-pit-cat-food: #FF6B35;
@@ -129,14 +129,14 @@
 
   /* Text */
   --text-primary: #FFFFFF;
-  --text-secondary: #B8B8CC;
-  --text-tertiary: #6E6E82;
-  --text-muted: #4A4A5C;
+  --text-secondary: #D1D1E0;
+  --text-tertiary: #A3A3B8;
+  --text-muted: #7A7A8C;
 
   /* Borders */
-  --border-subtle: #2A2A3C;
-  --border-medium: #3A3A4C;
-  --border-strong: #E10600;
+  --border-subtle: #3A3A4C;
+  --border-medium: #4A4A5C;
+  --border-strong: #FF1801;
 
   /* Session Status */
   --session-live: #E10600;
@@ -171,6 +171,8 @@ body {
   background: var(--bg-primary);
   color: var(--text-primary);
   font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
 }
 
 /* Carbon fiber texture — use on hero sections */

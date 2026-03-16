@@ -1,0 +1,33 @@
+[race]
+slug = "hungary-2026"
+name = "Hungarian Grand Prix 2026"
+season = 2026
+round = 13
+circuit_name = "Hungaroring"
+city = "Budapest"
+country = "Hungary"
+country_code = "HU"
+circuit_lat = 47.5830
+circuit_lng = 19.2505
+timezone = "Europe/Budapest"
+race_date = "2026-08-02"
+flag = "🇭🇺"
+short_code = "HUN"
+has_thursday_free_day = false
+
+[gyg]
+search_query = "Budapest things to do"
+location_slug = "budapest-l29"
+pages = 2
+
+[pipeline]
+scoring_agent = "f1-seo"
+content_agent = "seo-aeo-geo-strategist"
+top_n = 45
+
+[schedule]
+string = """
+Friday 31 Jul: FP1 13:30-14:30, FP2 17:00-18:00
+Saturday 1 Aug: FP3 12:30-13:30, Qualifying 16:00-17:00
+Sunday 2 Aug: Race 15:00-17:00
+"""

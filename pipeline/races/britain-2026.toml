@@ -1,0 +1,33 @@
+[race]
+slug = "britain-2026"
+name = "British Grand Prix 2026"
+season = 2026
+round = 11
+circuit_name = "Silverstone Circuit"
+city = "Silverstone"
+country = "United Kingdom"
+country_code = "GB"
+circuit_lat = 52.0786
+circuit_lng = -1.0169
+timezone = "Europe/London"
+race_date = "2026-07-05"
+flag = "🇬🇧"
+short_code = "GBR"
+has_thursday_free_day = false
+
+[gyg]
+search_query = "Silverstone Northampton things to do"
+location_slug = "northampton-l1681"
+pages = 2
+
+[pipeline]
+scoring_agent = "f1-seo"
+content_agent = "seo-aeo-geo-strategist"
+top_n = 45
+
+[schedule]
+string = """
+Friday 3 Jul: FP1 12:30-13:30, FP2 16:00-17:00
+Saturday 4 Jul: FP3 11:30-12:30, Qualifying 15:00-16:00
+Sunday 5 Jul: Race 15:00-17:00
+"""

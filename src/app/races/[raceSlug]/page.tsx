@@ -120,15 +120,19 @@ export default async function RaceLandingPage({ params }: Props) {
           — curated activities matched to every session gap in the weekend.
         </p>
 
-        {raceContent?.whyCityText && (
+        {(raceContent?.whyCityText || raceContent?.circuitMapSrc) && (
           <section className="mt-12 pt-8 border-t border-[var(--border-subtle)]">
-            <h2 className="font-display font-bold text-xl text-white uppercase-heading mb-4">
-              Why {race.city} Is the Perfect F1 City
-            </h2>
-            <p className="text-[var(--text-secondary)] text-base leading-relaxed max-w-2xl mb-6">
-              {raceContent.whyCityText}
-            </p>
-            {raceContent.circuitMapSrc && (
+            {raceContent?.whyCityText && (
+              <>
+                <h2 className="font-display font-bold text-xl text-white uppercase-heading mb-4">
+                  Why {race.city} Is the Perfect F1 City
+                </h2>
+                <p className="text-[var(--text-secondary)] text-base leading-relaxed max-w-2xl mb-6">
+                  {raceContent.whyCityText}
+                </p>
+              </>
+            )}
+            {raceContent?.circuitMapSrc && (
               <CircuitMap
                 src={raceContent.circuitMapSrc}
                 alt={`${race.circuitName} — Track Map`}

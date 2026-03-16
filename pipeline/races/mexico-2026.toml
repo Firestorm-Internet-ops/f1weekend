@@ -1,0 +1,33 @@
+[race]
+slug = "mexico-2026"
+name = "Mexico City Grand Prix"
+season = 2026
+round = 20
+circuit_name = "Autodromo Hermanos Rodriguez"
+city = "Mexico City"
+country = "Mexico"
+country_code = "MX"
+circuit_lat = 19.4042
+circuit_lng = -99.0907
+timezone = "America/Mexico_City"
+race_date = "2026-11-01"
+flag = "🇲🇽"
+short_code = "MEX"
+has_thursday_free_day = false
+
+[gyg]
+search_query = "Mexico City things to do"
+location_slug = "mexico-city-l146"
+pages = 4
+
+[pipeline]
+scoring_agent = "f1-seo"
+content_agent = "seo-aeo-geo-strategist"
+top_n = 47
+
+[schedule]
+string = """
+Friday 30 Oct: FP1 12:30-13:30, FP2 16:00-17:00
+Saturday 31 Oct: FP3 11:30-12:30, Qualifying 15:00-16:00
+Sunday 1 Nov: Race 14:00-16:00
+"""

@@ -59,6 +59,8 @@ const FAQ = [
   },
 ];
 
+const CANCELLED_RACES = new Set(['bahrain-2026', 'saudi-2026']);
+
 export default async function F12026Page() {
   const allRaces = await getAllRaces();
 
@@ -75,8 +77,9 @@ export default async function F12026Page() {
     dates: formatRaceDates(r.raceDate, r.hasThursdayFreeDay),
     raceEnd: r.raceDate,
     slug: r.slug,
-    hasGuide: !!r.available,  // Only races with experiences show "Guide ->"
-    isAvailable: !!r.available // used for featured section
+    hasGuide: !!r.available,
+    isAvailable: !!r.available,
+    isCancelled: CANCELLED_RACES.has(r.slug),
   }));
 
   const eventSeriesLd = {
@@ -227,6 +230,10 @@ export default async function F12026Page() {
                     >
                       Guide →
                     </Link>
+                  ) : race.isCancelled ? (
+                    <span className="shrink-0 text-xs font-medium px-3 py-1.5 rounded-full border border-dashed border-red-500/30 text-red-400/70 whitespace-nowrap cursor-default">
+                      Called off
+                    </span>
                   ) : (
                     <span className="shrink-0 text-xs font-medium px-3 py-1.5 rounded-full border border-dashed border-[var(--border-subtle)] text-[var(--text-secondary)]/50 whitespace-nowrap cursor-default">
                       Coming Soon

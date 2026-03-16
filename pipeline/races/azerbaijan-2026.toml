@@ -1,0 +1,33 @@
+[race]
+slug = "azerbaijan-2026"
+name = "Azerbaijan Grand Prix 2026"
+season = 2026
+round = 17
+circuit_name = "Baku City Circuit"
+city = "Baku"
+country = "Azerbaijan"
+country_code = "AZ"
+circuit_lat = 40.3725
+circuit_lng = 49.8533
+timezone = "Asia/Baku"
+race_date = "2026-09-26"
+flag = "🇦🇿"
+short_code = "AZE"
+has_thursday_free_day = false
+
+[gyg]
+search_query = "Baku things to do"
+location_slug = "baku-l162"
+pages = 3
+
+[pipeline]
+scoring_agent = "f1-seo"
+content_agent = "seo-aeo-geo-strategist"
+top_n = 47
+
+[schedule]
+string = """
+Thursday 24 Sep: FP1 12:30-13:30, FP2 16:00-17:00
+Friday 25 Sep: FP3 12:30-13:30, Qualifying 16:00-17:00
+Saturday 26 Sep: Race 15:00-17:00
+"""

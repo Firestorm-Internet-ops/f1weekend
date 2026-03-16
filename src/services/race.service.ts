@@ -63,8 +63,8 @@ function mapWindow(w: typeof experience_windows.$inferSelect): ExperienceWindow 
   };
 }
 
-// "Active" = first race whose race_date is today or in the future (with 1-day grace: >= yesterday).
-// After the race Sunday, users still see it on Monday, then it switches to the next race on Tuesday.
+// "Active" = first race whose race_date is today or in the future.
+// Once race day passes, the homepage immediately switches to the next upcoming race.
 // Falls back to the most recent past race if all races are done.
 export async function getActiveRace(): Promise<Race | null> {
   const todayStr = new Date().toISOString().split('T')[0];
@@ -73,13 +73,13 @@ export async function getActiveRace(): Promise<Race | null> {
       const rows = await db
         .select()
         .from(races)
-        .where(gte(races.race_date, sql`DATE_SUB(CURDATE(), INTERVAL 1 DAY)`))
+        .where(sql`${races.race_date} >= CURDATE() AND ${races.available} = true`)
         .orderBy(asc(races.race_date))
         .limit(1);
       if (rows[0]) return rows;
 
-      // All races are past — return the most recent one as fallback
-      return db.select().from(races).orderBy(desc(races.race_date)).limit(1);
+      // All races are past — return the most recent available one as fallback
+      return db.select().from(races).where(eq(races.available, true)).orderBy(desc(races.race_date)).limit(1);
     },
     [`race:active:${todayStr}`],
     { revalidate: CACHE_TTL, tags: ['races'] }
@@ -96,7 +96,7 @@ export async function getNextRace(): Promise<Race | null> {
       db
         .select()
         .from(races)
-        .where(gte(races.race_date, sql`DATE_SUB(CURDATE(), INTERVAL 1 DAY)`))
+        .where(sql`${races.race_date} >= CURDATE() AND ${races.available} = true`)
         .orderBy(asc(races.race_date))
         .limit(2),
     [`race:next:${todayStr}`],

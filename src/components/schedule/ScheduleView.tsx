@@ -276,7 +276,7 @@ export default function ScheduleView({ schedule, initialDay = 'Thursday', tzLabe
         <div key={`${activeDay}-${activeFilter}`} className="flex flex-col gap-2">
           {filteredEntries.map((entry, i) => (
             <SessionRow
-              key={`${entry.startTime}-${entry.seriesKey}-${entry.name}`}
+              key={`${entry.startTime}-${entry.seriesKey}-${entry.name}-${i}`}
               entry={entry}
               status={statuses[i]}
               liveProgress={liveProgressValues[i]}

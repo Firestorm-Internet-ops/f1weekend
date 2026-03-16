@@ -1,0 +1,33 @@
+[race]
+slug = "brazil-2026"
+name = "São Paulo Grand Prix"
+season = 2026
+round = 21
+circuit_name = "Autodromo Jose Carlos Pace"
+city = "São Paulo"
+country = "Brazil"
+country_code = "BR"
+circuit_lat = -23.7036
+circuit_lng = -46.6997
+timezone = "America/Sao_Paulo"
+race_date = "2026-11-08"
+flag = "🇧🇷"
+short_code = "BRA"
+has_thursday_free_day = false
+
+[gyg]
+search_query = "São Paulo things to do"
+location_slug = "sao-paulo-l176"
+pages = 4
+
+[pipeline]
+scoring_agent = "f1-seo"
+content_agent = "seo-aeo-geo-strategist"
+top_n = 47
+
+[schedule]
+string = """
+Friday 6 Nov: FP1 12:30-13:30, FP2 16:00-17:00
+Saturday 7 Nov: FP3 11:30-12:30, Qualifying 15:00-16:00
+Sunday 8 Nov: Race 14:00-16:00
+"""

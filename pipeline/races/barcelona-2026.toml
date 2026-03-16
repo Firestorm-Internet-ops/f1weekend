@@ -1,0 +1,33 @@
+[race]
+slug = "barcelona-2026"
+name = "Spanish Grand Prix 2026"
+season = 2026
+round = 9
+circuit_name = "Circuit de Barcelona-Catalunya"
+city = "Barcelona"
+country = "Spain"
+country_code = "ES"
+circuit_lat = 41.5700
+circuit_lng = 2.2611
+timezone = "Europe/Madrid"
+race_date = "2026-06-14"
+flag = "🇪🇸"
+short_code = "ESP"
+has_thursday_free_day = false
+
+[gyg]
+search_query = "Barcelona things to do"
+location_slug = "barcelona-l61"
+pages = 2
+
+[pipeline]
+scoring_agent = "f1-seo"
+content_agent = "seo-aeo-geo-strategist"
+top_n = 47
+
+[schedule]
+string = """
+Friday 12 Jun: FP1 13:30-14:30, FP2 17:00-18:00
+Saturday 13 Jun: FP3 12:30-13:30, Qualifying 16:00-17:00
+Sunday 14 Jun: Race 15:00-17:00
+"""

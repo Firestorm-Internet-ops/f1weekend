@@ -109,15 +109,21 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
 
                 {raceDropdownOpen && (() => {
                   const today = new Date().toISOString().slice(0, 10);
-                  const upcoming = races.filter((r) => r.raceDate >= today);
+                  const upcoming = races.filter((r) => r.raceDate >= today && r.available);
                   const mobileRaces = upcoming.slice(0, 2);
 
                   const renderRaceItem = (race: Race) => {
                     const d = new Date(race.raceDate + 'T00:00:00Z');
-                    const month = d.toLocaleDateString('en-AU', { month: 'short', timeZone: 'UTC' });
-                    const day = d.getUTCDate();
+                    const raceDay = d.getUTCDate();
+                    const raceMonth = d.toLocaleDateString('en-AU', { month: 'short', timeZone: 'UTC' });
                     const startOffset = race.hasThursdayFreeDay ? 3 : 2;
-                    const datesStr = `${month} ${day - startOffset}–${day}`;
+                    const startDate = new Date(d);
+                    startDate.setUTCDate(raceDay - startOffset);
+                    const startDay = startDate.getUTCDate();
+                    const startMonth = startDate.toLocaleDateString('en-AU', { month: 'short', timeZone: 'UTC' });
+                    const datesStr = startMonth === raceMonth
+                      ? `${raceMonth} ${startDay}–${raceDay}`
+                      : `${startMonth} ${startDay} – ${raceMonth} ${raceDay}`;
 
                     if (!race.available) {
                       return (

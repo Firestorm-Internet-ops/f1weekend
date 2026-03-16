@@ -1,0 +1,33 @@
+[race]
+slug = "madrid-2026"
+name = "Spanish Grand Prix (Madrid)"
+season = 2026
+round = 16
+circuit_name = "Circuito Urbano de Madrid"
+city = "Madrid"
+country = "Spain"
+country_code = "ES"
+circuit_lat = 40.4686
+circuit_lng = -3.6071
+timezone = "Europe/Madrid"
+race_date = "2026-09-13"
+flag = "🇪🇸"
+short_code = "MAD"
+has_thursday_free_day = false
+
+[gyg]
+search_query = "Madrid things to do"
+location_slug = "madrid-l218"
+pages = 4
+
+[pipeline]
+scoring_agent = "f1-seo"
+content_agent = "seo-aeo-geo-strategist"
+top_n = 47
+
+[schedule]
+string = """
+Friday 11 Sep: FP1 13:30-14:30, FP2 17:00-18:00
+Saturday 12 Sep: FP3 12:30-13:30, Qualifying 16:00-17:00
+Sunday 13 Sep: Race 15:00-17:00
+"""

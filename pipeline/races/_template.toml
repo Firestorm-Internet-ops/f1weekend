@@ -1,0 +1,34 @@
+[race]
+slug = "monaco-2026"
+name = "Monaco Grand Prix 2026"
+season = 2026
+round = 8
+circuit_name = "Circuit de Monaco"
+city = "Monaco"
+country = "Monaco"
+country_code = "MC"
+circuit_lat = 43.7347
+circuit_lng = 7.4206
+timezone = "Europe/Monaco"
+race_date = "2026-05-31"
+flag = "🇲🇨"
+short_code = "MON"
+has_thursday_free_day = true
+
+[gyg]
+search_query = "Monaco Monte Carlo things to do"
+location_slug = "monaco-l273"
+pages = 4
+
+[pipeline]
+scoring_agent = "f1-seo"
+content_agent = "seo-aeo-geo-strategist"
+top_n = 47
+
+[schedule]
+string = """
+Thursday 28 May: (Free day — no sessions)
+Friday 29 May: FP1 13:30-14:30, FP2 17:00-18:00
+Saturday 30 May: FP3 12:30-13:30, Qualifying 16:00-17:00
+Sunday 31 May: Race 15:00-17:00
+"""

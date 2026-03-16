@@ -1,0 +1,33 @@
+[race]
+slug = "las-vegas-2026"
+name = "Las Vegas Grand Prix"
+season = 2026
+round = 22
+circuit_name = "Las Vegas Strip Circuit"
+city = "Las Vegas"
+country = "United States"
+country_code = "US"
+circuit_lat = 36.1699
+circuit_lng = -115.1398
+timezone = "America/Los_Angeles"
+race_date = "2026-11-21"
+flag = "🇺🇸"
+short_code = "LVG"
+has_thursday_free_day = false
+
+[gyg]
+search_query = "Las Vegas things to do"
+location_slug = "las-vegas-l201"
+pages = 4
+
+[pipeline]
+scoring_agent = "f1-seo"
+content_agent = "seo-aeo-geo-strategist"
+top_n = 47
+
+[schedule]
+string = """
+Thursday 19 Nov: FP1 16:30-17:30, FP2 20:00-21:00
+Friday 20 Nov: FP3 16:30-17:30, Qualifying 20:00-21:00
+Saturday 21 Nov: Race 20:00-22:00
+"""
