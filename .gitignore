@@ -45,4 +45,5 @@ next-env.d.ts
 # documents
 # /docs removed — project docs are tracked
 
-*.sql
+*.sqlkey.json
+key.json

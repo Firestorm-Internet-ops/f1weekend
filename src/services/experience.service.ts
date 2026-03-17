@@ -1,5 +1,5 @@
 import { unstable_cache } from 'next/cache';
-import { db } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { experiences, experience_windows, experience_windows_map } from '@/lib/db/schema';
 import { eq, and, asc, desc, inArray, ne, isNotNull } from 'drizzle-orm';
 import { getRaceBySlug } from '@/services/race.service';
@@ -97,6 +97,7 @@ export async function getExperiencesByRace(
 
   const fetch = unstable_cache(
     async () => {
+      const db = await getDb();
       const conditions = [eq(experiences.race_id, raceId), eq(experiences.is_active, true)];
       if (filters?.category) {
         conditions.push(eq(experiences.category, filters.category));
@@ -117,12 +118,14 @@ export async function getExperiencesByRace(
 
 export async function getExperienceById(id: number): Promise<Experience | null> {
   const fetch = unstable_cache(
-    async () =>
-      db
+    async () => {
+      const db = await getDb();
+      return db
         .select()
         .from(experiences)
         .where(and(eq(experiences.id, id), eq(experiences.is_active, true)))
-        .limit(1),
+        .limit(1);
+    },
     [`exp:id:${id}`],
     { revalidate: CACHE_TTL, tags: ['experiences'] }
   );
@@ -132,12 +135,14 @@ export async function getExperienceById(id: number): Promise<Experience | null> 
 
 export async function getExperienceBySlug(slug: string): Promise<Experience | null> {
   const fetch = unstable_cache(
-    async () =>
-      db
+    async () => {
+      const db = await getDb();
+      return db
         .select()
         .from(experiences)
         .where(and(eq(experiences.slug, slug), eq(experiences.is_active, true)))
-        .limit(1),
+        .limit(1);
+    },
     [`exp:slug:${slug}`],
     { revalidate: CACHE_TTL, tags: ['experiences', `exp:${slug}`] }
   );
@@ -152,6 +157,7 @@ export async function getExperiencesByWindow(
 ): Promise<Experience[]> {
   const fetch = unstable_cache(
     async () => {
+      const db = await getDb();
       // Step 1: find window by slug
       const [window] = await db
         .select()
@@ -198,8 +204,9 @@ export async function getExperiencesByWindow(
 
 export async function getFeaturedExperiences(raceId: number): Promise<Experience[]> {
   const fetch = unstable_cache(
-    async () =>
-      db
+    async () => {
+      const db = await getDb();
+      return db
         .select()
         .from(experiences)
         .where(
@@ -210,7 +217,8 @@ export async function getFeaturedExperiences(raceId: number): Promise<Experience
             isNotNull(experiences.guide_article)
           )
         )
-        .orderBy(asc(experiences.sort_order)),
+        .orderBy(asc(experiences.sort_order));
+    },
     [`exp:race:${raceId}:featured:guided`],
     { revalidate: CACHE_TTL, tags: ['experiences', `exp:race:${raceId}`] }
   );
@@ -220,8 +228,9 @@ export async function getFeaturedExperiences(raceId: number): Promise<Experience
 
 export async function getMostPopularExperiences(raceId: number, limit = 6): Promise<Experience[]> {
   const fetch = unstable_cache(
-    async () =>
-      db
+    async () => {
+      const db = await getDb();
+      return db
         .select()
         .from(experiences)
         .where(
@@ -232,7 +241,8 @@ export async function getMostPopularExperiences(raceId: number, limit = 6): Prom
           )
         )
         .orderBy(desc(experiences.review_count), desc(experiences.rating))
-        .limit(limit),
+        .limit(limit);
+    },
     [`exp:race:${raceId}:popular:guided`],
     { revalidate: CACHE_TTL, tags: ['experiences', `exp:race:${raceId}`] }
   );
@@ -242,8 +252,9 @@ export async function getMostPopularExperiences(raceId: number, limit = 6): Prom
 
 export async function getTopRatedExperiences(raceId: number, limit = 6): Promise<Experience[]> {
   const fetch = unstable_cache(
-    async () =>
-      db
+    async () => {
+      const db = await getDb();
+      return db
         .select()
         .from(experiences)
         .where(
@@ -254,7 +265,8 @@ export async function getTopRatedExperiences(raceId: number, limit = 6): Promise
           )
         )
         .orderBy(desc(experiences.rating), desc(experiences.review_count))
-        .limit(limit),
+        .limit(limit);
+    },
     [`exp:race:${raceId}:top-rated:guided`],
     { revalidate: CACHE_TTL, tags: ['experiences', `exp:race:${raceId}`] }
   );
@@ -276,8 +288,9 @@ export async function getSuggestedExperiences(
   limit = 4
 ): Promise<Experience[]> {
   const fetch = unstable_cache(
-    async () =>
-      db
+    async () => {
+      const db = await getDb();
+      return db
         .select()
         .from(experiences)
         .where(
@@ -288,7 +301,8 @@ export async function getSuggestedExperiences(
           )
         )
         .orderBy(desc(experiences.is_featured), asc(experiences.sort_order))
-        .limit(limit),
+        .limit(limit);
+    },
     [`suggestions:${raceId}:${excludeSlug}`],
     { revalidate: CACHE_TTL, tags: ['experiences', `exp:race:${raceId}`] }
   );

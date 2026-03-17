@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { db } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { experiences } from '@/lib/db/schema';
 import { eq, count } from 'drizzle-orm';
 
@@ -33,6 +33,7 @@ export const metadata: Metadata = {
 };
 
 export default async function AboutPage() {
+  const db = await getDb();
   const [{ value: expCount }] = await db
     .select({ value: count() })
     .from(experiences)

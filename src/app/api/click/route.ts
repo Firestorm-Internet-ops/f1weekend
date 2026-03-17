@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { affiliate_clicks } from '@/lib/db/schema';
 import { getExperienceById } from '@/services/experience.service';
 import { buildAffiliateUrl } from '@/lib/affiliates';
@@ -59,6 +59,7 @@ export async function POST(req: NextRequest) {
   const affiliateUrl = buildAffiliateUrl(baseUrl, experienceId, source as Source);
 
   try {
+    const db = await getDb();
     await db.insert(affiliate_clicks).values({
       experience_id: experienceId,
       affiliate_partner: experience.affiliatePartner,

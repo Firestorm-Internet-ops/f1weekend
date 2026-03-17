@@ -1,5 +1,5 @@
 import { unstable_cache } from 'next/cache';
-import { db } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { races, sessions, experience_windows, race_content, experiences } from '@/lib/db/schema';
 import { eq, asc, gte, desc, sql, inArray, notInArray } from 'drizzle-orm';
 import { redis } from '@/lib/redis';
@@ -70,6 +70,7 @@ export async function getActiveRace(): Promise<Race | null> {
   const todayStr = new Date().toISOString().split('T')[0];
   const fetch = unstable_cache(
     async () => {
+      const db = await getDb();
       const rows = await db
         .select()
         .from(races)
@@ -92,13 +93,15 @@ export async function getActiveRace(): Promise<Race | null> {
 export async function getNextRace(): Promise<Race | null> {
   const todayStr = new Date().toISOString().split('T')[0];
   const fetch = unstable_cache(
-    async () =>
-      db
+    async () => {
+      const db = await getDb();
+      return db
         .select()
         .from(races)
         .where(sql`${races.race_date} >= CURDATE() AND ${races.available} = true`)
         .orderBy(asc(races.race_date))
-        .limit(2),
+        .limit(2);
+    },
     [`race:next:${todayStr}`],
     { revalidate: CACHE_TTL, tags: ['races'] }
   );
@@ -109,6 +112,7 @@ export async function getNextRace(): Promise<Race | null> {
 
 export const getAllRaces = unstable_cache(
   async (): Promise<Race[]> => {
+    const db = await getDb();
     const rows = await db
       .select({ race: races, content: race_content })
       .from(races)
@@ -122,6 +126,7 @@ export const getAllRaces = unstable_cache(
 
 export const getAvailableRaces = unstable_cache(
   async (): Promise<Race[]> => {
+    const db = await getDb();
     const rows = await db
       .select({ race: races, content: race_content })
       .from(races)
@@ -136,6 +141,7 @@ export const getAvailableRaces = unstable_cache(
 
 export const getRacesWithExperiences = unstable_cache(
   async (): Promise<Race[]> => {
+    const db = await getDb();
     const rows = await db
       .select({ race: races, content: race_content })
       .from(races)
@@ -150,13 +156,15 @@ export const getRacesWithExperiences = unstable_cache(
 
 export async function getRaceBySlug(slug: string): Promise<Race | null> {
   const fetch = unstable_cache(
-    async () =>
-      db
+    async () => {
+      const db = await getDb();
+      return db
         .select({ race: races, content: race_content })
         .from(races)
         .leftJoin(race_content, eq(races.id, race_content.race_id))
         .where(eq(races.slug, slug))
-        .limit(1),
+        .limit(1);
+    },
     [`race:slug:${slug}`],
     { revalidate: CACHE_TTL, tags: ['races', `race:${slug}`] }
   );
@@ -166,13 +174,15 @@ export async function getRaceBySlug(slug: string): Promise<Race | null> {
 
 export async function getRaceById(id: number): Promise<Race | null> {
   const fetch = unstable_cache(
-    async () =>
-      db
+    async () => {
+      const db = await getDb();
+      return db
         .select({ race: races, content: race_content })
         .from(races)
         .leftJoin(race_content, eq(races.id, race_content.race_id))
         .where(eq(races.id, id))
-        .limit(1),
+        .limit(1);
+    },
     [`race:id:${id}`],
     { revalidate: CACHE_TTL, tags: ['races'] }
   );
@@ -182,13 +192,15 @@ export async function getRaceById(id: number): Promise<Race | null> {
 
 export async function getUpcomingRace(): Promise<Race | null> {
   const fetch = unstable_cache(
-    async () =>
-      db
+    async () => {
+      const db = await getDb();
+      return db
         .select()
         .from(races)
         .where(gte(races.race_date, new Date()))
         .orderBy(asc(races.race_date))
-        .limit(1),
+        .limit(1);
+    },
     ['race:upcoming'],
     { revalidate: CACHE_TTL, tags: ['races'] }
   );
@@ -200,12 +212,14 @@ export async function getSessionsByRace(raceId: number): Promise<Session[]> {
   const DAY_ORDER = { Thursday: 0, Friday: 1, Saturday: 2, Sunday: 3 };
 
   const fetch = unstable_cache(
-    async () =>
-      db
+    async () => {
+      const db = await getDb();
+      return db
         .select()
         .from(sessions)
         .where(eq(sessions.race_id, raceId))
-        .orderBy(asc(sessions.start_time)),
+        .orderBy(asc(sessions.start_time));
+    },
     [`race:sessions:${raceId}`],
     { revalidate: CACHE_TTL, tags: ['races', `race:sessions:${raceId}`] }
   );
@@ -221,12 +235,14 @@ export async function getSessionsByRace(raceId: number): Promise<Session[]> {
 
 export async function getWindowsByRace(raceId: number): Promise<ExperienceWindow[]> {
   const fetch = unstable_cache(
-    async () =>
-      db
+    async () => {
+      const db = await getDb();
+      return db
         .select()
         .from(experience_windows)
         .where(eq(experience_windows.race_id, raceId))
-        .orderBy(asc(experience_windows.sort_order)),
+        .orderBy(asc(experience_windows.sort_order));
+    },
     [`race:windows:${raceId}`],
     { revalidate: CACHE_TTL, tags: ['races', `race:windows:${raceId}`] }
   );
@@ -271,6 +287,7 @@ export interface RaceContentRow {
 export async function getRaceContent(raceSlug: string): Promise<RaceContentRow | null> {
   const fetch = unstable_cache(
     async () => {
+      const db = await getDb();
       const race = await db.select({ id: races.id }).from(races).where(eq(races.slug, raceSlug)).limit(1);
       if (!race[0]) return null;
 
@@ -304,7 +321,8 @@ export async function getRaceContent(raceSlug: string): Promise<RaceContentRow |
         scheduleIntro: r.schedule_intro ?? null,
         sessionGapCopy: (r.session_gap_copy as RaceContentRow['sessionGapCopy']) ?? null,
         homepageCopy: (r.homepage_copy as RaceContentRow['homepageCopy']) ?? null,
-        } as RaceContentRow;    },
+      } as RaceContentRow;
+    },
     [`race-content:${raceSlug}`],
     { revalidate: CACHE_TTL, tags: ['races', `race:${raceSlug}`] }
   );
@@ -343,6 +361,8 @@ export async function clearRaceCache(slug?: string): Promise<void> {
  * Sync available flag for all races based on experiences in DB.
  */
 export async function syncAvailableRaces(): Promise<void> {
+  const db = await getDb();
+
   // 1. Get IDs of races that have at least one entry in the experiences table
   const racesWithExp = await db
     .selectDistinct({ raceId: experiences.race_id })
@@ -357,7 +377,7 @@ export async function syncAvailableRaces(): Promise<void> {
     await db.update(races)
       .set({ available: true })
       .where(inArray(races.id, withExpIds));
-    
+
     // Mark races without experiences as unavailable
     await db.update(races)
       .set({ available: false })

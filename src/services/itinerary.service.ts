@@ -1,4 +1,4 @@
-import { db } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { itineraries } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import type { Itinerary, ManualItineraryInput, SessionSlot, GapSlot } from '@/types/itinerary';
@@ -148,6 +148,7 @@ export async function buildManualItinerary(input: ManualItineraryInput): Promise
     const title = `${race.city} ${race.season} — ${input.arrivalDay} to ${input.departureDay}`;
     const itinerary: Itinerary = { id, title, days, raceId: race.id };
 
+    const db = await getDb();
     await db.insert(itineraries).values({
         id,
         race_id: race.id,
@@ -164,6 +165,7 @@ export async function buildManualItinerary(input: ManualItineraryInput): Promise
 }
 
 export async function getItinerary(id: string): Promise<Itinerary | null> {
+    const db = await getDb();
     const result = await db
         .select()
         .from(itineraries)

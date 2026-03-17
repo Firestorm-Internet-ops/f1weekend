@@ -1,5 +1,5 @@
 import { unstable_cache } from 'next/cache';
-import { db } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { schedule_entries } from '@/lib/db/schema';
 import { eq, asc } from 'drizzle-orm';
 import type { ScheduleDay, ScheduleEntry, SeriesKey } from '@/types/schedule';
@@ -32,12 +32,14 @@ function toHHMM(t: string | null): string {
 
 export async function getScheduleByRace(raceId: number, raceDate?: string): Promise<ScheduleDay[]> {
   const fetch = unstable_cache(
-    async () =>
-      db
+    async () => {
+      const db = await getDb();
+      return db
         .select()
         .from(schedule_entries)
         .where(eq(schedule_entries.race_id, raceId))
-        .orderBy(asc(schedule_entries.day_of_week), asc(schedule_entries.sort_order)),
+        .orderBy(asc(schedule_entries.day_of_week), asc(schedule_entries.sort_order));
+    },
     [`schedule:race:${raceId}`],
     { revalidate: CACHE_TTL, tags: ['schedule', `schedule:race:${raceId}`] }
   );
