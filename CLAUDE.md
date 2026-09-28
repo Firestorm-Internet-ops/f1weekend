@@ -30,6 +30,8 @@ Only three branches exist at any time: `main`, `staging`, and one `feature/<shor
 
 Never push or merge directly to `main`. Never keep more than one feature branch alive.
 
+Vercel only builds `main` (production) and `staging` (staging.f1weekend.co) — `vercel.json` `ignoreCommand` skips every other branch. Test feature work locally, then on staging.
+
 ## Common Dev Commands
 ```bash
 npm run dev            # Start dev server
