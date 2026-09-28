@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import Link from 'next/link';
 import ExperiencesClient from '@/components/experiences/ExperiencesClient';
+import DistanceMap from '@/components/experiences/DistanceMap';
 import RaceSwitcher from '@/components/race/RaceSwitcher';
 import { getRaceBySlug, getAvailableRaces, getRaceContent } from '@/services/race.service';
 import { getExperiencesByRace } from '@/services/experience.service';
@@ -143,6 +144,23 @@ export default async function ExperiencesPage({ params, searchParams }: Props) {
         <div className="mb-6">
           <RaceSwitcher currentRace={race} availableRaces={availableRaces} pageType="experiences" />
         </div>
+
+        {Number.isFinite(race.circuitLat) && Number.isFinite(race.circuitLng) && !(race.circuitLat === 0 && race.circuitLng === 0) && exps.length > 0 && (
+          <section className="mb-10 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] p-5">
+            <div className="flex items-baseline justify-between gap-4 mb-4">
+              <h2 className="font-display font-bold text-lg text-white">How far is everything from the circuit?</h2>
+              <Link href={`/races/${raceSlug}/experiences/map`} className="text-sm text-[var(--accent-teal,#00D2BE)] hover:underline whitespace-nowrap">
+                Open full map →
+              </Link>
+            </div>
+            <DistanceMap
+              compact
+              raceSlug={raceSlug}
+              circuit={{ lat: race.circuitLat, lng: race.circuitLng, name: race.circuitName }}
+              experiences={exps.map((e) => ({ id: e.id, title: e.title, slug: e.slug, lat: e.lat, lng: e.lng }))}
+            />
+          </section>
+        )}
 
         <Suspense
           fallback={

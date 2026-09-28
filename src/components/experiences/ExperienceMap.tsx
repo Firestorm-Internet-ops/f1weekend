@@ -17,18 +17,10 @@ import {
   type NearbyInfo,
   type NearbyTier,
 } from '@/lib/nearby';
+import { TIER_STYLE } from '@/lib/constants/nearby-styles';
 
 // Used only when a race has no circuit coordinates (original Melbourne default)
 const FALLBACK_CENTER = { lat: -37.8497, lng: 144.968 };
-
-// Pin colours by distance group (see src/lib/nearby.ts)
-const TIER_STYLE: Record<NearbyTier, { color: string; label: string; opacity: number }> = {
-  near: { color: '#22C55E', label: `Near circuit (≤ ${NEARBY_LIMITS.nearMins} min)`, opacity: 0.95 },
-  city: { color: '#3B82F6', label: `In the city (≤ ${NEARBY_LIMITS.cityMins} min)`, opacity: 0.95 },
-  daytrip: { color: '#F59E0B', label: 'Day trip (≤ 2 h)', opacity: 0.95 },
-  'too-far': { color: '#6B7280', label: 'Too far (will be hidden)', opacity: 0.4 },
-  unknown: { color: '#6B7280', label: 'No location', opacity: 0.4 },
-};
 
 const isValidPoint = (p?: Partial<LatLng> | null): p is LatLng =>
   !!p && Number.isFinite(p.lat) && Number.isFinite(p.lng) && !(p.lat === 0 && p.lng === 0);

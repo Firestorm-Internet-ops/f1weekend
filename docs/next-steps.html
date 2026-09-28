@@ -72,6 +72,7 @@
       <li>✓ Read-only audit script ready: <code>npm run audit:nearby</code>, which creates <code>scripts/output/nearby-audit.html</code>.</li>
       <li>✓ Audit page on staging: <code>staging.f1weekend.co/api/nearby-audit</code>. Review it before anything is hidden.</li>
       <li>✓ Experience map fixed. It was stuck on Melbourne for every race. It now centres on each race's circuit, with ~30 / ~60 min rings, pins coloured by distance, and markers for where fans stay (branch <code>feature/experience-map-distance</code>).</li>
+      <li>✓ Free drawn map shown by default (map page + a preview on each experiences page). Google Maps loads only when someone clicks "Open interactive Google map", so most visits cost nothing. Clicks are tracked as <code>map_open</code>. Protection in Google Cloud: a 300/day quota on the Maps JavaScript API plus a $5 budget alert at 50 / 90 / 100%.</li>
     </ul>
 
     <h3>The plan</h3>
