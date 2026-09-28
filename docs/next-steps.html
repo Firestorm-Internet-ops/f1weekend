@@ -66,6 +66,13 @@
       <li>Out-of-town circuits measure from where fans stay: Silverstone → Milton Keynes / Northampton, Spa → Liège, Suzuka → Nagoya, Zandvoort → Haarlem / Amsterdam, Red Bull Ring → Graz.</li>
     </ul>
 
+    <h3>Progress</h3>
+    <ul>
+      <li>✓ Distance rules written and tested (<code>src/lib/nearby.ts</code>, 10 tests with real places: Monaco, Silverstone, Monza, Suzuka).</li>
+      <li>✓ Read-only audit script ready: <code>npm run audit:nearby</code>, which creates <code>scripts/output/nearby-audit.html</code>.</li>
+      <li>⏳ Waiting on you: run the audit against the real database and review the report.</li>
+    </ul>
+
     <h3>The plan</h3>
     <ol>
       <li><strong>Audit</strong> every race: how many activities are near, far or missing a location. This is read-only and changes nothing on the site.</li>
