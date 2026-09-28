@@ -1,13 +1,29 @@
 'use client';
 
 import { useState, useCallback, useEffect, useMemo } from 'react';
-import { GoogleMap, useJsApiLoader, Marker, InfoWindow, Polyline } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader, Marker, InfoWindow, Polyline, CircleF } from '@react-google-maps/api';
 import type { Experience } from '@/types/experience';
 import { ALBERT_PARK_CIRCUIT } from '@/data/circuit-path';
 import { CATEGORY_COLORS } from '@/lib/constants/categories';
 import BookButton from '@/components/experiences/BookButton';
+import {
+  classifyExperience,
+  nearbyLabel,
+  radiusKmForMins,
+  raceKey,
+  NEARBY_LIMITS,
+  RACE_BASES,
+  type LatLng,
+  type NearbyInfo,
+  type NearbyTier,
+} from '@/lib/nearby';
+import { TIER_STYLE } from '@/lib/constants/nearby-styles';
 
-const CIRCUIT = { lat: -37.8497, lng: 144.968 };
+// Used only when a race has no circuit coordinates (original Melbourne default)
+const FALLBACK_CENTER = { lat: -37.8497, lng: 144.968 };
+
+const isValidPoint = (p?: Partial<LatLng> | null): p is LatLng =>
+  !!p && Number.isFinite(p.lat) && Number.isFinite(p.lng) && !(p.lat === 0 && p.lng === 0);
 
 // Google Maps dark style matching app's #15151E background
 const DARK_MAP_STYLE: google.maps.MapTypeStyle[] = [
@@ -35,10 +51,14 @@ interface Props {
   experiences: Experience[];
   height?: string;
   raceSlug?: string;
+  /** The race's circuit; the map centres here and measures distances from it. */
+  circuit?: { lat: number; lng: number; name: string };
+  /** Browser Maps key, passed from the server (GOOGLE_MAPS_API_KEY). */
+  apiKey?: string;
 }
 
-export default function ExperienceMap({ experiences, height = '500px', raceSlug }: Props) {
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
+export default function ExperienceMap({ experiences, height = '500px', raceSlug = '', circuit, apiKey: apiKeyProp }: Props) {
+  const apiKey = apiKeyProp || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '';
   const { isLoaded, loadError } = useJsApiLoader({
     id: 'google-map',
     googleMapsApiKey: apiKey,
@@ -50,25 +70,51 @@ export default function ExperienceMap({ experiences, height = '500px', raceSlug 
   const onLoad = useCallback((m: google.maps.Map) => setMap(m), []);
   const onUnmount = useCallback(() => setMap(null), []);
 
-  // Fit bounds to nearby pins only (exclude day trips > 15 km)
+  const circuitPoint = isValidPoint(circuit) ? { lat: circuit.lat, lng: circuit.lng } : null;
+  const bases = useMemo(() => RACE_BASES[raceKey(raceSlug)] ?? [], [raceSlug]);
+  const isMelbourne = raceKey(raceSlug) === 'melbourne';
+
+  // Distance group for every experience, using the same rules as the audit
+  const nearbyById = useMemo(() => {
+    const out = new Map<number, NearbyInfo>();
+    for (const e of experiences) {
+      out.set(e.id, classifyExperience({ lat: e.lat ?? undefined, lng: e.lng ?? undefined }, raceSlug, circuitPoint));
+    }
+    return out;
+    // circuitPoint is derived from `circuit`
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [experiences, raceSlug, circuit?.lat, circuit?.lng]);
+
+  const tierCounts = useMemo(() => {
+    const counts: Record<NearbyTier, number> = { near: 0, city: 0, daytrip: 0, 'too-far': 0, unknown: 0 };
+    nearbyById.forEach((n) => counts[n.tier]++);
+    return counts;
+  }, [nearbyById]);
+
+  const center = circuitPoint ?? bases[0] ?? FALLBACK_CENTER;
+
+  // Fit the view to the circuit, where fans stay, and the near / city pins
   useEffect(() => {
     if (!map || !isLoaded) return;
 
-    const nearbyPins = experiences.filter(
-      (e) => e.lat != null && e.lng != null && (e.distanceKm ?? Infinity) <= 15
-    );
+    const closePins = experiences.filter((e) => {
+      const tier = nearbyById.get(e.id)?.tier;
+      return isValidPoint({ lat: e.lat ?? undefined, lng: e.lng ?? undefined }) && (tier === 'near' || tier === 'city');
+    });
+    const anchors = [...(circuitPoint ? [circuitPoint] : []), ...bases];
 
-    if (nearbyPins.length === 0) {
-      map.panTo(CIRCUIT);
-      map.setZoom(14);
+    if (closePins.length === 0 && anchors.length <= 1) {
+      map.panTo(center);
+      map.setZoom(13);
       return;
     }
 
     const bounds = new window.google.maps.LatLngBounds();
-    bounds.extend(CIRCUIT);
-    nearbyPins.forEach((e) => bounds.extend({ lat: e.lat!, lng: e.lng! }));
+    anchors.forEach((a) => bounds.extend({ lat: a.lat, lng: a.lng }));
+    closePins.forEach((e) => bounds.extend({ lat: e.lat!, lng: e.lng! }));
     map.fitBounds(bounds, 60);
-  }, [map, isLoaded, experiences]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, isLoaded, experiences, nearbyById]);
 
   const neighborhoodGroups = useMemo(() => {
     const groups: Record<string, { count: number; lat: number; lng: number }> = {};
@@ -103,8 +149,8 @@ export default function ExperienceMap({ experiences, height = '500px', raceSlug 
     <div className="relative w-full rounded-2xl overflow-hidden border border-[var(--border-subtle)]" style={{ height }}>
       <GoogleMap
         mapContainerClassName="w-full h-full"
-        center={CIRCUIT}
-        zoom={14}
+        center={center}
+        zoom={13}
         options={{
           styles: DARK_MAP_STYLE,
           disableDefaultUI: false,
@@ -117,8 +163,44 @@ export default function ExperienceMap({ experiences, height = '500px', raceSlug 
         onLoad={onLoad}
         onUnmount={onUnmount}
       >
-        {/* Circuit track — outer glow */}
-        <Polyline
+        {/* Travel-time rings: ~30 / ~60 min from the circuit on race day */}
+        {circuitPoint && (
+          <>
+            <CircleF
+              center={circuitPoint}
+              radius={radiusKmForMins(NEARBY_LIMITS.cityMins) * 1000}
+              options={{ strokeColor: TIER_STYLE.city.color, strokeOpacity: 0.7, strokeWeight: 1.5, fillColor: TIER_STYLE.city.color, fillOpacity: 0.04, clickable: false, zIndex: 1 }}
+            />
+            <CircleF
+              center={circuitPoint}
+              radius={radiusKmForMins(NEARBY_LIMITS.nearMins) * 1000}
+              options={{ strokeColor: TIER_STYLE.near.color, strokeOpacity: 0.8, strokeWeight: 1.5, fillColor: TIER_STYLE.near.color, fillOpacity: 0.06, clickable: false, zIndex: 2 }}
+            />
+          </>
+        )}
+
+        {/* Where fans stay (out-of-town circuits): marker + ~60 min ring */}
+        {bases.map((b) => (
+          <CircleF
+            key={`ring-${b.name}`}
+            center={{ lat: b.lat, lng: b.lng }}
+            radius={radiusKmForMins(NEARBY_LIMITS.cityMins) * 1000}
+            options={{ strokeColor: TIER_STYLE.city.color, strokeOpacity: 0.45, strokeWeight: 1, fillColor: TIER_STYLE.city.color, fillOpacity: 0.02, clickable: false, zIndex: 1 }}
+          />
+        ))}
+        {bases.map((b) => (
+          <Marker
+            key={`base-${b.name}`}
+            position={{ lat: b.lat, lng: b.lng }}
+            title={`Where fans stay: ${b.name}`}
+            label={{ text: '🏨', fontSize: '16px' }}
+            icon={{ path: window.google.maps.SymbolPath.CIRCLE, scale: 0 }}
+            zIndex={55}
+          />
+        ))}
+
+        {/* Circuit track (outline data exists for Albert Park only) — outer glow */}
+        {isMelbourne && <Polyline
           path={ALBERT_PARK_CIRCUIT}
           options={{
             strokeColor: '#E10600',
@@ -126,10 +208,10 @@ export default function ExperienceMap({ experiences, height = '500px', raceSlug 
             strokeWeight: 14,
             zIndex: 40,
           }}
-        />
+        />}
 
         {/* Circuit track — solid inner line */}
-        <Polyline
+        {isMelbourne && <Polyline
           path={ALBERT_PARK_CIRCUIT}
           options={{
             strokeColor: '#E10600',
@@ -137,12 +219,12 @@ export default function ExperienceMap({ experiences, height = '500px', raceSlug 
             strokeWeight: 4,
             zIndex: 50,
           }}
-        />
+        />}
 
-        {/* Circuit label — 🏁 emoji at S/F line */}
-        <Marker
-          position={{ lat: -37.8450, lng: 144.9695 }}
-          title="Albert Park Circuit"
+        {/* Circuit label — 🏁 at the race's circuit */}
+        {circuitPoint && <Marker
+          position={circuitPoint}
+          title={circuit?.name ?? 'Circuit'}
           label={{
             text: '🏁',
             fontSize: '16px',
@@ -152,12 +234,13 @@ export default function ExperienceMap({ experiences, height = '500px', raceSlug 
             scale: 0,
           }}
           zIndex={60}
-        />
+        />}
 
-        {/* Experience pins */}
+        {/* Experience pins, coloured by distance group */}
         {experiences.map((exp) => {
           if (!exp.lat || !exp.lng) return null;
-          const color = CATEGORY_COLORS[exp.category] ?? '#6E6E82';
+          const style = TIER_STYLE[nearbyById.get(exp.id)?.tier ?? 'unknown'];
+          const color = style.color;
           return (
             <Marker
               key={exp.id}
@@ -166,7 +249,7 @@ export default function ExperienceMap({ experiences, height = '500px', raceSlug 
               icon={{
                 path: 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z',
                 fillColor: color,
-                fillOpacity: 0.9,
+                fillOpacity: style.opacity,
                 strokeColor: '#ffffff',
                 strokeWeight: 1,
                 scale: 1.5,
@@ -222,6 +305,16 @@ export default function ExperienceMap({ experiences, height = '500px', raceSlug 
                 <div style={{ fontWeight: 600, fontSize: '13px', lineHeight: '1.3', marginBottom: '6px', color: '#ffffff' }}>
                   {activeExp.title}
                 </div>
+                {(() => {
+                  const info = nearbyById.get(activeExp.id);
+                  const text = info ? nearbyLabel(info) : null;
+                  if (!info || !text) return null;
+                  return (
+                    <div style={{ fontSize: '12px', fontWeight: 600, color: TIER_STYLE[info.tier].color, marginBottom: '4px' }}>
+                      {text}{info.tier === 'too-far' ? ' · too far' : ''}
+                    </div>
+                  );
+                })()}
                 <div style={{ display: 'flex', gap: '8px', fontSize: '12px', color: '#9a9aaf', marginBottom: '8px' }}>
                   <span>{activeExp.priceLabel}</span>
                   <span>·</span>
@@ -287,16 +380,29 @@ export default function ExperienceMap({ experiences, height = '500px', raceSlug 
         </div>
       )}
 
-      {/* Circuit legend */}
+      {/* Legend: circuit + distance groups */}
       <div
-        className="absolute bottom-4 left-4 flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium pointer-events-none"
-        style={{ background: 'rgba(21,21,30,0.85)', border: '1px solid rgba(255,255,255,0.15)', color: '#e0e0f0' }}
+        className="absolute bottom-4 left-4 flex flex-col gap-1 px-3 py-2 rounded-xl text-xs font-medium pointer-events-none"
+        style={{ background: 'rgba(21,21,30,0.88)', border: '1px solid rgba(255,255,255,0.15)', color: '#e0e0f0', zIndex: 10 }}
       >
-        <span
-          className="inline-block rounded-full"
-          style={{ width: 12, height: 12, background: '#E10600', border: '2px solid #fff', flexShrink: 0 }}
-        />
-        Albert Park Circuit
+        <div className="flex items-center gap-2">
+          <span>🏁</span>
+          {circuit?.name || 'Circuit'}
+        </div>
+        {(['near', 'city', 'daytrip', 'too-far'] as NearbyTier[])
+          .filter((t) => tierCounts[t] > 0)
+          .map((t) => (
+            <div key={t} className="flex items-center gap-2">
+              <span className="inline-block rounded-full" style={{ width: 10, height: 10, background: TIER_STYLE[t].color, opacity: TIER_STYLE[t].opacity, flexShrink: 0 }} />
+              {TIER_STYLE[t].label} · {tierCounts[t]}
+            </div>
+          ))}
+        {bases.length > 0 && (
+          <div className="flex items-center gap-2"><span>🏨</span>Where fans stay</div>
+        )}
+        {circuitPoint && (
+          <div style={{ color: '#9a9aaf' }}>Rings: ~{NEARBY_LIMITS.nearMins} / ~{NEARBY_LIMITS.cityMins} min on race day</div>
+        )}
       </div>
     </div>
   );
