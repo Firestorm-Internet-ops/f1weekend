@@ -18,8 +18,14 @@ async function init(): Promise<void> {
     const credsJson = process.env.GOOGLE_CLOUD_CREDENTIALS;
     if (credsJson) {
       const { GoogleAuth } = await import('google-auth-library');
+      const credentials = JSON.parse(credsJson);
+      // Env-var editors often store the key's line breaks as literal "\n" text,
+      // which OpenSSL can't decode (ERR_OSSL_UNSUPPORTED). Restore real newlines.
+      if (typeof credentials.private_key === 'string') {
+        credentials.private_key = credentials.private_key.replace(/\\n/g, '\n');
+      }
       connectorOpts.auth = new GoogleAuth({
-        credentials: JSON.parse(credsJson),
+        credentials,
         scopes: ['https://www.googleapis.com/auth/cloud-platform'],
       });
     }

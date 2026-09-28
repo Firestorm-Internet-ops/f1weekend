@@ -47,3 +47,6 @@ next-env.d.ts
 
 *.sqlkey.json
 key.json
+
+# nearby audit reports (generated locally)
+scripts/output/nearby-audit.*
