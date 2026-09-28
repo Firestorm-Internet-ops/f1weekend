@@ -14,46 +14,70 @@
   body { margin:0; background:var(--bg); color:var(--text); font:17px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif; }
   main { max-width:680px; margin:0 auto; padding:48px 16px 80px; }
   h1 { font-size:1.8rem; margin:0 0 6px; }
+  h3 { font-size:1rem; margin:18px 0 4px; }
   .muted { color:var(--muted); }
   .step { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:20px 22px; margin:16px 0; }
   .step.now { border:2px solid var(--accent); }
   .label { font-size:.75rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
   .now .label { color:var(--accent); }
+  .ok .label { color:var(--done); }
   h2 { font-size:1.2rem; margin:4px 0 8px; }
   ol, ul { padding-left:20px; margin:8px 0; }
   li { margin:6px 0; }
-  .done { color:var(--done); font-weight:600; }
   code { background:var(--border); padding:1px 6px; border-radius:4px; font-size:.88em; }
+  table { width:100%; border-collapse:collapse; font-size:.95rem; margin:8px 0; }
+  th, td { text-align:left; padding:6px 8px; border-bottom:1px solid var(--border); vertical-align:top; }
 </style>
 </head>
 <body>
 <main>
   <h1>f1weekend: what we do next</h1>
-  <p class="muted">One step at a time. We don't start a step until the one before it is finished.</p>
+  <p class="muted">One step at a time. Updated 28 Sep 2026.</p>
 
-  <div class="step now">
-    <div class="label">Step 1 · Now</div>
+  <div class="step ok">
+    <div class="label">Step 1 · Done ✓</div>
     <h2>Measure the site</h2>
-    <p>Today we can't see who visits or who clicks "Book". Google shows only 18 clicks from February to August 2026.</p>
-    <p><span class="done">✓ Code done:</span></p>
     <ul>
-      <li>Ahrefs Web Analytics tracker added to every page.</li>
-      <li>Every Book click sends a <code>book_click</code> event to Ahrefs (and to Google Analytics and Vercel Analytics when they're on).</li>
-      <li>Book buttons now open the partner site reliably. Before, Safari and mobile browsers could block them as popups.</li>
+      <li>Change merged into <code>main</code> and deployed on Vercel.</li>
+      <li>The Ahrefs tracker is on every page, and every Book click sends a <code>book_click</code> event.</li>
+      <li>Book buttons now open the partner site reliably.</li>
     </ul>
-    <p><strong>Your part:</strong></p>
-    <ol>
-      <li>Merge and deploy the change.</li>
-      <li>After a day, open Ahrefs → Web Analytics → F1weekend and check that visits appear.</li>
-      <li>Click a Book button yourself and check that a <code>book_click</code> event shows up.</li>
-      <li>Let it collect data for 2–4 weeks.</li>
-    </ol>
+    <p><strong>Still to check:</strong> Ahrefs showed 0 visits right after deploy, which is normal. Check again tomorrow. If it's still 0, the tracker is being blocked and we fix that first.</p>
   </div>
 
-  <div class="step">
-    <div class="label">Step 2</div>
-    <h2>Fix the "things to do" data</h2>
-    <p>Only show activities near the circuit, within a set distance and travel time. Hide the far-away ones.</p>
+  <div class="step now">
+    <div class="label">Step 2 · Next</div>
+    <h2>Show only activities near the race</h2>
+    <p><strong>The problem:</strong> race pages mix nearby activities with far-away day trips. Nothing checks distance. Activities are found by keyword search, some are tagged "day trip" on purpose, and the distance and travel-time fields are empty.</p>
+
+    <h3>The plan</h3>
+    <ol>
+      <li><strong>Audit.</strong> For every race, measure how far each activity is from the circuit and count how many are close, far or missing a location.</li>
+      <li><strong>Agree the rules with you.</strong> Suggested:
+        <table>
+          <tr><th>Group</th><th>Rule</th><th>When shown</th></tr>
+          <tr><td>Near the circuit</td><td>≤ 30 min away</td><td>Between sessions</td></tr>
+          <tr><td>In the city</td><td>≤ 60 min away</td><td>Mornings and evenings</td></tr>
+          <tr><td>Day trips</td><td>≤ 2 h away, max 3 per race</td><td>Thursday or Monday only, clearly labelled</td></tr>
+          <tr><td>Everything else</td><td>&gt; 2 h away</td><td>Hidden</td></tr>
+        </table>
+        Some circuits are outside town (Silverstone, Spa, Suzuka, Zandvoort, Red Bull Ring). For those, we also measure from the town where fans stay.</li>
+      <li><strong>Fill in the data.</strong> Save the distance and travel time for every activity.</li>
+      <li><strong>Apply it on the site.</strong> Hide what's out of range, sort by nearest, and show "15 min from circuit" on each card.</li>
+      <li><strong>Keep it clean.</strong> The data pipeline applies the same rule, so new activities never bring the problem back.</li>
+    </ol>
+
+    <h3>What you'll get</h3>
+    <ul>
+      <li><strong>First:</strong> an audit report for each race showing counts and the list of far-away activities. You review it before anything is hidden.</li>
+      <li><strong>Then:</strong> race pages with only nearby activities, each showing travel time, sorted closest first.</li>
+    </ul>
+
+    <h3>What I need from you</h3>
+    <ul>
+      <li>OK on the distance rules above, or your own numbers.</li>
+      <li>Keep day trips (limited, labelled) or remove them completely?</li>
+    </ul>
   </div>
 
   <div class="step">
@@ -67,8 +91,6 @@
     <h2>Build one pilot race page</h2>
     <p>Tickets → hospitality → hotels → things to do nearby, plus a "Request a package" form. That form tests whether an F1 DMC is worth doing.</p>
   </div>
-
-  <p class="muted">Later, once the data supports it: more activity providers (Viator, Tiqets, Headout) and the DMC decision.</p>
 </main>
 </body>
 </html>
