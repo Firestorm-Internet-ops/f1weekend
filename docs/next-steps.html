@@ -50,33 +50,49 @@
     <h2>Show only activities near the race</h2>
     <p><strong>The problem:</strong> race pages mix nearby activities with far-away day trips. Nothing checks distance. Activities are found by keyword search, some are tagged "day trip" on purpose, and the distance and travel-time fields are empty.</p>
 
+    <p><strong>Branch:</strong> <code>feature/nearby-activities-filter</code></p>
+
+    <h3>Agreed rules ✓</h3>
+    <table>
+      <tr><th>Group</th><th>Rule</th><th>When shown</th></tr>
+      <tr><td>Near circuit</td><td>≤ 30 min (race-traffic adjusted)</td><td>Between sessions</td></tr>
+      <tr><td>In the city</td><td>≤ 60 min</td><td>Mornings and evenings; all day at night races</td></tr>
+      <tr><td>Day trips</td><td>≤ 2 h, max 3 per race</td><td>Thursday / Monday only, labelled</td></tr>
+      <tr><td>Everything else</td><td>&gt; 2 h</td><td>Hidden, with old pages redirected</td></tr>
+    </table>
+    <ul>
+      <li>Rules use travel time, not kilometres, with about 1.5× normal time for race-weekend traffic.</li>
+      <li>Night races (Singapore, Las Vegas, Bahrain, Saudi, Qatar, Abu Dhabi) show city activities all day.</li>
+      <li>Out-of-town circuits measure from where fans stay: Silverstone → Milton Keynes / Northampton, Spa → Liège, Suzuka → Nagoya, Zandvoort → Haarlem / Amsterdam, Red Bull Ring → Graz.</li>
+    </ul>
+
     <h3>The plan</h3>
     <ol>
-      <li><strong>Audit.</strong> For every race, measure how far each activity is from the circuit and count how many are close, far or missing a location.</li>
-      <li><strong>Agree the rules with you.</strong> Suggested:
-        <table>
-          <tr><th>Group</th><th>Rule</th><th>When shown</th></tr>
-          <tr><td>Near the circuit</td><td>≤ 30 min away</td><td>Between sessions</td></tr>
-          <tr><td>In the city</td><td>≤ 60 min away</td><td>Mornings and evenings</td></tr>
-          <tr><td>Day trips</td><td>≤ 2 h away, max 3 per race</td><td>Thursday or Monday only, clearly labelled</td></tr>
-          <tr><td>Everything else</td><td>&gt; 2 h away</td><td>Hidden</td></tr>
-        </table>
-        Some circuits are outside town (Silverstone, Spa, Suzuka, Zandvoort, Red Bull Ring). For those, we also measure from the town where fans stay.</li>
-      <li><strong>Fill in the data.</strong> Save the distance and travel time for every activity.</li>
-      <li><strong>Apply it on the site.</strong> Hide what's out of range, sort by nearest, and show "15 min from circuit" on each card.</li>
-      <li><strong>Keep it clean.</strong> The data pipeline applies the same rule, so new activities never bring the problem back.</li>
+      <li><strong>Audit</strong> every race: how many activities are near, far or missing a location. This is read-only and changes nothing on the site.</li>
+      <li><strong>Fill in</strong> the distance and travel time for every activity.</li>
+      <li><strong>Apply the rules on the site:</strong> hide what's out of range, sort closest first, and show "15 min from circuit" on each card.</li>
+      <li><strong>Keep it clean:</strong> the data pipeline uses the same rules for new activities.</li>
     </ol>
 
     <h3>What you'll get</h3>
     <ul>
-      <li><strong>First:</strong> an audit report for each race showing counts and the list of far-away activities. You review it before anything is hidden.</li>
-      <li><strong>Then:</strong> race pages with only nearby activities, each showing travel time, sorted closest first.</li>
+      <li><strong>First:</strong> an audit report per race, which you review before anything is hidden.</li>
+      <li><strong>Then:</strong> race pages with only nearby activities, each showing its travel time.</li>
     </ul>
+  </div>
 
-    <h3>What I need from you</h3>
+  <div class="step">
+    <div class="label">How every change goes live</div>
+    <h2>Preview first, then production</h2>
+    <ol>
+      <li><strong>Feature branch</strong> (e.g. <code>feature/nearby-activities-filter</code>). Vercel builds a private preview link automatically.</li>
+      <li><strong>Pull request into <code>staging</code>.</strong> You test on the staging preview.</li>
+      <li><strong>Pull request from <code>staging</code> into <code>main</code></strong>, only after your OK. That is the only route to production (f1weekend.co).</li>
+    </ol>
+    <p><strong>Before step 2 goes live, check two things:</strong></p>
     <ul>
-      <li>OK on the distance rules above, or your own numbers.</li>
-      <li>Keep day trips (limited, labelled) or remove them completely?</li>
+      <li><strong>Catch up <code>staging</code>.</strong> It is 3 commits behind <code>main</code> (missing the analytics change), so bring it up to date first.</li>
+      <li><strong>Check which database previews use.</strong> Look in Vercel → Settings → Environment Variables → Preview. If previews use the production database, data changes would show on the live site immediately. So step 2 only <em>adds</em> distance data, and the hiding happens in code. The live site stays unchanged until the code reaches <code>main</code>.</li>
     </ul>
   </div>
 
