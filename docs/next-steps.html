@@ -84,14 +84,15 @@
   <div class="step">
     <div class="label">How every change goes live</div>
     <h2>Preview first, then production</h2>
+    <p>Only three branches at any time: <code>main</code>, <code>staging</code>, and one feature branch.</p>
     <ol>
-      <li><strong>Feature branch</strong> (e.g. <code>feature/nearby-activities-filter</code>). Vercel builds a private preview link automatically.</li>
-      <li><strong>Pull request into <code>staging</code>.</strong> You test on the staging preview.</li>
-      <li><strong>Pull request from <code>staging</code> into <code>main</code></strong>, only after your OK. That is the only route to production (f1weekend.co).</li>
+      <li><strong>Feature branch</strong> (now: <code>feature/nearby-activities-filter</code>). All coding happens here. It's fully tested, bottom up.</li>
+      <li><strong>Feature → <code>staging</code>.</strong> Merge it, then delete the feature branch. You check the change on the Vercel staging environment.</li>
+      <li><strong><code>staging</code> → <code>main</code></strong>, only after you confirm. That puts it live on f1weekend.co.</li>
     </ol>
-    <p><strong>Before step 2 goes live, check two things:</strong></p>
+    <p><strong>Things to know before step 2 goes live:</strong></p>
     <ul>
-      <li><strong>Catch up <code>staging</code>.</strong> It is 3 commits behind <code>main</code> (missing the analytics change), so bring it up to date first.</li>
+      <li><strong><code>staging</code> is 3 commits behind <code>main</code>.</strong> No extra step is needed: the feature branch starts from <code>main</code>, so merging it into <code>staging</code> brings those commits along.</li>
       <li><strong>Check which database previews use.</strong> Look in Vercel → Settings → Environment Variables → Preview. If previews use the production database, data changes would show on the live site immediately. So step 2 only <em>adds</em> distance data, and the hiding happens in code. The live site stays unchanged until the code reaches <code>main</code>.</li>
     </ul>
   </div>

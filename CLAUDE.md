@@ -21,6 +21,15 @@ scripts/               38+ pipeline scripts — fetch, seed, enrich, patch
 drizzle/               DB schema + migrations
 ```
 
+## Branching & Release Workflow (always follow)
+Only three branches exist at any time: `main`, `staging`, and one `feature/<short-description>` branch.
+
+1. **Feature branch**: create from `main` with a descriptive name (e.g. `feature/nearby-activities-filter`). All coding happens here. Test it fully, bottom up, before moving on.
+2. **Feature → `staging`**: open a PR into `staging`, merge it, then **delete the feature branch**. `staging` is what the Vercel staging/preview environment shows; the user verifies it there.
+3. **`staging` → `main`**: only after the user confirms staging looks right. `main` is production (f1weekend.co).
+
+Never push or merge directly to `main`. Never keep more than one feature branch alive.
+
 ## Common Dev Commands
 ```bash
 npm run dev            # Start dev server
