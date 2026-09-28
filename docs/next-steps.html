@@ -90,12 +90,35 @@
     </ul>
   </div>
 
+  <div class="step now">
+    <div class="label">Now · Multi-provider pilot</div>
+    <h2>Monaco: compare GetYourGuide, Viator and Tiqets</h2>
+    <p>Branch: <code>feature/multi-provider-experiences</code></p>
+    <p>Each experience keeps one page. Under it sit offers from every site that sells it, and fans pick the best price. Monaco is the first race.</p>
+    <h3>Progress</h3>
+    <ul>
+      <li>✓ Offers are separate from experiences: new <code>experience_offers</code> table; each click records which offer was used (<code>affiliate_clicks.offer_id</code>).</li>
+      <li>✓ Booking links are built per provider (GetYourGuide, Viator, Tiqets). Copy on the pages says "Book on {provider}" instead of always "GetYourGuide".</li>
+      <li>✓ Viator and Tiqets connected. First fetch for Monaco: 143 Viator and 33 Tiqets products.</li>
+      <li>✓ Matcher: finds the same product on another site. Clear matches are attached automatically, look-alikes (different length, private vs shared) go to a review list. 15 tests.</li>
+      <li>✓ Experience pages show a "Compare booking sites" block when there is more than one offer. With only GetYourGuide, pages look exactly as before.</li>
+      <li>☐ Run the database migration, then the Monaco fetch with your experiences, and review the report.</li>
+    </ul>
+    <h3>How to run it</h3>
+    <ol>
+      <li><code>npm run db:migrate-offers -- --dry-run</code>, then without <code>--dry-run</code>. Adds the table and copies every current GetYourGuide link into it. Nothing is removed.</li>
+      <li><code>npm run offers:fetch -- --race monaco-2026</code>. Read-only. Opens <code>scripts/output/offers-monaco-2026.html</code>: automatic matches, matches that need your decision, and products not on the site yet.</li>
+      <li><code>npm run offers:fetch -- --race monaco-2026 --apply --approve viator:CODE,tiqets:ID</code>. Saves the automatic matches plus the ones you approved.</li>
+    </ol>
+    <p class="muted">Safe for production data: the live site's code doesn't read the new table, so saved offers only appear once this branch reaches <code>main</code>.</p>
+  </div>
+
   <div class="step">
     <div class="label">How every change goes live</div>
     <h2>Preview first, then production</h2>
     <p>Only three branches at any time: <code>main</code>, <code>staging</code>, and one feature branch.</p>
     <ol>
-      <li><strong>Feature branch</strong> (now: <code>feature/nearby-activities-filter</code>). All coding happens here. It's fully tested, bottom up.</li>
+      <li><strong>Feature branch</strong> (now: <code>feature/multi-provider-experiences</code>). All coding happens here. It's fully tested, bottom up.</li>
       <li><strong>Feature → <code>staging</code>.</strong> Merge it, then delete the feature branch. You check the change on the Vercel staging environment.</li>
       <li><strong><code>staging</code> → <code>main</code></strong>, only after you confirm. That puts it live on f1weekend.co.</li>
     </ol>

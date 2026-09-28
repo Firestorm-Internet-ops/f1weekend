@@ -5,6 +5,7 @@ import { marked } from 'marked';
 import { getExperienceBySlug, getExperiencesByRace } from '@/services/experience.service';
 import { getRaceBySlug, getActiveRace } from '@/services/race.service';
 import BookButton from '@/components/experiences/BookButton';
+import { providerName } from '@/lib/providers/meta';
 import PhotoSlider from '@/components/experiences/PhotoSlider';
 import Breadcrumb from '@/components/Breadcrumb';
 import type { Experience } from '@/types/experience';
@@ -361,7 +362,7 @@ export default async function ExperienceDetailPage({ params }: Props) {
                   <BookButton experience={exp} source="guide" />
 
                   <p className="mt-4 text-[10px] text-center text-[var(--text-secondary)]">
-                    Secure booking via GetYourGuide · Free cancellation up to 24h before
+                    Secure booking via {providerName(exp.affiliatePartner)} · Free cancellation up to 24h before
                   </p>
                 </div>
 

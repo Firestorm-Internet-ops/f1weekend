@@ -21,7 +21,10 @@
     "enrich-seo": "tsx --env-file=.env scripts/enrich-seo-content.ts",
     "patch:miami-schedule": "tsx --env-file=.env scripts/patch-miami-2026-schedule.ts",
     "audit:nearby": "tsx scripts/audit-nearby.ts",
-    "test:nearby": "tsx --test src/lib/nearby.test.ts src/lib/distance-map.test.ts"
+    "test:nearby": "tsx --test src/lib/nearby.test.ts src/lib/distance-map.test.ts",
+    "test:providers": "tsx --test src/lib/providers/providers.test.ts",
+    "db:migrate-offers": "tsx scripts/migrate-add-experience-offers.ts",
+    "offers:fetch": "tsx scripts/fetch-provider-offers.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",

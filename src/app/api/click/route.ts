@@ -1,78 +1,90 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { sql } from 'drizzle-orm';
 import { getDb } from '@/lib/db';
 import { affiliate_clicks } from '@/lib/db/schema';
 import { getExperienceById } from '@/services/experience.service';
-import { buildAffiliateUrl } from '@/lib/affiliates';
+import { getOffersForExperience } from '@/services/offer.service';
+import { buildAffiliateUrl, type ClickSource, type Offer } from '@/lib/providers';
 
 const VALID_SOURCES = ['feed', 'itinerary', 'featured', 'map', 'guide'] as const;
-type Source = typeof VALID_SOURCES[number];
+type Source = ClickSource;
 
-function getBaseUrl(trackedUrl: string): string {
+interface ClickLog {
+  experienceId: number;
+  offer: Offer;
+  source: Source;
+  sessionId: string | null;
+  itineraryId: string | null;
+}
+
+async function logClick(req: NextRequest, c: ClickLog) {
+  const userAgent = req.headers.get('user-agent')?.slice(0, 500) ?? null;
+  const referer = req.headers.get('referer')?.slice(0, 1000) ?? null;
+  const db = await getDb();
   try {
-    const url = new URL(trackedUrl);
-    url.searchParams.delete('partner_id');
-    url.searchParams.delete('utm_medium');
-    url.searchParams.delete('utm_source');
-    url.searchParams.delete('utm_content');
-    url.searchParams.delete('utm_term');
-    return url.toString();
-  } catch {
-    return trackedUrl;
+    await db.insert(affiliate_clicks).values({
+      experience_id: c.experienceId,
+      affiliate_partner: c.offer.provider,
+      offer_id: c.offer.id,
+      source: c.source,
+      session_id: c.sessionId,
+      itinerary_id: c.itineraryId,
+      user_agent: userAgent,
+      referer,
+    });
+  } catch (err) {
+    // affiliate_clicks.offer_id may not exist yet (migration not run): log without it.
+    try {
+      await db.execute(sql`INSERT INTO affiliate_clicks
+        (experience_id, affiliate_partner, source, session_id, itinerary_id, user_agent, referer)
+        VALUES (${c.experienceId}, ${c.offer.provider}, ${c.source}, ${c.sessionId}, ${c.itineraryId}, ${userAgent}, ${referer})`);
+    } catch {
+      console.error('[/api/click] DB insert failed:', err);
+      // Still redirect — tracking failure shouldn't block the user
+    }
   }
 }
 
-async function logClick(
-  req: NextRequest,
-  experienceId: number,
-  affiliatePartner: string,
-  source: Source,
-  sessionId: string | null,
-  itineraryId: string | null
-) {
-  try {
-    const db = await getDb();
-    await db.insert(affiliate_clicks).values({
-      experience_id: experienceId,
-      affiliate_partner: affiliatePartner,
-      source,
-      session_id: sessionId,
-      itinerary_id: itineraryId,
-      user_agent: req.headers.get('user-agent')?.slice(0, 500) ?? null,
-      referer: req.headers.get('referer')?.slice(0, 1000) ?? null,
-    });
-  } catch (err) {
-    console.error('[/api/click] DB insert failed:', err);
-    // Still redirect — tracking failure shouldn't block the user
-  }
+function parseSource(value: string | null | undefined): Source | null {
+  return VALID_SOURCES.includes(value as Source) ? (value as Source) : null;
+}
+
+/** The requested offer if it belongs to the experience, else the default (primary, then cheapest). */
+async function resolveOffer(experienceId: number, offerId: number | null) {
+  const experience = Number.isInteger(experienceId) && experienceId > 0
+    ? await getExperienceById(experienceId)
+    : null;
+  if (!experience) return null;
+  const offers = await getOffersForExperience(experience);
+  const offer = (offerId ? offers.find((o) => o.id === offerId) : undefined) ?? offers[0];
+  return offer ? { experience, offer } : null;
 }
 
 /**
- * GET /api/click?id=123&source=feed&sid=abc&itinerary=xyz
- * Logs the click, then redirects to the tracked partner URL.
+ * GET /api/click?id=123&offer=456&source=feed&sid=abc&itinerary=xyz
+ * Logs the click, then redirects to the offer's tracked partner URL.
+ * `offer` is optional; without it the experience's default offer is used.
  * Used by the Book buttons (opened synchronously in a new tab).
  */
 export async function GET(req: NextRequest) {
   const params = req.nextUrl.searchParams;
   const experienceId = Number(params.get('id'));
-  const sourceParam = params.get('source') ?? 'feed';
-  const source: Source = VALID_SOURCES.includes(sourceParam as Source) ? (sourceParam as Source) : 'feed';
+  const offerId = Number(params.get('offer')) || null;
+  const source = parseSource(params.get('source')) ?? 'feed';
 
-  const experience = Number.isInteger(experienceId) && experienceId > 0
-    ? await getExperienceById(experienceId)
-    : null;
-  if (!experience?.affiliateUrl) {
+  const resolved = await resolveOffer(experienceId, offerId);
+  if (!resolved) {
     return NextResponse.redirect(new URL('/experiences', req.url), 302);
   }
 
-  const affiliateUrl = buildAffiliateUrl(getBaseUrl(experience.affiliateUrl), experienceId, source);
-  await logClick(
-    req,
+  const affiliateUrl = buildAffiliateUrl(resolved.offer.provider, resolved.offer.url, { experienceId, source });
+  await logClick(req, {
     experienceId,
-    experience.affiliatePartner,
+    offer: resolved.offer,
     source,
-    params.get('sid')?.slice(0, 64) || null,
-    params.get('itinerary')?.slice(0, 12) || null
-  );
+    sessionId: params.get('sid')?.slice(0, 64) || null,
+    itineraryId: params.get('itinerary')?.slice(0, 12) || null,
+  });
 
   const res = NextResponse.redirect(affiliateUrl, 302);
   res.headers.set('X-Robots-Tag', 'noindex, nofollow');
@@ -88,8 +100,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const { experienceId, source, sessionId, itineraryId } = body as {
+  const { experienceId, offerId, source, sessionId, itineraryId } = body as {
     experienceId?: number;
+    offerId?: number;
     source?: string;
     sessionId?: string;
     itineraryId?: string;
@@ -102,29 +115,27 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  if (!VALID_SOURCES.includes(source as Source)) {
+  const validSource = parseSource(source);
+  if (!validSource) {
     return NextResponse.json(
       { error: `Invalid source. Must be one of: ${VALID_SOURCES.join(', ')}` },
       { status: 400 }
     );
   }
 
-  const experience = await getExperienceById(experienceId);
-  if (!experience) {
+  const resolved = await resolveOffer(experienceId, offerId ?? null);
+  if (!resolved) {
     return NextResponse.json({ error: 'Experience not found' }, { status: 404 });
   }
 
-  const baseUrl = getBaseUrl(experience.affiliateUrl);
-  const affiliateUrl = buildAffiliateUrl(baseUrl, experienceId, source as Source);
-
-  await logClick(
-    req,
+  const affiliateUrl = buildAffiliateUrl(resolved.offer.provider, resolved.offer.url, { experienceId, source: validSource });
+  await logClick(req, {
     experienceId,
-    experience.affiliatePartner,
-    source as Source,
-    sessionId ?? null,
-    itineraryId ?? null
-  );
+    offer: resolved.offer,
+    source: validSource,
+    sessionId: sessionId ?? null,
+    itineraryId: itineraryId ?? null,
+  });
 
   return NextResponse.json({ affiliateUrl, tracked: true });
 }

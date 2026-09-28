@@ -1,4 +1,4 @@
-import { mysqlTable, int, varchar, year, decimal, char, date, timestamp, mysqlEnum, time, boolean, json, bigint, primaryKey, text, longtext } from "drizzle-orm/mysql-core";
+import { mysqlTable, uniqueIndex, index, int, varchar, year, decimal, char, date, timestamp, mysqlEnum, time, boolean, json, bigint, primaryKey, text, longtext } from "drizzle-orm/mysql-core";
 
 export const races = mysqlTable("races", {
     id: int("id").primaryKey().autoincrement(),
@@ -103,6 +103,35 @@ export const experiences = mysqlTable("experiences", {
     faq_items: json("faq_items"),                  // FAQItem[] — { question: string, answer: string }[]
 });
 
+// One row per provider product sold for an experience (GYG, Viator, Tiqets).
+// Title, slug, editorial and geodata stay on experiences; price, rating and
+// the booking URL live here. Created by scripts/migrate-add-experience-offers.ts.
+export const experience_offers = mysqlTable("experience_offers", {
+    id: int("id").primaryKey().autoincrement(),
+    experience_id: int("experience_id").notNull().references(() => experiences.id),
+    provider: varchar("provider", { length: 20 }).notNull(),
+    product_id: varchar("product_id", { length: 100 }).notNull(),
+    title: varchar("title", { length: 255 }),
+    url: varchar("url", { length: 1000 }).notNull(),
+    price_amount: decimal("price_amount", { precision: 10, scale: 2 }),
+    price_currency: varchar("price_currency", { length: 3 }),
+    original_price: decimal("original_price", { precision: 10, scale: 2 }),
+    rating: decimal("rating", { precision: 3, scale: 1 }),
+    review_count: int("review_count").default(0),
+    duration_hours: decimal("duration_hours", { precision: 4, scale: 1 }),
+    flags: json("flags"),                          // OfferFlags
+    provider_categories: json("provider_categories"),
+    raw_snapshot: json("raw_snapshot"),
+    match_score: decimal("match_score", { precision: 4, scale: 3 }), // null for the experience's own (backfilled) offer
+    is_primary: boolean("is_primary").default(false),
+    is_active: boolean("is_active").default(true),
+    last_synced_at: timestamp("last_synced_at").defaultNow(),
+    created_at: timestamp("created_at").defaultNow(),
+}, (table) => ({
+    providerProduct: uniqueIndex("uq_offer_provider_product").on(table.provider, table.product_id, table.experience_id),
+    byExperience: index("idx_offer_experience").on(table.experience_id),
+}));
+
 export const experience_windows_map = mysqlTable("experience_windows_map", {
     experience_id: int("experience_id").references(() => experiences.id),
     window_id: int("window_id").references(() => experience_windows.id),
@@ -130,6 +159,7 @@ export const affiliate_clicks = mysqlTable("affiliate_clicks", {
     experience_id: int("experience_id").references(() => experiences.id),
     itinerary_id: varchar("itinerary_id", { length: 12 }),
     affiliate_partner: varchar("affiliate_partner", { length: 50 }),
+    offer_id: int("offer_id"),
     source: mysqlEnum("source", ["feed", "itinerary", "featured", "map", "guide"]),
     session_id: varchar("session_id", { length: 64 }),
     user_agent: varchar("user_agent", { length: 500 }),
