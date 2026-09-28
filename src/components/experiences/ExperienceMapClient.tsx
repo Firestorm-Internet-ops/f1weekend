@@ -6,7 +6,12 @@ import type { Experience } from '@/types/experience';
 import CategoryTabs from './CategoryTabs';
 import ExperienceMap from './ExperienceMap';
 
-export default function ExperienceMapClient({ raceSlug }: { raceSlug: string }) {
+interface Props {
+  raceSlug: string;
+  circuit?: { lat: number; lng: number; name: string };
+}
+
+export default function ExperienceMapClient({ raceSlug, circuit }: Props) {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -45,7 +50,7 @@ export default function ExperienceMapClient({ raceSlug }: { raceSlug: string }) 
       {loading ? (
         <div className="w-full h-[600px] rounded-2xl shimmer" />
       ) : (
-        <ExperienceMap experiences={experiences} height="600px" raceSlug={raceSlug} />
+        <ExperienceMap experiences={experiences} height="600px" raceSlug={raceSlug} circuit={circuit} />
       )}
     </div>
   );

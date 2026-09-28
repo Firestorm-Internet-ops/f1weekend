@@ -99,6 +99,16 @@ export function estimateTravelMins(straightLineKm: number): number {
   return 30 + ((roadKm - 10) / 60) * 60;
 }
 
+/**
+ * Inverse of estimateTravelMins: straight-line radius (km) reachable in `mins`.
+ * With raceDay, the race-traffic factor is applied first (used for map rings).
+ */
+export function radiusKmForMins(mins: number, raceDay = true): number {
+  const baseMins = raceDay ? mins / RACE_TRAFFIC_FACTOR : mins;
+  const roadKm = baseMins <= 30 ? (baseMins / 60) * 20 : 10 + ((baseMins - 30) / 60) * 60;
+  return roadKm / ROAD_FACTOR;
+}
+
 function roundTo5(mins: number): number {
   return Math.max(5, Math.round(mins / 5) * 5);
 }

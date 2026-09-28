@@ -43,7 +43,7 @@ export default async function ExperienceMapPage({ params }: Props) {
               Experience Map
             </h1>
             <p className="text-[var(--text-secondary)] mt-2">
-              All experiences relative to {race.circuitName}.
+              All experiences relative to {race.circuitName}. Rings show roughly 30 and 60 minutes away on race day.
             </p>
           </div>
           <Link
@@ -56,7 +56,10 @@ export default async function ExperienceMapPage({ params }: Props) {
         </div>
 
         <Suspense fallback={<div className="h-[600px] bg-[var(--bg-secondary)] rounded-2xl animate-pulse" />}>
-          <ExperienceMapClient raceSlug={raceSlug} />
+          <ExperienceMapClient
+            raceSlug={raceSlug}
+            circuit={{ lat: race.circuitLat, lng: race.circuitLng, name: race.circuitName }}
+          />
         </Suspense>
       </div>
     </div>

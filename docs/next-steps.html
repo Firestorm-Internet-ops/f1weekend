@@ -70,7 +70,8 @@
     <ul>
       <li>✓ Distance rules written and tested (<code>src/lib/nearby.ts</code>, 10 tests with real places: Monaco, Silverstone, Monza, Suzuka).</li>
       <li>✓ Read-only audit script ready: <code>npm run audit:nearby</code>, which creates <code>scripts/output/nearby-audit.html</code>.</li>
-      <li>⏳ Waiting on you: run the audit against the real database and review the report.</li>
+      <li>✓ Audit page on staging: <code>staging.f1weekend.co/api/nearby-audit</code>. Review it before anything is hidden.</li>
+      <li>✓ Experience map fixed. It was stuck on Melbourne for every race. It now centres on each race's circuit, with ~30 / ~60 min rings, pins coloured by distance, and markers for where fans stay (branch <code>feature/experience-map-distance</code>).</li>
     </ul>
 
     <h3>The plan</h3>

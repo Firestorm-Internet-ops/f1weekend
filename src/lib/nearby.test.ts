@@ -5,7 +5,11 @@ import {
   applyNearbyRules,
   classifyExperience,
   isNightRace,
+  estimateTravelMins,
   nearbyLabel,
+  NEARBY_LIMITS,
+  RACE_TRAFFIC_FACTOR,
+  radiusKmForMins,
   raceKey,
   sortByNearest,
 } from './nearby';
@@ -99,4 +103,16 @@ test('labels', () => {
   assert.equal(nearbyLabel({ tier: 'daytrip', distanceKm: 70, travelMins: 90, from: 'Nagoya' }), 'Day trip · 1h 30 from Nagoya');
   assert.equal(nearbyLabel({ tier: 'city', distanceKm: 20, travelMins: 60, from: 'Milan' }), '1h from Milan');
   assert.equal(nearbyLabel({ tier: 'unknown', distanceKm: null, travelMins: null, from: null }), null);
+});
+
+test('radiusKmForMins is the inverse of the travel estimate (map rings)', () => {
+  for (const mins of [10, 30, 45, 60, 90, 120]) {
+    const km = radiusKmForMins(mins, false);
+    assert.ok(Math.abs(estimateTravelMins(km) - mins) < 1e-9, `plain ${mins} min`);
+    const raceKm = radiusKmForMins(mins, true);
+    assert.ok(Math.abs(estimateTravelMins(raceKm) * RACE_TRAFFIC_FACTOR - mins) < 1e-9, `race-day ${mins} min`);
+  }
+  // Ring sizes shown on the map: ~5 km for 30 min, ~15 km for 60 min on race day
+  assert.equal(Math.round(radiusKmForMins(NEARBY_LIMITS.nearMins)), 5);
+  assert.equal(Math.round(radiusKmForMins(NEARBY_LIMITS.cityMins)), 15);
 });
