@@ -21,6 +21,65 @@ function getBaseUrl(trackedUrl: string): string {
   }
 }
 
+async function logClick(
+  req: NextRequest,
+  experienceId: number,
+  affiliatePartner: string,
+  source: Source,
+  sessionId: string | null,
+  itineraryId: string | null
+) {
+  try {
+    const db = await getDb();
+    await db.insert(affiliate_clicks).values({
+      experience_id: experienceId,
+      affiliate_partner: affiliatePartner,
+      source,
+      session_id: sessionId,
+      itinerary_id: itineraryId,
+      user_agent: req.headers.get('user-agent')?.slice(0, 500) ?? null,
+      referer: req.headers.get('referer')?.slice(0, 1000) ?? null,
+    });
+  } catch (err) {
+    console.error('[/api/click] DB insert failed:', err);
+    // Still redirect — tracking failure shouldn't block the user
+  }
+}
+
+/**
+ * GET /api/click?id=123&source=feed&sid=abc&itinerary=xyz
+ * Logs the click, then redirects to the tracked partner URL.
+ * Used by the Book buttons (opened synchronously in a new tab).
+ */
+export async function GET(req: NextRequest) {
+  const params = req.nextUrl.searchParams;
+  const experienceId = Number(params.get('id'));
+  const sourceParam = params.get('source') ?? 'feed';
+  const source: Source = VALID_SOURCES.includes(sourceParam as Source) ? (sourceParam as Source) : 'feed';
+
+  const experience = Number.isInteger(experienceId) && experienceId > 0
+    ? await getExperienceById(experienceId)
+    : null;
+  if (!experience?.affiliateUrl) {
+    return NextResponse.redirect(new URL('/experiences', req.url), 302);
+  }
+
+  const affiliateUrl = buildAffiliateUrl(getBaseUrl(experience.affiliateUrl), experienceId, source);
+  await logClick(
+    req,
+    experienceId,
+    experience.affiliatePartner,
+    source,
+    params.get('sid')?.slice(0, 64) || null,
+    params.get('itinerary')?.slice(0, 12) || null
+  );
+
+  const res = NextResponse.redirect(affiliateUrl, 302);
+  res.headers.set('X-Robots-Tag', 'noindex, nofollow');
+  res.headers.set('Cache-Control', 'no-store');
+  return res;
+}
+
 export async function POST(req: NextRequest) {
   let body: unknown;
   try {
@@ -58,21 +117,14 @@ export async function POST(req: NextRequest) {
   const baseUrl = getBaseUrl(experience.affiliateUrl);
   const affiliateUrl = buildAffiliateUrl(baseUrl, experienceId, source as Source);
 
-  try {
-    const db = await getDb();
-    await db.insert(affiliate_clicks).values({
-      experience_id: experienceId,
-      affiliate_partner: experience.affiliatePartner,
-      source: source as Source,
-      session_id: sessionId ?? null,
-      itinerary_id: itineraryId ?? null,
-      user_agent: req.headers.get('user-agent') ?? null,
-      referer: req.headers.get('referer') ?? null,
-    });
-  } catch (err) {
-    console.error('[POST /api/click] DB insert failed:', err);
-    // Still return the URL — tracking failure shouldn't block the user
-  }
+  await logClick(
+    req,
+    experienceId,
+    experience.affiliatePartner,
+    source as Source,
+    sessionId ?? null,
+    itineraryId ?? null
+  );
 
   return NextResponse.json({ affiliateUrl, tracked: true });
 }

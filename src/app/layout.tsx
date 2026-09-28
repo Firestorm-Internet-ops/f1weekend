@@ -75,6 +75,12 @@ export default async function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://cdn.getyourguide.com" />
+        {/* Ahrefs Web Analytics (project "F1weekend"); the data key is public by design */}
+        <Script
+          src="https://analytics.ahrefs.com/analytics.js"
+          data-key={process.env.NEXT_PUBLIC_AHREFS_ANALYTICS_KEY ?? 'D7ZeRUINVlprh/1l3P26ow'}
+          strategy="afterInteractive"
+        />
         {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID && (
           <>
             <Script
