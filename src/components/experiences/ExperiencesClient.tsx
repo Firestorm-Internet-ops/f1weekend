@@ -6,8 +6,8 @@ import type { Experience } from '@/types/experience';
 import ExperienceCard from './ExperienceCard';
 import SortSelector, { type SortOption } from './SortSelector';
 import { CATEGORY_LABELS, CATEGORY_COLORS } from '@/lib/constants/categories';
+import { openBooking } from '@/lib/analytics';
 
-const SESSION_KEY = 'pitlane-session';
 
 const WINDOW_LABELS: Record<string, string> = {
   'thu-full':    'Thursday — Full Day',
@@ -60,16 +60,6 @@ function getSessionWindows(raceSlug: string): SessionWindow[] {
   return base;
 }
 
-function getSessionId(): string {
-  if (typeof window === 'undefined') return '';
-  let id = localStorage.getItem(SESSION_KEY);
-  if (!id) {
-    id = Math.random().toString(36).slice(2) + Date.now().toString(36);
-    localStorage.setItem(SESSION_KEY, id);
-  }
-  return id;
-}
-
 export default function ExperiencesClient({
   initialExperiences = [],
   raceSlug,
@@ -88,7 +78,6 @@ export default function ExperiencesClient({
   const [experiences, setExperiences] = useState<Experience[]>(initialExperiences);
   const [loading, setLoading] = useState(false);
   const isFirstRender = useRef(true);
-  const [bookingId, setBookingId] = useState<number | null>(null);
 
   const sessionWindows = useMemo(() => getSessionWindows(raceSlug), [raceSlug]);
 
@@ -154,26 +143,8 @@ export default function ExperiencesClient({
       .catch(() => setLoading(false));
   }, [windowSlug, category, sort, raceSlug]);
 
-  const handleBook = async (experienceId: number) => {
-    setBookingId(experienceId);
-    try {
-      const res = await fetch('/api/click', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          experienceId,
-          source: 'feed',
-          sessionId: getSessionId(),
-        }),
-      });
-      const { affiliateUrl } = await res.json();
-      window.open(affiliateUrl, '_blank');
-    } catch {
-      const exp = experiences.find((e) => e.id === experienceId);
-      if (exp?.affiliateUrl) window.open(exp.affiliateUrl, '_blank');
-    } finally {
-      setBookingId(null);
-    }
+  const handleBook = (experienceId: number) => {
+    openBooking(experienceId, 'feed');
   };
 
   return (
@@ -290,7 +261,6 @@ export default function ExperiencesClient({
               key={exp.id}
               experience={exp}
               onBook={handleBook}
-              loading={bookingId === exp.id}
               index={i}
               detailHref={`/races/${raceSlug}/experiences/${exp.slug}`}
             />

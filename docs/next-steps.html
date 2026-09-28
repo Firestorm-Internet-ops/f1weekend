@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>f1weekend Next Steps</title>
+<style>
+  :root { --bg:#fafaf9; --card:#fff; --text:#1c1917; --muted:#6b6560; --border:#e7e5e4; --accent:#e10600; --done:#15803d; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --bg:#0c0a09; --card:#1c1917; --text:#f5f5f4; --muted:#a8a29e; --border:#2e2a27; --accent:#ff3b30; --done:#4ade80; }
+  }
+  :root[data-theme="dark"] { --bg:#0c0a09; --card:#1c1917; --text:#f5f5f4; --muted:#a8a29e; --border:#2e2a27; --accent:#ff3b30; --done:#4ade80; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:17px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif; }
+  main { max-width:680px; margin:0 auto; padding:48px 16px 80px; }
+  h1 { font-size:1.8rem; margin:0 0 6px; }
+  .muted { color:var(--muted); }
+  .step { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:20px 22px; margin:16px 0; }
+  .step.now { border:2px solid var(--accent); }
+  .label { font-size:.75rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+  .now .label { color:var(--accent); }
+  h2 { font-size:1.2rem; margin:4px 0 8px; }
+  ol, ul { padding-left:20px; margin:8px 0; }
+  li { margin:6px 0; }
+  .done { color:var(--done); font-weight:600; }
+  code { background:var(--border); padding:1px 6px; border-radius:4px; font-size:.88em; }
+</style>
+</head>
+<body>
+<main>
+  <h1>f1weekend: what we do next</h1>
+  <p class="muted">One step at a time. We don't start a step until the one before it is finished.</p>
+
+  <div class="step now">
+    <div class="label">Step 1 · Now</div>
+    <h2>Measure the site</h2>
+    <p>Today we can't see who visits or who clicks "Book". Google shows only 18 clicks from February to August 2026.</p>
+    <p><span class="done">✓ Code done:</span></p>
+    <ul>
+      <li>Ahrefs Web Analytics tracker added to every page.</li>
+      <li>Every Book click sends a <code>book_click</code> event to Ahrefs (and to Google Analytics and Vercel Analytics when they're on).</li>
+      <li>Book buttons now open the partner site reliably. Before, Safari and mobile browsers could block them as popups.</li>
+    </ul>
+    <p><strong>Your part:</strong></p>
+    <ol>
+      <li>Merge and deploy the change.</li>
+      <li>After a day, open Ahrefs → Web Analytics → F1weekend and check that visits appear.</li>
+      <li>Click a Book button yourself and check that a <code>book_click</code> event shows up.</li>
+      <li>Let it collect data for 2–4 weeks.</li>
+    </ol>
+  </div>
+
+  <div class="step">
+    <div class="label">Step 2</div>
+    <h2>Fix the "things to do" data</h2>
+    <p>Only show activities near the circuit, within a set distance and travel time. Hide the far-away ones.</p>
+  </div>
+
+  <div class="step">
+    <div class="label">Step 3</div>
+    <h2>Sign up for F1 affiliate programmes</h2>
+    <p>Tickets, hospitality and hotels are where F1 fans spend money. Apply to their affiliate programmes.</p>
+  </div>
+
+  <div class="step">
+    <div class="label">Step 4</div>
+    <h2>Build one pilot race page</h2>
+    <p>Tickets → hospitality → hotels → things to do nearby, plus a "Request a package" form. That form tests whether an F1 DMC is worth doing.</p>
+  </div>
+
+  <p class="muted">Later, once the data supports it: more activity providers (Viator, Tiqets, Headout) and the DMC decision.</p>
+</main>
+</body>
+</html>
