@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Multi-Provider Plan</title>
+<style>
+  :root {
+    --bg: #fafaf9; --surface: #ffffff; --text: #1c1917; --muted: #57534e;
+    --border: #e7e5e4; --accent: #e10600; --accent-soft: #fde8e7;
+    --ok: #15803d; --ok-soft: #dcfce7; --warn: #b45309; --warn-soft: #fef3c7;
+    --code-bg: #f5f5f4;
+    --gyg: #ff5533; --viator: #0f8a7e; --tiqets: #4f46e5; --headout: #9333ea;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0c0a09; --surface: #1c1917; --text: #f5f5f4; --muted: #a8a29e;
+      --border: #292524; --accent: #ff3b30; --accent-soft: #3b1210;
+      --ok: #4ade80; --ok-soft: #10281a; --warn: #fbbf24; --warn-soft: #2e2109;
+      --code-bg: #292524;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0c0a09; --surface: #1c1917; --text: #f5f5f4; --muted: #a8a29e;
+    --border: #292524; --accent: #ff3b30; --accent-soft: #3b1210;
+    --ok: #4ade80; --ok-soft: #10281a; --warn: #fbbf24; --warn-soft: #2e2109;
+    --code-bg: #292524;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 920px; margin: 0 auto; padding: 40px 16px 80px; }
+  h1 { font-size: 2rem; line-height: 1.2; margin: 0 0 8px; }
+  h2 { font-size: 1.35rem; margin: 48px 0 12px; padding-top: 8px; border-top: 1px solid var(--border); }
+  h3 { font-size: 1.05rem; margin: 20px 0 6px; }
+  p, li { color: var(--text); }
+  .muted { color: var(--muted); }
+  .eyebrow { color: var(--accent); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; font-size: .78rem; }
+  code { background: var(--code-bg); padding: 1px 6px; border-radius: 4px; font-size: .88em; overflow-wrap: anywhere; }
+  pre { background: var(--code-bg); padding: 14px 16px; border-radius: 8px; overflow-x: auto; font-size: .85rem; line-height: 1.5; }
+  pre code { background: none; padding: 0; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; margin: 14px 0; }
+  .callout { border-left: 4px solid var(--accent); background: var(--accent-soft); border-radius: 8px; padding: 14px 18px; margin: 18px 0; }
+  .callout.ok { border-color: var(--ok); background: var(--ok-soft); }
+  .callout.warn { border-color: var(--warn); background: var(--warn-soft); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+  .table-wrap { overflow-x: auto; margin: 14px 0; }
+  table { border-collapse: collapse; width: 100%; font-size: .92rem; background: var(--surface); }
+  th, td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--code-bg); }
+  .phase { position: relative; padding-left: 56px; }
+  .phase .num {
+    position: absolute; left: 16px; top: 18px; width: 30px; height: 30px; border-radius: 50%;
+    background: var(--accent); color: #fff; font-weight: 700; display: grid; place-items: center; font-size: .9rem;
+  }
+  .phase h3 { margin-top: 0; }
+  .tag { display: inline-block; font-size: .75rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--code-bg); color: var(--muted); margin-left: 6px; vertical-align: middle; }
+  .tag.now { background: var(--accent); color: #fff; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
+  ul.check { list-style: none; padding-left: 0; }
+  ul.check li { padding-left: 26px; position: relative; margin: 6px 0; }
+  ul.check li::before { content: "☐"; position: absolute; left: 0; color: var(--muted); }
+  svg text { fill: var(--text); font-family: inherit; }
+  svg .box { fill: var(--surface); stroke: var(--border); stroke-width: 1.5; }
+  svg .core { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.5; }
+  svg .line { stroke: var(--muted); stroke-width: 1.5; fill: none; }
+  svg .small { font-size: 12px; fill: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+
+<div class="eyebrow">f1weekend.co · Plan</div>
+<h1>Going multi-provider: GetYourGuide + Viator + Tiqets + Headout</h1>
+<p class="muted">Plan to move f1weekend from a GetYourGuide-only listing to a comparison of offers from four providers, organised around F1 session times. Written 28 Sep 2026 from a review of the <code>f1weekend</code> repo.</p>
+
+<div class="callout">
+  <strong>Where to start, in one line:</strong> start the three partner applications today, because approval takes time. While they're pending, change the code so experiences and provider offers are separate things. Ship that with GYG as the only provider, so nothing on the site changes visibly. Then each new provider is a new adapter, not a rewrite.
+</div>
+
+<h2>1. The idea</h2>
+<p>Adding more listings isn't the goal on its own. The goal is for f1weekend to be <strong>the one F1 site that compares booking options and fits them around the race sessions</strong>. Each "thing to do" (e.g. <em>Monaco helicopter ride</em>) becomes a single page with one set of editorial content. Under it sit offers from every provider that sells it.</p>
+<div class="grid">
+  <div class="card"><strong>Coverage</strong><br><span class="muted">Tiqets and Headout are strong on attraction tickets and skip-the-line entry, which suit short session gaps. Viator is strongest in the Americas (Miami, Austin, Vegas, Montreal, Mexico City).</span></div>
+  <div class="card"><strong>Revenue resilience</strong><br><span class="muted">Four affiliate programmes instead of one. We can send each click to the best offer: cheapest, best rated or highest commission.</span></div>
+  <div class="card"><strong>SEO / AEO angle</strong><br><span class="muted">Pages like "cheapest way to book X during the Monaco GP" are content that answer engines like to quote, and single-provider sites can't write them.</span></div>
+</div>
+
+<h2>2. Where the code is today</h2>
+<div class="table-wrap"><table>
+  <tr><th>Area</th><th>Current state</th><th>Multi-provider ready?</th></tr>
+  <tr><td><code>experiences</code> table</td><td>Has <code>affiliate_partner</code>, <code>affiliate_url</code>, <code>affiliate_product_id</code>, but only <strong>one</strong> provider per row</td><td>Partly</td></tr>
+  <tr><td><code>affiliate_clicks</code></td><td>Already records <code>affiliate_partner</code></td><td>✅ Yes</td></tr>
+  <tr><td><code>src/lib/affiliates.ts</code></td><td>Builds GYG links only (<code>partner_id</code> + UTMs)</td><td>❌ No</td></tr>
+  <tr><td><code>/api/click</code></td><td>Sends every click through the GYG link builder</td><td>❌ No</td></tr>
+  <tr><td>UI copy</td><td>"Book on GetYourGuide →", "reviews on GetYourGuide", schema.org <code>seller: GetYourGuide</code></td><td>❌ Hardcoded</td></tr>
+  <tr><td>GYG-specific columns</td><td><code>gyg_categories</code>, <code>options_snapshot</code>, <code>reviews_snapshot</code>, <code>photos</code></td><td>Need to move per provider</td></tr>
+  <tr><td>Ingestion</td><td><code>discover-gyg-tours</code>, <code>enrich-from-gyg</code>, <code>seed-from-candidates</code>, Python <code>pipeline/</code></td><td>❌ GYG-only</td></tr>
+  <tr><td>Python pipeline deps</td><td>Imports <code>gyg_client</code> / <code>experience_ranker</code> from <code>../../getyourguideapi/shared</code>, outside this repo</td><td>⚠️ Fragile</td></tr>
+</table></div>
+
+<div class="callout warn">
+  <strong>Housekeeping first:</strong> <code>CLAUDE.md</code> says Postgres / Next 15 / Stripe / <code>gyg-client.ts</code>. The code is actually MySQL/TiDB via Cloud SQL, Next 16, and neither of those files exists. <code>drizzle/schema.ts</code> has also drifted from <code>src/lib/db/schema.ts</code> (for example, the click <code>source</code> enum has 3 values in one and 5 in the other). We should settle on one schema before we migrate.
+</div>
+
+<h2>3. Target architecture</h2>
+<svg viewBox="0 0 860 330" width="100%" role="img" aria-label="Architecture: provider adapters feed a normaliser and matcher, which write experiences and offers; the site reads both and routes clicks per provider.">
+  <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="currentColor" style="color:var(--muted)"/></marker></defs>
+  <!-- adapters -->
+  <rect class="box" x="10" y="20" width="170" height="52" rx="8"/><text x="95" y="51" text-anchor="middle"><tspan fill="#ff5533">●</tspan> GYG adapter</text>
+  <rect class="box" x="10" y="92" width="170" height="52" rx="8"/><text x="95" y="123" text-anchor="middle"><tspan fill="#0f8a7e">●</tspan> Viator adapter</text>
+  <rect class="box" x="10" y="164" width="170" height="52" rx="8"/><text x="95" y="195" text-anchor="middle"><tspan fill="#4f46e5">●</tspan> Tiqets adapter</text>
+  <rect class="box" x="10" y="236" width="170" height="52" rx="8"/><text x="95" y="267" text-anchor="middle"><tspan fill="#9333ea">●</tspan> Headout adapter</text>
+  <!-- normaliser -->
+  <rect class="core" x="250" y="100" width="190" height="110" rx="10"/>
+  <text x="345" y="135" text-anchor="middle" font-weight="700">Normalise + Match</text>
+  <text x="345" y="158" text-anchor="middle" class="small">common Offer shape</text>
+  <text x="345" y="176" text-anchor="middle" class="small">dedupe → canonical experience</text>
+  <text x="345" y="194" text-anchor="middle" class="small">F1-relevance ranking</text>
+  <path class="line" d="M180 46 C215 46 215 140 250 140" marker-end="url(#a)"/>
+  <path class="line" d="M180 118 C215 118 215 150 250 150" marker-end="url(#a)"/>
+  <path class="line" d="M180 190 C215 190 215 165 250 165" marker-end="url(#a)"/>
+  <path class="line" d="M180 262 C215 262 215 175 250 175" marker-end="url(#a)"/>
+  <!-- db -->
+  <rect class="box" x="500" y="60" width="160" height="70" rx="8"/>
+  <text x="580" y="90" text-anchor="middle" font-weight="700">experiences</text>
+  <text x="580" y="110" text-anchor="middle" class="small">slug · editorial · windows</text>
+  <rect class="box" x="500" y="180" width="160" height="70" rx="8"/>
+  <text x="580" y="210" text-anchor="middle" font-weight="700">experience_offers</text>
+  <text x="580" y="230" text-anchor="middle" class="small">1 row per provider</text>
+  <path class="line" d="M440 140 L500 100" marker-end="url(#a)"/>
+  <path class="line" d="M440 175 L500 212" marker-end="url(#a)"/>
+  <path class="line" d="M580 130 L580 180" />
+  <!-- site -->
+  <rect class="core" x="710" y="100" width="140" height="110" rx="10"/>
+  <text x="780" y="135" text-anchor="middle" font-weight="700">Site</text>
+  <text x="780" y="158" text-anchor="middle" class="small">compare offers</text>
+  <text x="780" y="176" text-anchor="middle" class="small">/api/click →</text>
+  <text x="780" y="194" text-anchor="middle" class="small">provider link</text>
+  <path class="line" d="M660 95 L710 135" marker-end="url(#a)"/>
+  <path class="line" d="M660 215 L710 175" marker-end="url(#a)"/>
+</svg>
+
+<h3>The provider interface</h3>
+<pre><code>// src/lib/providers/types.ts
+export type ProviderId = 'getyourguide' | 'viator' | 'tiqets' | 'headout';
+
+export interface NormalizedOffer {
+  provider: ProviderId;
+  productId: string;
+  title: string;
+  url: string;              // clean product URL, no tracking params
+  priceAmount: number | null;
+  priceCurrency: string;
+  rating: number | null;    // normalised to a 0–5 scale
+  reviewCount: number;
+  durationHours: number | null;
+  lat: number | null;
+  lng: number | null;
+  flags: { instantConfirmation?: boolean; skipTheLine?: boolean; freeCancellation?: boolean; };
+  raw: unknown;             // original payload, stored for re-processing
+}
+
+export interface Provider {
+  id: ProviderId;
+  displayName: string;      // "GetYourGuide", "Viator", ...
+  search(q: { city: string; lat: number; lng: number; query?: string }): Promise&lt;NormalizedOffer[]&gt;;
+  getDetail(productId: string): Promise&lt;NormalizedOffer&gt;;
+  buildAffiliateUrl(url: string, ctx: { experienceId: number; source: string }): string;
+}</code></pre>
+
+<h3>Data model change</h3>
+<pre><code>experience_offers
+  id               int PK
+  experience_id    int FK → experiences.id
+  provider         varchar(20)     -- 'getyourguide' | 'viator' | 'tiqets' | 'headout'
+  product_id       varchar(100)    -- UNIQUE(provider, product_id)
+  url              varchar(1000)
+  price_amount     decimal(10,2)
+  price_currency   varchar(3)
+  original_price   decimal(10,2)
+  rating           decimal(3,1)
+  review_count     int
+  flags            json            -- instant confirmation, skip-the-line, free cancellation, ...
+  options_snapshot json
+  provider_categories json
+  is_active        boolean
+  last_synced_at   timestamp
+
+affiliate_clicks  + offer_id int FK → experience_offers.id</code></pre>
+<p class="muted">Title, slug, editorial, F1 context, FAQs, windows and geodata stay on <code>experiences</code>. Anything provider-specific moves to offers. Denormalised "from" price and best rating are cached on <code>experiences</code> so list pages stay fast.</p>
+
+<h2>4. Phased plan</h2>
+
+<div class="card phase"><div class="num">0</div>
+  <h3>Groundwork <span class="tag now">Start now</span></h3>
+  <ul class="check">
+    <li>Apply for the <strong>Viator Partner</strong>, <strong>Tiqets affiliate/distributor</strong> and <strong>Headout affiliate</strong> programmes. Approval and API access take a while, so apply first.</li>
+    <li>For each programme, write down whether we get an API or only deeplinks/feeds, the commission rate, the cookie window, and whether we may show their reviews and photos (see §6).</li>
+    <li>Fix <code>CLAUDE.md</code> and settle on one Drizzle schema.</li>
+    <li>Move <code>getyourguideapi/shared</code> modules (GYG client, ranker) into this repo.</li>
+  </ul>
+</div>
+
+<div class="card phase"><div class="num">1</div>
+  <h3>Refactor with GYG only <span class="tag">first PR · no visible change</span></h3>
+  <ul class="check">
+    <li>Add the <code>experience_offers</code> table and <code>affiliate_clicks.offer_id</code>.</li>
+    <li>Migration: backfill one GYG offer per existing experience from the current columns.</li>
+    <li>Add <code>src/lib/providers/</code> with the <code>Provider</code> interface and a <code>getyourguide</code> adapter. Move the current <code>buildAffiliateUrl</code> into it.</li>
+    <li>Make <code>/api/click</code> take an <code>offerId</code> and pick the link builder by provider.</li>
+    <li>Change <code>BookButton</code> and the detail pages to read provider names from the offer ("Book on {provider}"), including schema.org <code>seller</code>.</li>
+    <li>Check that the site looks identical and GYG clicks still track.</li>
+  </ul>
+</div>
+
+<div class="card phase"><div class="num">2</div>
+  <h3>Add the first new provider: Tiqets or Headout</h3>
+  <ul class="check">
+    <li>Write the adapter for whichever programme approves first. Both suit attraction tickets that fit session gaps.</li>
+    <li>Make ingestion provider-agnostic: <code>discover</code> → <code>match</code> → <code>seed</code> → <code>enrich</code>, with a <code>--provider</code> flag.</li>
+    <li>Build the matcher (§5) and a manual review queue for uncertain matches.</li>
+    <li>Pilot on two or three races with lots of attractions (e.g. Barcelona, Italy, Britain).</li>
+  </ul>
+</div>
+
+<div class="card phase"><div class="num">3</div>
+  <h3>Add Viator, focused on the Americas</h3>
+  <ul class="check">
+    <li>Write the Viator adapter. Run it first on Miami, USA (Austin), Las Vegas, Canada, Mexico and Brazil.</li>
+    <li>Put the rating scale and currency conversion in one shared utility.</li>
+  </ul>
+</div>
+
+<div class="card phase"><div class="num">4</div>
+  <h3>Comparison UX and monetisation</h3>
+  <ul class="check">
+    <li>On list cards show "From €89 · 3 providers". On detail pages show an offer comparison block (price, rating, cancellation, instant confirmation).</li>
+    <li>Choose a default "best offer" rule: cheapest or best-rated by default, with commission as a tiebreaker.</li>
+    <li>Add per-provider click/conversion reporting from <code>affiliate_clicks</code>.</li>
+    <li>Add SEO/AEO content blocks such as "Cheapest way to book X for the {Race} GP", with FAQ schema.</li>
+  </ul>
+</div>
+
+<div class="card phase"><div class="num">5</div>
+  <h3>Keep offers fresh</h3>
+  <ul class="check">
+    <li>Run a scheduled job that re-syncs prices and availability per offer. Refresh more often close to race weekend.</li>
+    <li>Deactivate offers that disappear. If none are left, hide the experience or show "currently unavailable".</li>
+    <li>Revalidate affected pages through the existing <code>/api/revalidate</code>.</li>
+  </ul>
+</div>
+
+<h2>5. Deduplication: the hard part</h2>
+<p>The same Sagrada Família ticket or Monaco helicopter tour will appear on two to four platforms. If we list it several times the site looks spammy and near-duplicate pages compete with each other for SEO. Matching approach:</p>
+<ol>
+  <li><strong>Candidate filter:</strong> same race and city, within ~1 km of each other (when coordinates exist), similar duration.</li>
+  <li><strong>Score:</strong> title similarity (normalised tokens and landmark names) + distance + duration + category.</li>
+  <li><strong>Decide:</strong> high score → auto-attach as an offer. Middle → review queue (Claude can pre-judge "same product?"). Low → new experience.</li>
+  <li><strong>Canonical slug never changes</strong> when offers are added, so existing URLs and rankings are safe.</li>
+</ol>
+
+<h2>6. Things to confirm with each provider</h2>
+<div class="table-wrap"><table>
+  <tr><th>Provider</th><th>Strength for F1 weekends</th><th>Check before building</th></tr>
+  <tr><td><span class="dot" style="background:var(--gyg)"></span>GetYourGuide</td><td>Existing integration, broad EU/Middle East coverage</td><td>Current terms still apply once we show competitors side by side</td></tr>
+  <tr><td><span class="dot" style="background:var(--viator)"></span>Viator</td><td>Deepest inventory in the Americas; TripAdvisor reviews</td><td>Which Partner API tier we get (basic affiliate vs full content); rules for showing reviews/photos</td></tr>
+  <tr><td><span class="dot" style="background:var(--tiqets)"></span>Tiqets</td><td>Museums, landmarks, instant mobile tickets</td><td>Affiliate vs distributor API access; product feed availability</td></tr>
+  <tr><td><span class="dot" style="background:var(--headout)"></span>Headout</td><td>Curated attractions and experiences in major cities</td><td>API vs deeplink/feed only; city coverage against the race calendar</td></tr>
+</table></div>
+<p class="muted">Commission rates, cookie windows and content-reuse rights change often and depend on the account, so we get them from each programme's current terms rather than assuming them.</p>
+
+<h2>7. Risks</h2>
+<div class="grid">
+  <div class="card"><strong>API access delays</strong><br><span class="muted">Mitigation: phases 0–1 don't need any approval, and adapters can start from deeplinks or feeds.</span></div>
+  <div class="card"><strong>Stale prices</strong><br><span class="muted">Mitigation: <code>last_synced_at</code>, scheduled re-sync, and a "prices from, checked {date}" label.</span></div>
+  <div class="card"><strong>Wrong matches</strong><br><span class="muted">Mitigation: conservative thresholds, a review queue, and never merging offers from different venues.</span></div>
+  <div class="card"><strong>SEO regressions</strong><br><span class="muted">Mitigation: canonical slugs stay fixed, and we don't create a new page per provider.</span></div>
+</div>
+
+<div class="callout ok">
+  <strong>Proposed first PR:</strong> Phase 1. It adds the <code>experience_offers</code> table, backfill migration, provider interface, GYG adapter, provider-aware <code>/api/click</code> and provider-neutral booking copy. The site should look exactly the same, and every later provider plugs in without touching the pages again.
+</div>
+
+</main>
+</body>
+</html>
