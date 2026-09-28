@@ -3,15 +3,16 @@
  * too far / missing a location, using the rules in src/lib/nearby.ts.
  * Nothing is written to the database.
  *
- * Run:
- *   npx tsx --env-file=.env scripts/audit-nearby.ts
- *   npx tsx --env-file=.env scripts/audit-nearby.ts --race monaco-2026
+ * Run (reads DB settings from the environment, or from .env if present):
+ *   npm run audit:nearby
+ *   npm run audit:nearby -- --race monaco-2026
  *
  * Output:
  *   console summary
  *   scripts/output/nearby-audit.html   (open in a browser)
  *   scripts/output/nearby-audit.csv    (every experience, for spreadsheets)
  */
+import 'dotenv/config';
 import fs from 'node:fs';
 import path from 'node:path';
 import { and, eq } from 'drizzle-orm';
