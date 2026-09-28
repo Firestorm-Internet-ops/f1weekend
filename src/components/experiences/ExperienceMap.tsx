@@ -53,10 +53,12 @@ interface Props {
   raceSlug?: string;
   /** The race's circuit; the map centres here and measures distances from it. */
   circuit?: { lat: number; lng: number; name: string };
+  /** Browser Maps key, passed from the server (GOOGLE_MAPS_API_KEY). */
+  apiKey?: string;
 }
 
-export default function ExperienceMap({ experiences, height = '500px', raceSlug = '', circuit }: Props) {
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
+export default function ExperienceMap({ experiences, height = '500px', raceSlug = '', circuit, apiKey: apiKeyProp }: Props) {
+  const apiKey = apiKeyProp || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '';
   const { isLoaded, loadError } = useJsApiLoader({
     id: 'google-map',
     googleMapsApiKey: apiKey,

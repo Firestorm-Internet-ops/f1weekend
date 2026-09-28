@@ -11,12 +11,14 @@ import { trackEvent } from '@/lib/analytics';
 interface Props {
   raceSlug: string;
   circuit?: { lat: number; lng: number; name: string };
+  /** Google Maps browser key from the server env (only used when the interactive map is opened). */
+  mapsApiKey?: string;
 }
 
 const hasCircuit = (c?: Props['circuit']): c is NonNullable<Props['circuit']> =>
   !!c && Number.isFinite(c.lat) && Number.isFinite(c.lng) && !(c.lat === 0 && c.lng === 0);
 
-export default function ExperienceMapClient({ raceSlug, circuit }: Props) {
+export default function ExperienceMapClient({ raceSlug, circuit, mapsApiKey }: Props) {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -64,7 +66,7 @@ export default function ExperienceMapClient({ raceSlug, circuit }: Props) {
         <div className="w-full h-[600px] rounded-2xl shimmer" />
       ) : interactive || !hasCircuit(circuit) ? (
         <>
-          <ExperienceMap experiences={experiences} height="600px" raceSlug={raceSlug} circuit={circuit} />
+          <ExperienceMap experiences={experiences} height="600px" raceSlug={raceSlug} circuit={circuit} apiKey={mapsApiKey} />
           {hasCircuit(circuit) && (
             <div className="mt-3 text-center">
               <button
