@@ -63,7 +63,7 @@ class ContentGenerator:
         facts_keys = (
             '"Lap Record", "Track Length", "Corners", "MotoGP Classes"'
             if series == "motogp"
-            else '"Lap Record", "Circuit Length", "Turns", "DRS Zones"'
+            else '"Lap Record", "Circuit Length", "Turns", "Race Laps"'
         )
 
         prompt = f"""Generate {series_label} race weekend guide content for {race_name} in {city_name}.

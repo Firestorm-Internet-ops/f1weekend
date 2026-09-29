@@ -50,7 +50,8 @@ export async function generateMetadata(): Promise<Metadata> {
     };
   }
 
-  const title = raceContent?.pageTitle ?? `${race.city} F1 Weekend Guide — ${race.name} ${race.season} | F1 Weekend`;
+  const venue = race.venueNote ? ` at ${race.circuitName.replace(/ International Circuit$/, '')}, ${race.country}` : '';
+  const title = raceContent?.pageTitle ?? `${race.name} ${race.season}${venue}: ${race.city} F1 Weekend Guide | F1 Weekend`;
   // Absolute: the layout template would append "| F1 Weekend" a second time.
   const description = raceContent?.pageDescription ?? `Plan your perfect ${race.name} weekend in ${race.city}. Curated experiences matched to session gaps, full schedule, and transport guide.`;
 
@@ -359,6 +360,8 @@ export default async function HomePage() {
             dateLabel={stripDates}
             flag={race.flag}
             raceName={race.name}
+            note={race.venueNote}
+            renderedAt={new Date().toISOString()}
             href={`/races/${activeRaceSlug}/schedule`}
             timezone={race.timezone}
           />

@@ -18,6 +18,8 @@ export interface CalendarVenue {
   flag: string;
   /** Track image for the new venue: a /public path (shown once the file exists) or an https URL. */
   trackImage?: string;
+  /** Where the race was held before, for the "moved" note (e.g. "Sakhir, Bahrain"). */
+  movedFrom: string;
 }
 
 export interface CalendarRace {
@@ -49,7 +51,7 @@ export const CALENDAR_2026: CalendarRace[] = [
   { slug: 'madrid-2026', round: 14, name: 'Gran Premio de España', startDate: '2026-09-11', raceDate: '2026-09-13' },
   { slug: 'azerbaijan-2026', round: 15, name: 'Azerbaijan Grand Prix', startDate: '2026-09-24', raceDate: '2026-09-26' },
   {
-    slug: 'bahrain-2026', round: 16, name: 'Bahrain Grand Prix in Malaysia', startDate: '2026-10-02', raceDate: '2026-10-04',
+    slug: 'bahrain-2026', round: 16, name: 'Bahrain Grand Prix', startDate: '2026-10-02', raceDate: '2026-10-04',
     venue: {
       circuitName: 'Sepang International Circuit',
       city: 'Kuala Lumpur',
@@ -59,6 +61,7 @@ export const CALENDAR_2026: CalendarRace[] = [
       circuitLng: 101.7382,
       timezone: 'Asia/Kuala_Lumpur',
       flag: '🇲🇾',
+      movedFrom: 'Sakhir, Bahrain',
       trackImage: 'https://media.formula1.com/image/upload/c_fit,h_704/q_auto/v1740000001/common/f1/2026/track/2026trackkualalumpurdetailed.webp',
     },
     liveExperiences: true,

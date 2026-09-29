@@ -4,6 +4,7 @@ import { races, sessions, experience_windows, race_content, experiences } from '
 import { eq, asc, sql, inArray, notInArray, or, and } from 'drizzle-orm';
 import { redis } from '@/lib/redis';
 import type { Race, Session, ExperienceWindow } from '@/types/race';
+import { correctContent } from '@/lib/content-corrections';
 import { calendarEntry, nextCalendarRace, sortByCalendar, LIVE_EXPERIENCE_SLUGS } from '@/data/calendar-2026';
 import { timetableSessions, timetableFor } from '@/data/timetables-2026';
 import { fetchSeasonSchedule, findJolpicaRace, mergeSessions, sessionsOf, toSessionRows, type JolpicaRace } from '@/lib/jolpica';
@@ -66,6 +67,7 @@ function withCalendar(race: Race): Race {
           circuitLng: v.circuitLng,
           timezone: v.timezone,
           flag: v.flag,
+          venueNote: `Held at ${v.circuitName.replace(/ International Circuit$/, '')}, ${v.country} in ${race.season} (moved from ${v.movedFrom})`,
         }
       : {}),
   };
@@ -381,7 +383,9 @@ export async function getRaceContent(raceSlug: string): Promise<RaceContentRow |
     [`race-content:${raceSlug}`],
     { revalidate: CACHE_TTL, tags: ['races', `race:${raceSlug}`] }
   );
-  return fetch();
+  const row = await fetch();
+  // Known errors in the stored text (DRS is gone in 2026, wrong travel claims).
+  return row && correctContent(raceSlug, row);
 }
 
 /**
