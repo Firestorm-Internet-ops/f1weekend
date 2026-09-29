@@ -33,7 +33,7 @@ Never push or merge directly to `main`. Never keep more than one feature branch 
 
 Vercel only builds `main` (production) and `staging` (staging.f1weekend.co) — `vercel.json` `ignoreCommand` skips every other branch. Test feature work locally, then on staging.
 
-**2026 calendar**: `src/data/calendar-2026.ts` is the source of truth for race order, dates and moved venues (Bahrain GP → Sepang); `race.service` applies it over the `races` table, and the home page leads with the next race. Races flagged `liveExperiences` show GetYourGuide + Viator + Tiqets products live around the circuit (`services/nearby-feed.service.ts`, `components/experiences/NearbyFeed.tsx`) instead of the database list.
+**2026 calendar**: `src/data/calendar-2026.ts` is the source of truth for race order, dates and moved venues (Bahrain GP → Sepang); `race.service` applies it over the `races` table, and the home page leads with the next race. F1 session times for upcoming races come from Jolpica (`src/lib/jolpica.ts`, api.jolpi.ca, cached 12 h) unless a full timetable is in `src/data/timetables-2026.ts`. Races flagged `liveExperiences` show GetYourGuide + Viator + Tiqets products live around the circuit (`services/nearby-feed.service.ts`, `components/experiences/NearbyFeed.tsx`) instead of the database list.
 
 ## Common Dev Commands
 ```bash
@@ -54,6 +54,7 @@ npx drizzle-kit studio # Browse database
 | Fetch + match Viator/Tiqets offers for a race | `npm run offers:fetch -- --race <slug>` |
 | Change race dates / venue / order | `src/data/calendar-2026.ts`, then `npm run db:sync-calendar` |
 | Weekend timetable for a race not in the DB | `src/data/timetables-2026.ts` (wins over stored sessions) |
+| Check calendar/timetables against F1 (Jolpica) | open `/api/schedule-check` on staging |
 
 ## Data Pipeline (`pipeline/`)
 Self-contained Python pipeline that fetches GYG experiences and seeds the f1weekend DB.

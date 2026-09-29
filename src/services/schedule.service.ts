@@ -4,6 +4,7 @@ import { schedule_entries } from '@/lib/db/schema';
 import { eq, asc } from 'drizzle-orm';
 import type { ScheduleDay, ScheduleEntry, SeriesKey } from '@/types/schedule';
 import { timetableFor } from '@/data/timetables-2026';
+import type { Session } from '@/types/race';
 
 const CACHE_TTL = 3600; // 1 hour
 
@@ -85,5 +86,25 @@ export async function getScheduleByRace(raceId: number, raceDate?: string, raceS
     day: day as ScheduleDay['day'],
     date: DAY_DATES[day] ?? '',
     entries: dayMap.get(day) ?? [],
+  }));
+}
+
+/**
+ * A Formula 1–only schedule built from sessions, for races with no stored or
+ * coded timetable (sessions then come from Jolpica).
+ */
+export function scheduleFromSessions(base: ScheduleDay[], sessions: Session[]): ScheduleDay[] {
+  if (base.some((d) => d.entries.length > 0)) return base;
+  return base.map((d) => ({
+    ...d,
+    entries: sessions
+      .filter((s) => s.dayOfWeek === d.day)
+      .map((s) => ({
+        series: 'Formula 1',
+        seriesKey: (s.sessionType === 'support' ? 'support' : s.sessionType === 'event' ? 'promoter' : 'f1') as SeriesKey,
+        name: s.name,
+        startTime: s.startTime.slice(0, 5),
+        endTime: s.endTime.slice(0, 5),
+      })),
   }));
 }

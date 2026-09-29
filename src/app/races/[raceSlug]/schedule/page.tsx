@@ -5,7 +5,7 @@ import ScheduleView from '@/components/schedule/ScheduleView';
 import Breadcrumb from '@/components/Breadcrumb';
 import RaceSwitcher from '@/components/race/RaceSwitcher';
 import { getRaceBySlug, getSessionsByRace, getRaceContent, getAvailableRaces, getWindowsByRace } from '@/services/race.service';
-import { getScheduleByRace } from '@/services/schedule.service';
+import { getScheduleByRace, scheduleFromSessions } from '@/services/schedule.service';
 import { getTimezoneAbbr } from '@/lib/utils';
 
 export const revalidate = 3600; // 1 hour
@@ -48,11 +48,12 @@ export default async function SchedulePage({ params }: Props) {
   ]);
   if (!race) notFound();
 
-  const [schedule, sessions, windows] = await Promise.all([
+  const [storedSchedule, sessions, windows] = await Promise.all([
     getScheduleByRace(race.id, race.raceDate, race.slug),
     getSessionsByRace(race.id),
     getWindowsByRace(race.id),
   ]);
+  const schedule = scheduleFromSessions(storedSchedule, sessions);
 
   const hasThursdayFreeDay = raceContent?.hasThursdayFreeDay ?? false;
   const firstDayOffset = hasThursdayFreeDay ? -3 : -2;
