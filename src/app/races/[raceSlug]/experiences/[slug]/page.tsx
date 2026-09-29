@@ -19,6 +19,8 @@ import type { Offer } from '@/lib/providers';
 import type { Experience } from '@/types/experience';
 import { CATEGORY_COLORS, CATEGORY_LABELS } from '@/lib/constants/categories';
 import { formatPrice } from '@/lib/utils';
+import { raceKey } from '@/lib/race-url';
+import { resolveRaceSlug } from '@/services/race.service';
 
 export const revalidate = 86400; // 24 hours
 export const dynamicParams = true; // SSR fallback for new races not yet in generateStaticParams
@@ -32,7 +34,7 @@ export async function generateStaticParams() {
     const availableRaces = await getAvailableRaces();
     const results = await Promise.all(
       availableRaces.filter((race) => !hasMovedVenue(race.slug)).map(async (race) => {
-        const raceSlug = race.slug;
+        const raceSlug = raceKey(race.slug); // URLs use the key
         const exps = await getExperiencesByRace(race.id);
         return exps.map((e) => ({ raceSlug, slug: e.slug }));
       })
@@ -44,12 +46,13 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { raceSlug, slug } = await params;
+  const { raceSlug: raceParam, slug } = await params;
+  const raceSlug = (await resolveRaceSlug(raceParam)) ?? raceParam;
   const exp = await getExperienceBySlug(slug);
   if (!exp) return {};
 
   const race = await getRaceBySlug(raceSlug);
-  const canonical = `https://f1weekend.co/races/${raceSlug}/experiences/${exp.slug}`;
+  const canonical = `https://f1weekend.co/races/${raceKey(raceSlug)}/experiences/${exp.slug}`;
   const city = race?.city ?? 'Melbourne';
   const season = race?.season ?? '2026';
   const title = `${exp.title} — ${city} F1 ${season} Guide`;
@@ -107,7 +110,7 @@ function offerLd(o: Offer) {
 }
 
 function buildJsonLd(exp: Experience, raceSlug: string, race: { city: string; country: string; countryCode: string } | null, offers: Offer[]) {
-  const url = `https://f1weekend.co/races/${raceSlug}/experiences/${exp.slug}`;
+  const url = `https://f1weekend.co/races/${raceKey(raceSlug)}/experiences/${exp.slug}`;
   const city = race?.city ?? 'Melbourne';
   const countryCode = race?.countryCode ?? 'AU';
   const ld: Record<string, unknown> = {
@@ -213,11 +216,12 @@ function stripArticleFrontMatter(md: string): string {
 }
 
 export default async function ExperienceDetailPage({ params }: Props) {
-  const { raceSlug, slug } = await params;
+  const { raceSlug: raceParam, slug } = await params;
+  const raceSlug = (await resolveRaceSlug(raceParam)) ?? raceParam;
   // Race moved venue (Bahrain GP → Sepang): stored experiences are for the old
   // venue; send visitors to the live list. Other live-feed races keep their
   // written experience pages (guide articles).
-  if (hasMovedVenue(raceSlug)) permanentRedirect(`/races/${raceSlug}/experiences`);
+  if ((await getRaceBySlug(raceSlug))?.venueMoved) permanentRedirect(`/races/${raceKey(raceSlug)}/experiences`);
   const exp = await getExperienceBySlug(slug);
   if (!exp) notFound();
 
@@ -250,9 +254,9 @@ export default async function ExperienceDetailPage({ params }: Props) {
     '@type': 'BreadcrumbList',
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://f1weekend.co' },
-      { '@type': 'ListItem', position: 2, name: race?.city ?? 'Race', item: `https://f1weekend.co/races/${raceSlug}` },
-      { '@type': 'ListItem', position: 3, name: 'Experiences', item: `https://f1weekend.co/races/${raceSlug}/experiences` },
-      { '@type': 'ListItem', position: 4, name: exp.title, item: `https://f1weekend.co/races/${raceSlug}/experiences/${exp.slug}` },
+      { '@type': 'ListItem', position: 2, name: race?.city ?? 'Race', item: `https://f1weekend.co/races/${raceKey(raceSlug)}` },
+      { '@type': 'ListItem', position: 3, name: 'Experiences', item: `https://f1weekend.co/races/${raceKey(raceSlug)}/experiences` },
+      { '@type': 'ListItem', position: 4, name: exp.title, item: `https://f1weekend.co/races/${raceKey(raceSlug)}/experiences/${exp.slug}` },
     ],
   };
 
@@ -295,8 +299,8 @@ export default async function ExperienceDetailPage({ params }: Props) {
             <div className="flex-1 min-w-0 max-w-2xl">
               <Breadcrumb items={[
                 { label: 'Home', href: '/' },
-                { label: race?.city ?? 'Race', href: `/races/${raceSlug}` },
-                { label: 'Experiences', href: `/races/${raceSlug}/experiences` },
+                { label: race?.city ?? 'Race', href: `/races/${raceKey(raceSlug)}` },
+                { label: 'Experiences', href: `/races/${raceKey(raceSlug)}/experiences` },
                 { label: exp.title },
               ]} />
 

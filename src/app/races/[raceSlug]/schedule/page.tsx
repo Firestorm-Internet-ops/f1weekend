@@ -7,6 +7,8 @@ import RaceSwitcher from '@/components/race/RaceSwitcher';
 import { getRaceBySlug, getSessionsByRace, getRaceContent, getAvailableRaces, getWindowsByRace } from '@/services/race.service';
 import { getScheduleByRace, scheduleFromSessions } from '@/services/schedule.service';
 import { getTimezoneAbbr } from '@/lib/utils';
+import { raceKey } from '@/lib/race-url';
+import { resolveRaceSlug } from '@/services/race.service';
 
 export const revalidate = 3600; // 1 hour
 
@@ -22,13 +24,14 @@ function offsetDate(raceDateStr: string, days: number): string {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { raceSlug } = await params;
+  const { raceSlug: raceParam } = await params;
+  const raceSlug = (await resolveRaceSlug(raceParam)) ?? raceParam;
   const race = await getRaceBySlug(raceSlug);
   if (!race) return {};
 
   const title = `${race.name} Schedule | F1 Weekend`;
   const description = `Full ${race.season} ${race.name} weekend schedule — all sessions, support races and events at ${race.circuitName}.`;
-  const canonical = `https://f1weekend.co/races/${raceSlug}/schedule`;
+  const canonical = `https://f1weekend.co/races/${raceKey(raceSlug)}/schedule`;
 
   return {
     title: { absolute: title },
@@ -55,7 +58,8 @@ function scheduleIntro(race: { season: number; name: string; circuitName: string
 }
 
 export default async function SchedulePage({ params }: Props) {
-  const { raceSlug } = await params;
+  const { raceSlug: raceParam } = await params;
+  const raceSlug = (await resolveRaceSlug(raceParam)) ?? raceParam;
   const [race, raceContent, availableRaces] = await Promise.all([
     getRaceBySlug(raceSlug),
     getRaceContent(raceSlug),
@@ -64,7 +68,8 @@ export default async function SchedulePage({ params }: Props) {
   if (!race) notFound();
 
   const [storedSchedule, sessions, windows] = await Promise.all([
-    getScheduleByRace(race.id, race.raceDate, race.slug),
+    // Stored timetables (support races, events) are for the stored season; next season shows F1's sessions.
+    race.rolledFrom ? Promise.resolve([]) : getScheduleByRace(race.id, race.raceDate, race.slug),
     getSessionsByRace(race.id),
     getWindowsByRace(race.id),
   ]);
@@ -121,7 +126,7 @@ export default async function SchedulePage({ params }: Props) {
       <section className="max-w-3xl mx-auto px-4 pt-24 pb-16">
         <Breadcrumb items={[
           { label: 'Home', href: '/' },
-          { label: race.city, href: `/races/${raceSlug}` },
+          { label: race.city, href: `/races/${raceKey(raceSlug)}` },
           { label: 'Schedule' },
         ]} />
         <p className="text-xs uppercase-label text-[var(--accent-red)] mb-3 tracking-widest">
@@ -172,7 +177,7 @@ export default async function SchedulePage({ params }: Props) {
                     {gap.copy}
                   </p>
                   <div className="flex flex-wrap gap-3">
-                    <Link href={`/races/${raceSlug}/experiences?window=${gap.windowSlug}`} className="text-xs font-medium text-[var(--accent-teal)] hover:text-[var(--text-primary)] transition-colors">
+                    <Link href={`/races/${raceKey(raceSlug)}/experiences?window=${gap.windowSlug}`} className="text-xs font-medium text-[var(--accent-teal)] hover:text-[var(--text-primary)] transition-colors">
                       Browse experiences for this gap →
                     </Link>
                   </div>
@@ -180,7 +185,7 @@ export default async function SchedulePage({ params }: Props) {
               ))}
             </div>
             <Link
-              href={`/races/${raceSlug}/experiences`}
+              href={`/races/${raceKey(raceSlug)}/experiences`}
               className="inline-block mt-6 text-sm font-medium text-[var(--accent-teal)] hover:text-[var(--text-primary)] transition-colors"
             >
               Browse all {race.city} experiences →

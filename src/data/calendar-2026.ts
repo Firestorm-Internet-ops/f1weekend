@@ -123,8 +123,8 @@ export function localDate(now: Date, timezone = 'UTC'): string {
 }
 
 /** True once race day is over at the track (e.g. Las Vegas's Saturday-night race counts until midnight in Las Vegas). */
-export function isRaceOver(race: Pick<CalendarRace, 'slug' | 'raceDate'>, now: Date | string): boolean {
-  const today = typeof now === 'string' ? now : localDate(now, TRACK_TIMEZONES[race.slug]);
+export function isRaceOver(race: Pick<CalendarRace, 'slug' | 'raceDate'> & { timezone?: string }, now: Date | string): boolean {
+  const today = typeof now === 'string' ? now : localDate(now, race.timezone ?? TRACK_TIMEZONES[race.slug]);
   return today > race.raceDate;
 }
 

@@ -1,11 +1,14 @@
 import { unstable_cache } from 'next/cache';
 import { getDb } from '@/lib/db';
 import { races, sessions, experience_windows, race_content, experiences } from '@/lib/db/schema';
-import { eq, asc, sql, inArray, notInArray, or, and } from 'drizzle-orm';
+import { eq, asc, sql, inArray, notInArray, or, and, like } from 'drizzle-orm';
+import { hasSeason, raceKey } from '@/lib/race-url';
 import { redis } from '@/lib/redis';
 import type { Race, Session, ExperienceWindow } from '@/types/race';
 import { correctContent } from '@/lib/content-corrections';
-import { calendarEntry, isRaceOver, nextCalendarRace, sortByCalendar, LIVE_EXPERIENCE_SLUGS } from '@/data/calendar-2026';
+import { calendarEntry, isRaceOver, sortByCalendar, LIVE_EXPERIENCE_SLUGS } from '@/data/calendar-2026';
+import { getNextSeasonRaces } from '@/services/season.service';
+import { rollForward } from '@/lib/rollover';
 import { timetableSessions, timetableFor } from '@/data/timetables-2026';
 import { fetchSeasonSchedule, findJolpicaRace, mergeSessions, sessionsOf, toSessionRows, type JolpicaRace } from '@/lib/jolpica';
 
@@ -53,10 +56,17 @@ function withCalendar(race: Race): Race {
     ...race,
     round: cal.round,
     raceDate: cal.raceDate,
+    startDate: cal.startDate,
     // Live-feed races have experiences from providers, whatever the stored flag says.
     available: race.available || cal.liveExperiences === true,
     ...(v
       ? {
+          storedVenue: {
+            name: race.name, circuitName: race.circuitName, city: race.city, country: race.country, countryCode: race.countryCode,
+            circuitLat: race.circuitLat, circuitLng: race.circuitLng, timezone: race.timezone, flag: race.flag, hasTips: race.hasTips,
+          },
+          venueMoved: true,
+          trackImage: v.trackImage,
           hasTips: false, // stored tips are for the old venue
           name: cal.name,
           circuitName: v.circuitName,
@@ -73,6 +83,17 @@ function withCalendar(race: Race): Race {
   };
 }
 
+
+async function rollAll(list: Race[]): Promise<Race[]> {
+  const next = await getNextSeasonRaces();
+  const now = new Date();
+  return list.map((r) => rollForward(r, next, now)).sort((a, b) => a.raceDate.localeCompare(b.raceDate));
+}
+
+async function rollOne(race: Race | null): Promise<Race | null> {
+  if (!race) return null;
+  return rollForward(race, await getNextSeasonRaces(), new Date());
+}
 
 function mapRaceRow(r: typeof races.$inferSelect, hasThursdayFreeDay?: boolean): Race {
   return {
@@ -124,15 +145,13 @@ function mapWindow(w: typeof experience_windows.$inferSelect): ExperienceWindow 
   };
 }
 
-// "Active" = the first race on the 2026 calendar whose weekend hasn't finished
-// (by the calendar's dates, not the older dates in the database), among races
-// the site has content for. After race day it moves to the next race.
+// "Active" = the first race (across seasons, after rollover) whose race day
+// isn't over at the track. Between seasons, before F1 publishes the next
+// calendar, it stays on the last race (the home page then says the season is over).
 export async function getActiveRace(): Promise<Race | null> {
-  const available = await getAvailableRaces();
-  const bySlug = new Map(available.map((r) => [r.slug, r]));
-  const cal = nextCalendarRace(new Date(), new Set(bySlug.keys()));
-  if (cal) return bySlug.get(cal.slug) ?? null;
-  return available[available.length - 1] ?? null;
+  const available = await getAvailableRaces(); // rolled, in date order
+  const now = new Date();
+  return available.find((r) => !isRaceOver(r, now)) ?? available[available.length - 1] ?? null;
 }
 
 // The race after the active race, or null if no more races.
@@ -157,7 +176,7 @@ export const getAllRaces = unstable_cache(
   { revalidate: CACHE_TTL, tags: ['races'] }
 );
 
-export const getAvailableRaces = unstable_cache(
+const getAvailableRacesStored = unstable_cache(
   async (): Promise<Race[]> => {
     const db = await getDb();
     const rows = await db
@@ -174,7 +193,12 @@ export const getAvailableRaces = unstable_cache(
   { revalidate: CACHE_TTL, tags: ['races'] }
 );
 
-export const getRacesWithExperiences = unstable_cache(
+/** Races with experiences, each on its current or next weekend (see rollForward), in date order. */
+export async function getAvailableRaces(): Promise<Race[]> {
+  return rollAll(await getAvailableRacesStored());
+}
+
+const getRacesWithExperiencesStored = unstable_cache(
   async (): Promise<Race[]> => {
     const db = await getDb();
     const rows = await db
@@ -189,6 +213,35 @@ export const getRacesWithExperiences = unstable_cache(
   ['races:with-experiences:calendar-2026:live'],
   { revalidate: CACHE_TTL, tags: ['races', 'experiences'] }
 );
+
+export async function getRacesWithExperiences(): Promise<Race[]> {
+  return rollAll(await getRacesWithExperiencesStored());
+}
+
+/**
+ * URL param → database slug. URLs use the race key ("bahrain"); the newest
+ * season row for that key is the race. A full slug ("bahrain-2026") passes
+ * through. Unknown keys return null.
+ */
+export async function resolveRaceSlug(param: string): Promise<string | null> {
+  if (hasSeason(param)) return param;
+  if (!/^[a-z][a-z-]*[a-z]$/.test(param)) return null;
+  const find = unstable_cache(
+    async () => {
+      const db = await getDb();
+      const rows = await db
+        .select({ slug: races.slug, season: races.season })
+        .from(races)
+        .where(like(races.slug, `${param}-%`));
+      // Exactly "<key>-<year>" (not "abu-dhabi-…" for "abu"), newest season first.
+      const own = rows.filter((r) => r.slug && raceKey(r.slug) === param).sort((a, b) => Number(b.season) - Number(a.season));
+      return own[0]?.slug ?? null;
+    },
+    [`race:key:${param}`],
+    { revalidate: CACHE_TTL, tags: ['races'] }
+  );
+  return find();
+}
 
 export async function getRaceBySlug(slug: string): Promise<Race | null> {
   const fetch = unstable_cache(
@@ -205,7 +258,7 @@ export async function getRaceBySlug(slug: string): Promise<Race | null> {
     { revalidate: CACHE_TTL, tags: ['races', `race:${slug}`] }
   );
   const rows = await fetch();
-  return rows[0] ? mapRace(rows[0].race, !!rows[0].content?.has_thursday_free_day, !!rows[0].content?.tips_content) : null;
+  return rollOne(rows[0] ? mapRace(rows[0].race, !!rows[0].content?.has_thursday_free_day, !!rows[0].content?.tips_content) : null);
 }
 
 export async function getRaceById(id: number): Promise<Race | null> {
@@ -223,14 +276,12 @@ export async function getRaceById(id: number): Promise<Race | null> {
     { revalidate: CACHE_TTL, tags: ['races'] }
   );
   const rows = await fetch();
-  return rows[0] ? mapRace(rows[0].race, !!rows[0].content?.has_thursday_free_day, !!rows[0].content?.tips_content) : null;
+  return rollOne(rows[0] ? mapRace(rows[0].race, !!rows[0].content?.has_thursday_free_day, !!rows[0].content?.tips_content) : null);
 }
 
 export async function getUpcomingRace(): Promise<Race | null> {
-  const all = await getAllRaces();
-  const bySlug = new Map(all.map((r) => [r.slug, r]));
-  const cal = nextCalendarRace(new Date(), new Set(bySlug.keys()));
-  return cal ? bySlug.get(cal.slug) ?? null : null;
+  const now = new Date();
+  return (await rollAll(await getAllRaces())).find((r) => !isRaceOver(r, now)) ?? null;
 }
 
 /**
@@ -239,8 +290,7 @@ export async function getUpcomingRace(): Promise<Race | null> {
  * venue and are not shown until they are replaced.
  */
 async function venueMoved(raceId: number): Promise<boolean> {
-  const race = await getRaceById(raceId);
-  return !!(race && calendarEntry(race.slug)?.venue);
+  return !!(await getRaceById(raceId))?.venueMoved;
 }
 
 /**
@@ -252,9 +302,10 @@ async function venueMoved(raceId: number): Promise<boolean> {
  */
 export async function getSessionsByRace(raceId: number): Promise<Session[]> {
   const race = await getRaceById(raceId);
-  if (race && timetableFor(race.slug)) return timetableSessions(race.slug, raceId);
-  const moved = await venueMoved(raceId);
-  const stored = moved ? [] : await getStoredSessions(raceId);
+  // The code timetables are for 2026; a race that has moved on to next season uses F1's times.
+  if (race && !race.rolledFrom && timetableFor(race.slug)) return timetableSessions(race.slug, raceId);
+  // Stored sessions describe the stored venue and season.
+  const stored = race?.venueMoved || race?.rolledFrom ? [] : await getStoredSessions(raceId);
   if (race && !isRaceOver(race, new Date())) {
     return mergeSessions(stored, await jolpicaSessions(race));
   }
@@ -339,7 +390,8 @@ export interface RaceContentRow {
 }
 
 export async function getRaceContent(raceSlug: string): Promise<RaceContentRow | null> {
-  if (calendarEntry(raceSlug)?.venue) return null; // written for the old venue
+  const race = await getRaceBySlug(raceSlug);
+  if (race ? race.venueMoved : calendarEntry(raceSlug)?.venue) return null; // written for the old venue
   const fetch = unstable_cache(
     async () => {
       const db = await getDb();
@@ -382,8 +434,29 @@ export async function getRaceContent(raceSlug: string): Promise<RaceContentRow |
     { revalidate: CACHE_TTL, tags: ['races', `race:${raceSlug}`] }
   );
   const row = await fetch();
+  if (!row) return null;
   // Known errors in the stored text (DRS is gone in 2026, wrong travel claims).
-  return row && correctContent(raceSlug, row);
+  const corrected = correctContent(raceSlug, row);
+  // Moved on to next season: drop the copy written for the stored year (titles,
+  // intros, FAQs, gap copy mention its dates); keep what doesn't age (transport,
+  // tips, circuit facts). Pages fall back to their templates.
+  return race?.rolledFrom ? withoutSeasonCopy(corrected) : corrected;
+}
+
+function withoutSeasonCopy(c: RaceContentRow): RaceContentRow {
+  return {
+    ...c,
+    pageTitle: null,
+    pageDescription: null,
+    homepageIntro: null,
+    homepageCopy: null,
+    howItWorksText: null,
+    scheduleIntro: null,
+    sessionGapCopy: null,
+    faqItems: null,
+    faqLd: null,
+    openF1: null,
+  };
 }
 
 /**

@@ -4,6 +4,7 @@ import { getRaceBySlug } from '@/services/race.service';
 import { findFeedOffer } from '@/services/nearby-feed.service';
 import { buildAffiliateUrl, campaignId, resolveCampaignPage, type ClickSource } from '@/lib/providers';
 import { hasLiveExperiences } from '@/data/calendar-2026';
+import { raceKey } from '@/lib/race-url';
 
 const VALID_SOURCES: ClickSource[] = ['feed', 'itinerary', 'featured', 'map', 'guide'];
 
@@ -24,7 +25,7 @@ export async function GET(req: NextRequest) {
   const race = hasLiveExperiences(raceSlug) ? await getRaceBySlug(raceSlug) : null;
   const found = race ? await findFeedOffer(race, provider, productId) : null;
   if (!race || !found) {
-    return NextResponse.redirect(new URL(race ? `/races/${race.slug}/experiences` : '/experiences', req.url), 302);
+    return NextResponse.redirect(new URL(race ? `/races/${raceKey(race.slug)}/experiences` : '/experiences', req.url), 302);
   }
 
   const campaign = campaignId(race.slug, resolveCampaignPage(params.get('page'), req.headers.get('referer'), source));

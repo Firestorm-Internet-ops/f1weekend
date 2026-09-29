@@ -1,6 +1,7 @@
 import { revalidatePath } from 'next/cache';
 import { NextRequest, NextResponse } from 'next/server';
 import { clearRaceCache, syncAvailableRaces } from '@/services/race.service';
+import { raceKey } from '@/lib/race-url';
 
 export async function POST(req: NextRequest) {
   const token = req.headers.get('x-revalidate-token');
@@ -25,12 +26,12 @@ export async function POST(req: NextRequest) {
   if (slug) {
     // Revalidate all sub-pages for the specific race
     const paths = [
-      `/races/${slug}`,
-      `/races/${slug}/schedule`,
-      `/races/${slug}/experiences`,
-      `/races/${slug}/getting-there`,
-      `/races/${slug}/guide`,
-      `/races/${slug}/tips`,
+      `/races/${raceKey(slug)}`,
+      `/races/${raceKey(slug)}/schedule`,
+      `/races/${raceKey(slug)}/experiences`,
+      `/races/${raceKey(slug)}/getting-there`,
+      `/races/${raceKey(slug)}/guide`,
+      `/races/${raceKey(slug)}/tips`,
     ];
     paths.forEach(p => revalidatePath(p));
   }

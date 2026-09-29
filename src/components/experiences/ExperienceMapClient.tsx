@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import type { Experience } from '@/types/experience';
 import CategoryTabs from './CategoryTabs';
 import ExperienceMap from './ExperienceMap';
+import { raceKey } from '@/lib/race-url';
 
 interface Props {
   raceSlug: string;
@@ -25,7 +26,7 @@ export default function ExperienceMapClient({ raceSlug, circuit, mapsApiKey }: P
     setCategory(cat);
     const params = new URLSearchParams();
     if (cat) params.set('category', cat);
-    const base = `/races/${raceSlug}/experiences/map`;
+    const base = `/races/${raceKey(raceSlug)}/experiences/map`;
     router.replace(`${base}${params.size ? `?${params.toString()}` : ''}`, { scroll: false });
   };
 

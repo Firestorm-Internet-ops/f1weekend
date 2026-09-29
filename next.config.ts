@@ -14,6 +14,17 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'media.formula1.com', pathname: '/image/upload/**' },
     ],
   },
+  async redirects() {
+    return [
+      // Race URLs dropped the year (/races/bahrain-2026/schedule → /races/bahrain/schedule):
+      // one address per race that keeps its rankings from season to season.
+      {
+        source: '/races/:key([a-z][a-z-]*[a-z])-:year(20\\d{2})/:path*',
+        destination: '/races/:key/:path*',
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {

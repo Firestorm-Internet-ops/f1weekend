@@ -1,9 +1,10 @@
 import ItineraryForm, { type FormRace } from '@/components/itinerary/ItineraryForm';
 import { getAvailableRaces, getSessionsByRace } from '@/services/race.service';
 import { getActiveRaceSlug } from '@/lib/activeRace';
-import { calendarEntry, isRaceOver } from '@/data/calendar-2026';
+import { isRaceOver } from '@/data/calendar-2026';
 import { formatRaceDates, getTimezoneAbbr, sessionToUtcDate } from '@/lib/utils';
 import type { ManualItineraryInput } from '@/types/itinerary';
+import { raceKey } from '@/lib/race-url';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,12 +39,10 @@ export default async function ItineraryPage({ searchParams }: Props) {
 
     // Only races still to come can be planned (after the season, keep them all).
     const now = new Date();
-    const upcoming = available.filter((r) => {
-        const cal = calendarEntry(r.slug);
-        return cal ? !isRaceOver(cal, now) : r.raceDate >= now.toISOString().slice(0, 10);
-    });
+    const upcoming = available.filter((r) => !isRaceOver(r, now));
     const races = upcoming.length > 0 ? upcoming : available;
-    const race = races.find((r) => r.slug === sp.race) ?? races.find((r) => r.slug === activeRaceSlug) ?? races[0];
+    // ?race= may be the URL key ("bahrain") or the full slug.
+    const race = races.find((r) => r.slug === sp.race || raceKey(r.slug) === sp.race) ?? races.find((r) => r.slug === activeRaceSlug) ?? races[0];
 
     // Only this race's sessions: switching race reloads the page for the new one.
     const sessions = race
