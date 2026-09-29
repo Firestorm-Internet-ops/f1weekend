@@ -302,18 +302,22 @@ export default function NearbyFeed({ cards, raceSlug, circuit, pageSize = 24, co
  * "Our picks for race weekend": a swipeable row on phones, three columns
  * from tablet up. Exported so the home page can show it right under the hero.
  */
-export function FeedPicks({ picks, raceSlug, cities = [], className = '', onPin }: {
+export function FeedPicks({ picks, raceSlug, cities = [], className = '', onPin, id = 'picks-heading', heading = 'Our picks for race weekend', description = 'Well reviewed, different from each other, and each one fits a gap in the F1 schedule.' }: {
   picks: FeedCard[];
   raceSlug: string;
   cities?: string[];
   className?: string;
   onPin?: (card: FeedCard) => void;
+  /** Reused for other short rows (e.g. transfers on Getting There). */
+  id?: string;
+  heading?: string;
+  description?: string;
 }) {
   if (picks.length === 0) return null;
   return (
-    <section className={className} aria-labelledby="picks-heading">
-      <h2 id="picks-heading" className="font-display font-bold text-lg text-[var(--text-primary)] mb-1">Our picks for race weekend</h2>
-      <p className="text-sm text-[var(--text-secondary)] mb-4">Well reviewed, different from each other, and each one fits a gap in the F1 schedule.</p>
+    <section className={className} aria-labelledby={id}>
+      <h2 id={id} className="font-display font-bold text-lg text-[var(--text-primary)] mb-1">{heading}</h2>
+      <p className="text-sm text-[var(--text-secondary)] mb-4">{description}</p>
       <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-3 sm:overflow-visible">
         {picks.map((c) => (
           <div key={c.key} className="snap-start shrink-0 w-[80%] sm:w-auto">

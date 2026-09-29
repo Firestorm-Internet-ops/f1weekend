@@ -21,6 +21,8 @@ import { getAvailableRaces } from '@/services/race.service';
 import { raceKey } from '@/lib/race-url';
 import { resolveRaceSlug } from '@/services/race.service';
 import Icon, { type IconName } from '@/components/ui/Icon';
+import PageByline from '@/components/race/PageByline';
+import { raceEventLd, webPageLd } from '@/lib/structured-data';
 
 interface Props {
   params: Promise<{ raceSlug: string }>;
@@ -108,6 +110,8 @@ export default async function RaceLandingPage({ params }: Props) {
   return (
     <div className="min-h-screen pt-24 pb-24 px-4">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(raceEventLd(race)) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(webPageLd(`/races/${raceKey(raceSlug)}`, `${race.name} ${race.season} travel guide`, liveFeed?.fetchedAt)) }} />
       <div className={live ? 'max-w-5xl mx-auto' : 'max-w-3xl mx-auto'}>
         <Breadcrumb items={[
           { label: 'Home', href: '/' },
@@ -141,6 +145,16 @@ export default async function RaceLandingPage({ params }: Props) {
             {race.venueNote}
           </p>
         )}
+        <PageByline
+          className="-mt-6 mb-8 max-w-2xl"
+          updated={liveFeed?.fetchedAt}
+          updatedLabel="Experiences and prices refreshed"
+          sources={[
+            { label: 'Formula 1 timetable (Jolpica F1 API)', url: 'https://api.jolpi.ca/ergast/f1/' },
+            ...(race.venueMoved && raceKey(race.slug) === 'bahrain' ? [{ label: 'Sepang International Circuit', url: 'https://www.sepangcircuit.com' }] : []),
+            ...(live ? [{ label: 'GetYourGuide, Viator and Tiqets listings' }] : []),
+          ]}
+        />
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {NAV_ITEMS.filter(item => item.href !== 'tips' || !!raceContent?.tipsContent).map(({ href, label, icon, desc }) => (

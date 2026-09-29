@@ -3,7 +3,7 @@ import { hasMovedVenue } from '@/data/calendar-2026';
 import type { Metadata } from 'next';
 import { marked } from 'marked';
 import { getExperienceBySlug, getExperiencesByRace, getSuggestedExperiences } from '@/services/experience.service';
-import { getRaceBySlug, getAllRaces, getAvailableRaces } from '@/services/race.service';
+import { getRaceBySlug, getAvailableRaces } from '@/services/race.service';
 import BookButton from '@/components/experiences/BookButton';
 import PhotoSlider from '@/components/experiences/PhotoSlider';
 import Breadcrumb from '@/components/Breadcrumb';

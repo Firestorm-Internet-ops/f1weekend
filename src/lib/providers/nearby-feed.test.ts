@@ -1,7 +1,7 @@
 // Run: npm run test:providers
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildNearbyFeed, byNearest, displayTitle, groupSameProducts, isExperience, recommendedScore, relocateByTitle } from './nearby-feed';
+import { buildNearbyFeed, byNearest, displayTitle, groupSameProducts, isExperience, isTransfer, recommendedScore, relocateByTitle } from './nearby-feed';
 import type { NormalizedOffer } from './types';
 
 const SEPANG = { slug: 'bahrain-2026', lat: 2.7608, lng: 101.7382, placeWords: ['Kuala Lumpur', 'Malaysia'] };
@@ -131,4 +131,22 @@ test('a full-day city tour keeps the city travel line; a venue out of town is a 
   assert.equal(tour.destination, null);
   const dogs = cards.find((c) => c.title.startsWith('Huskitory'))!;
   assert.equal(dogs.travelLabel, 'Day trip to Melaka');
+});
+
+test('transfers are their own list: airport and circuit rides, not tours or lounges', () => {
+  assert.equal(isTransfer({ title: 'KLIA Airport Private Transfer to Kuala Lumpur' }), true);
+  assert.equal(isTransfer({ title: 'Shared Shuttle to Sepang Circuit' }), true);
+  assert.equal(isTransfer({ title: 'KUL Premium Lounge Entry' }), false);
+  assert.equal(isTransfer({ title: 'Batu Caves Tour with Hotel Transfer' }), false);
+  assert.equal(isTransfer({ title: 'Sunway Lagoon Theme Park with Round-Trip Transfer' }), false);
+  assert.equal(isTransfer({ title: 'Putrajaya: River Cruise with Pink Mosque + Roundtrip Transfer' }), false);
+  assert.equal(isTransfer({ title: 'KL TravelPass: Single Trip KLIA Ekspres + Unlimited Rail Transfer (2 Consecutive Days)' }), true);
+  assert.equal(isTransfer({ title: 'Kuala Lumpur Hotel to Singapore Hotel (Door To Door) Overland Transfer' }), true);
+  assert.equal(isExperience({ title: 'Kuala Lumpur Hotel to Singapore Hotel (Door To Door) Overland Transfer' }), false);
+  const offers = [
+    offer({ title: 'KLIA Airport Private Transfer to Kuala Lumpur', lat: 2.74, lng: 101.7, reviewCount: 300 }),
+    offer({ title: 'Batu Caves Half-Day Tour', reviewCount: 900 }),
+  ];
+  assert.deepEqual(buildNearbyFeed(offers, SEPANG, 'transfers').map((c) => c.title), ['KLIA Airport Private Transfer to Kuala Lumpur']);
+  assert.deepEqual(buildNearbyFeed(offers, SEPANG).map((c) => c.title), ['Batu Caves Half-Day Tour']);
 });
