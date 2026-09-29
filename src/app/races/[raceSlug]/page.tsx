@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   ]);
   if (!race) return {};
   return {
-    title: { absolute: raceContent?.pageTitle ?? `${race.name} Travel Guide | F1 Weekend` },
+    title: { absolute: raceContent?.pageTitle ?? `${race.name} ${race.season}${race.venueNote ? ` at ${race.circuitName.replace(/ International Circuit$/, '')}, ${race.country}` : ''} Travel Guide | F1 Weekend` },
     description: raceContent?.pageDescription ?? `Your complete travel companion for the ${race.name} at ${race.circuitName}, ${race.city}. Schedule, experiences, and transport guide.`,
     alternates: { canonical: `https://f1weekend.co/races/${raceSlug}` },
     ...(raceContent?.pageKeywords?.length && { keywords: raceContent.pageKeywords }),
@@ -114,9 +114,14 @@ export default async function RaceLandingPage({ params }: Props) {
         <p className="text-[var(--text-secondary)] text-lg mb-1">
           {race.circuitName}
         </p>
-        <p className="text-sm text-[var(--text-secondary)] mono-data mb-10">
+        <p className={`text-sm text-[var(--text-secondary)] mono-data ${race.venueNote ? 'mb-2' : 'mb-10'}`}>
           {race.city}, {race.country} · {firstDateStr}–{sunStr}, {race.season}
         </p>
+        {race.venueNote && (
+          <p className="inline-block text-sm font-medium text-[var(--accent-red)] bg-[var(--accent-red-muted)] rounded-full px-3 py-1 mb-10">
+            {race.venueNote}
+          </p>
+        )}
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {NAV_ITEMS.filter(item => item.href !== 'tips' || !!raceContent?.tipsContent).map(({ href, label, icon, desc }) => (
@@ -137,9 +142,8 @@ export default async function RaceLandingPage({ params }: Props) {
         {live ? (
           <>
             <p className="text-[var(--text-secondary)] leading-relaxed mt-8">
-              {moved && <>For 2026 the {race.name.replace(/ in .*$/, '')} is held at {race.circuitName}, next to Kuala Lumpur International Airport. </>}
-              Round {race.round} runs {firstDateStr}–{sunStr}. Most fans stay in {race.city} or Putrajaya
-              {liveFeed && liveFeed.cards[0]?.circuitKm != null && <> — central {race.city} is about {Math.round(liveFeed.cards.find((c) => c.locationName === race.city)?.circuitKm ?? 44)} km from the circuit</>}.
+              {moved && <>For {race.season} the {race.name} is held at {race.circuitName}, next to Kuala Lumpur International Airport, about 45 km south of central {race.city}. </>}
+              Round {race.round} runs {firstDateStr}–{sunStr}. Most fans stay in {race.city} or Putrajaya.
               {liveFeed && liveFeed.cards.length > 0 && <> We list {liveFeed.cards.length} bookable experiences around the circuit{nearCount > 0 ? `, ${nearCount} of them within 30 minutes` : ''}, sorted by race-weekend travel time.</>}
             </p>
 

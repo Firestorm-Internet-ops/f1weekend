@@ -69,17 +69,33 @@ export default async function GettingTherePage({ params }: Props) {
   // when we have one, otherwise the stored sessions.
   const allSessions = await getSessionsByRace(race.id);
   const timetable = timetableFor(raceSlug);
+  // Timetable names already carry the series ("Formula Trophy Malaysia · Race 2"): never prefix it twice.
+  const label = (series: string, name: string) =>
+    series === 'Formula 1' || name.startsWith(series) ? name : `${series} · ${name}`;
   const firstOfDay = (day: string) =>
     timetable
-      ? timetable.filter((e) => e.day === day).map((e) => ({ name: e.series === 'Formula 1' ? e.name : `${e.series} · ${e.name}`, startTime: e.start }))
+      ? timetable.filter((e) => e.day === day).map((e) => ({ name: label(e.series, e.name), startTime: e.start }))
           .filter((e) => !/press|presentation|parade|anthem/i.test(e.name))[0]
       : allSessions.filter((s) => s.dayOfWeek === day).sort((a, b) => a.startTime.localeCompare(b.startTime))[0];
+  // The day's headline F1 session, from the same session list every page uses.
+  const f1Rank = { race: 0, sprint: 1, qualifying: 2, practice: 3 } as Record<string, number>;
+  const mainF1 = (day: string) =>
+    allSessions
+      .filter((s) => s.dayOfWeek === day && s.sessionType in f1Rank)
+      .sort((a, b) => f1Rank[a.sessionType] - f1Rank[b.sessionType] || a.startTime.localeCompare(b.startTime))[0];
   const gateTimes = ['Thursday', 'Friday', 'Saturday', 'Sunday']
     .map(day => {
       const first = firstOfDay(day);
-      return first ? { day, session: first.name, gates: formatGateTime(first.startTime, 2, tzLabel) } : null;
+      if (!first) return null;
+      const f1 = mainF1(day);
+      return {
+        day,
+        firstOnTrack: `${first.name} ${first.startTime}`,
+        f1: f1 && f1.name !== first.name ? `${f1.sessionType === 'race' ? 'Grand Prix' : f1.name} ${f1.startTime}` : null,
+        gates: formatGateTime(first.startTime, 2, tzLabel),
+      };
     })
-    .filter((g): g is { day: string; session: string; gates: string } => g !== null);
+    .filter((g): g is { day: string; firstOnTrack: string; f1: string | null; gates: string } => g !== null);
 
   return (
     <>
@@ -200,11 +216,13 @@ export default async function GettingTherePage({ params }: Props) {
                     i < gateTimes.length - 1 ? 'border-b border-[var(--border-subtle)]' : ''
                   }`}
                 >
-                  <div>
+                  <div className="min-w-0">
                     <p className="font-medium text-[var(--text-primary)]">{g.day}</p>
-                    <p className="text-sm text-[var(--text-secondary)]">{g.session}</p>
+                    <p className="text-sm text-[var(--text-secondary)]">First on track: {g.firstOnTrack}</p>
+                    {g.f1 && <p className="text-sm text-[var(--text-secondary)]">F1: {g.f1}</p>}
                   </div>
-                  <span className="mono-data text-sm text-[var(--accent-teal)] font-medium">
+                  <span className="mono-data text-sm text-[var(--accent-red)] font-medium text-right shrink-0 ml-4">
+                    <span className="block text-[10px] uppercase tracking-wider text-[var(--text-muted)]">Gates open ~</span>
                     {g.gates}
                   </span>
                 </div>
