@@ -20,9 +20,10 @@ import { calendarEntry, hasLiveExperiences } from '@/data/calendar-2026';
 import fs from 'node:fs';
 import path from 'node:path';
 
-/** A /public image path, if the file is actually there (track images are added by hand). */
+/** A /public image path if the file is actually there (added by hand); https URLs are used as they are. */
 function existingPublicFile(src: string | undefined): string | undefined {
   if (!src) return undefined;
+  if (/^https:\/\//.test(src)) return src;
   try {
     return fs.existsSync(path.join(process.cwd(), 'public', src)) ? src : undefined;
   } catch {

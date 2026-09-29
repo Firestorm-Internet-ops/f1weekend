@@ -10,6 +10,8 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'cdn.getyourguide.com' },
       { protocol: 'https', hostname: 'img.getyourguide.com' },
       { protocol: 'https', hostname: '**.getyourguide.com' },
+      // F1 track maps (Sepang for the Bahrain GP in Malaysia): fetched once by the image optimiser.
+      { protocol: 'https', hostname: 'media.formula1.com', pathname: '/image/upload/**' },
     ],
   },
   async headers() {
