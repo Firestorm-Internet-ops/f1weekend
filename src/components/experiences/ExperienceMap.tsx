@@ -26,7 +26,7 @@ const isValidPoint = (p?: Partial<LatLng> | null): p is LatLng =>
   !!p && Number.isFinite(p.lat) && Number.isFinite(p.lng) && !(p.lat === 0 && p.lng === 0);
 
 // Google Maps dark style matching app's #15151E background
-const DARK_MAP_STYLE: google.maps.MapTypeStyle[] = [
+export const DARK_MAP_STYLE: google.maps.MapTypeStyle[] = [
   { elementType: 'geometry', stylers: [{ color: '#1a1a26' }] },
   { elementType: 'labels.text.stroke', stylers: [{ color: '#15151e' }] },
   { elementType: 'labels.text.fill', stylers: [{ color: '#9a9aaf' }] },

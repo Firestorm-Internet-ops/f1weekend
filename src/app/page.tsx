@@ -428,6 +428,7 @@ export default async function HomePage() {
             raceSlug={activeRaceSlug}
             circuit={{ lat: race.circuitLat, lng: race.circuitLng, name: race.circuitName }}
             moreHref={expBasePath}
+            mapsApiKey={process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ''}
           />
         ) : (
         <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide lg:grid lg:grid-cols-5 lg:overflow-visible">
