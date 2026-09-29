@@ -42,6 +42,7 @@ async function main() {
     console.log(`[calendar] ${race.slug}: ${changes.join(', ')}`);
     if (DRY_RUN) continue;
     await conn.execute('UPDATE races SET round = ?, race_date = ? WHERE slug = ?', [race.round, race.raceDate, race.slug]);
+    if (race.liveExperiences) await conn.execute('UPDATE races SET available = true WHERE slug = ?', [race.slug]);
     if (v) {
       await conn.execute(
         `UPDATE races SET name = ?, circuit_name = ?, city = ?, country = ?, country_code = ?,

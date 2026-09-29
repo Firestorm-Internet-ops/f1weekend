@@ -82,6 +82,9 @@ export function isOffCalendar(slug: string): boolean {
   return OFF_CALENDAR_2026.has(slug);
 }
 
+/** Races whose experiences come live from providers: always listed, whatever the database's `available` flag says. */
+export const LIVE_EXPERIENCE_SLUGS = CALENDAR_2026.filter((r) => r.liveExperiences).map((r) => r.slug);
+
 export function hasLiveExperiences(slug: string): boolean {
   return BY_SLUG.get(slug)?.liveExperiences === true;
 }
