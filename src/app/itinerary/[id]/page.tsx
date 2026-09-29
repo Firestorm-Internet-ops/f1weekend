@@ -14,7 +14,7 @@ interface Props {
 export async function generateMetadata({ params }: Props) {
   const { id } = await params;
   const itinerary = await getItinerary(id);
-  if (!itinerary) return { title: 'Itinerary | F1 Weekend' };
+  if (!itinerary) return { title: { absolute: 'Itinerary | F1 Weekend' } };
 
   const race = itinerary.raceId ? await getRaceById(itinerary.raceId) : await getActiveRace();
   const raceName = race?.name ?? '2026 Australian Grand Prix';

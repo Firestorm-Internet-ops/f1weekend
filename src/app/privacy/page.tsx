@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy | F1 Weekend',
+  title: { absolute: 'Privacy Policy | F1 Weekend' },
   description: 'Privacy policy for the F1 Weekend app by Firestorm Internet.',
   alternates: { canonical: 'https://f1weekend.co/privacy' },
   robots: { index: false, follow: false },

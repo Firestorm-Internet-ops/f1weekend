@@ -25,12 +25,24 @@ const target = (id: number, title: string, durationHours: number | null = null, 
 // ── affiliate links ────────────────────────────────────────────────────────
 
 test('GYG link replaces stale tracking params with ours', () => {
+  const saved = process.env.GYG_PARTNER_ID;
+  process.env.GYG_PARTNER_ID = 'OURS';
   const url = new URL(buildAffiliateUrl('getyourguide', 'https://www.getyourguide.com/monaco-l273/t123/?partner_id=OLD&utm_term=1', ctx));
   assert.equal(url.searchParams.getAll('partner_id').length, 1);
-  assert.notEqual(url.searchParams.get('partner_id'), 'OLD');
+  assert.equal(url.searchParams.get('partner_id'), 'OURS');
+  if (saved === undefined) delete process.env.GYG_PARTNER_ID; else process.env.GYG_PARTNER_ID = saved;
   assert.equal(url.searchParams.get('utm_term'), '42');
   assert.equal(url.searchParams.get('utm_content'), 'feed');
   assert.equal(url.pathname, '/monaco-l273/t123/');
+});
+
+test('GYG link keeps the API partner ID when GYG_PARTNER_ID is not set', () => {
+  const saved = process.env.GYG_PARTNER_ID;
+  delete process.env.GYG_PARTNER_ID;
+  const url = new URL(buildAffiliateUrl('getyourguide', 'https://www.getyourguide.com/x-t1/?partner_id=9BAL9K3', ctx));
+  assert.equal(url.searchParams.get('partner_id'), '9BAL9K3');
+  assert.equal(new URL(buildAffiliateUrl('getyourguide', 'https://www.getyourguide.com/x-t1/', ctx)).searchParams.get('partner_id'), null);
+  if (saved !== undefined) process.env.GYG_PARTNER_ID = saved;
 });
 
 test('stripGygTracking keeps non-tracking params and survives bad URLs', () => {

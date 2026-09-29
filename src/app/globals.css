@@ -177,6 +177,22 @@ body {
   line-height: 1.6;
 }
 
+/* Tailwind v4 resets buttons to the default arrow cursor: show the hand on
+   everything clickable, and "not allowed" on disabled controls. */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+summary,
+select,
+label[for],
+input[type="checkbox"],
+input[type="radio"] {
+  cursor: pointer;
+}
+button:disabled,
+[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
 /* Carbon fiber texture — use on hero sections */
 .carbon-texture {
   background-image:

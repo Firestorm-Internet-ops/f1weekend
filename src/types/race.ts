@@ -16,6 +16,8 @@ export interface Race {
     shortCode?: string
     available?: boolean
     hasThursdayFreeDay?: boolean
+    /** Whether /races/[slug]/tips has content (false → the page 404s, so don't link to it). */
+    hasTips?: boolean
 }
 
 export interface Session {

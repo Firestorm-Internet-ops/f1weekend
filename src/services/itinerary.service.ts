@@ -180,7 +180,9 @@ export async function getItinerary(id: string): Promise<Itinerary | null> {
         .where(eq(itineraries.id, id))
         .catch(() => {});
 
-    const itinerary = result[0].itinerary_json as Itinerary;
+    // JSON columns come back as objects from MySQL/TiDB but as strings from MariaDB.
+    const raw = result[0].itinerary_json;
+    const itinerary = (typeof raw === 'string' ? JSON.parse(raw) : raw) as Itinerary;
     if (result[0].race_id) itinerary.raceId = result[0].race_id;
     return itinerary;
 }

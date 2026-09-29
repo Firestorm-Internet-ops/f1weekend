@@ -40,8 +40,8 @@ function toDateString(d: unknown): string {
 }
 
 /** Database row + the 2026 calendar (round, date, and venue when a race moved). */
-function mapRace(r: typeof races.$inferSelect, hasThursdayFreeDay?: boolean): Race {
-  return withCalendar(mapRaceRow(r, hasThursdayFreeDay));
+function mapRace(r: typeof races.$inferSelect, hasThursdayFreeDay?: boolean, hasTips?: boolean): Race {
+  return withCalendar({ ...mapRaceRow(r, hasThursdayFreeDay), hasTips });
 }
 
 function withCalendar(race: Race): Race {
@@ -56,6 +56,7 @@ function withCalendar(race: Race): Race {
     available: race.available || cal.liveExperiences === true,
     ...(v
       ? {
+          hasTips: false, // stored tips are for the old venue
           name: cal.name,
           circuitName: v.circuitName,
           city: v.city,
@@ -151,7 +152,7 @@ export const getAllRaces = unstable_cache(
       .from(races)
       .leftJoin(race_content, eq(races.id, race_content.race_id))
       .orderBy(asc(races.race_date));
-    return sortByCalendar(rows.map((row) => mapRace(row.race, !!row.content?.has_thursday_free_day)));
+    return sortByCalendar(rows.map((row) => mapRace(row.race, !!row.content?.has_thursday_free_day, !!row.content?.tips_content)));
   },
   ['races:all:calendar-2026'],
   { revalidate: CACHE_TTL, tags: ['races'] }
@@ -168,7 +169,7 @@ export const getAvailableRaces = unstable_cache(
       // races (Bahrain at Sepang) get theirs from providers, so they always count.
       .where(or(eq(races.available, true), inArray(races.slug, LIVE_EXPERIENCE_SLUGS)))
       .orderBy(asc(races.race_date));
-    return sortByCalendar(rows.map((row) => mapRace(row.race, !!row.content?.has_thursday_free_day)));
+    return sortByCalendar(rows.map((row) => mapRace(row.race, !!row.content?.has_thursday_free_day, !!row.content?.tips_content)));
   },
   ['races:available:calendar-2026:live'],
   { revalidate: CACHE_TTL, tags: ['races'] }
@@ -183,7 +184,7 @@ export const getRacesWithExperiences = unstable_cache(
       .leftJoin(race_content, eq(races.id, race_content.race_id))
       .where(sql`EXISTS (SELECT 1 FROM experiences WHERE race_id = ${races.id})`)
       .orderBy(asc(races.race_date));
-    return sortByCalendar(rows.map((row) => mapRace(row.race, !!row.content?.has_thursday_free_day)));
+    return sortByCalendar(rows.map((row) => mapRace(row.race, !!row.content?.has_thursday_free_day, !!row.content?.tips_content)));
   },
   ['races:with-experiences:calendar-2026'],
   { revalidate: CACHE_TTL, tags: ['races', 'experiences'] }
@@ -204,7 +205,7 @@ export async function getRaceBySlug(slug: string): Promise<Race | null> {
     { revalidate: CACHE_TTL, tags: ['races', `race:${slug}`] }
   );
   const rows = await fetch();
-  return rows[0] ? mapRace(rows[0].race, !!rows[0].content?.has_thursday_free_day) : null;
+  return rows[0] ? mapRace(rows[0].race, !!rows[0].content?.has_thursday_free_day, !!rows[0].content?.tips_content) : null;
 }
 
 export async function getRaceById(id: number): Promise<Race | null> {
@@ -222,7 +223,7 @@ export async function getRaceById(id: number): Promise<Race | null> {
     { revalidate: CACHE_TTL, tags: ['races'] }
   );
   const rows = await fetch();
-  return rows[0] ? mapRace(rows[0].race, !!rows[0].content?.has_thursday_free_day) : null;
+  return rows[0] ? mapRace(rows[0].race, !!rows[0].content?.has_thursday_free_day, !!rows[0].content?.tips_content) : null;
 }
 
 export async function getUpcomingRace(): Promise<Race | null> {
