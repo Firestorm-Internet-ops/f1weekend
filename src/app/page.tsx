@@ -51,10 +51,11 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 
   const title = raceContent?.pageTitle ?? `${race.city} F1 Weekend Guide — ${race.name} ${race.season} | F1 Weekend`;
+  // Absolute: the layout template would append "| F1 Weekend" a second time.
   const description = raceContent?.pageDescription ?? `Plan your perfect ${race.name} weekend in ${race.city}. Curated experiences matched to session gaps, full schedule, and transport guide.`;
 
   return {
-    title,
+    title: { absolute: title },
     description,
     alternates: { canonical: 'https://f1weekend.co' },
     keywords: [
