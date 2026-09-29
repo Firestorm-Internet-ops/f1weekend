@@ -50,3 +50,4 @@ key.json
 
 # nearby audit reports (generated locally)
 scripts/output/nearby-audit.*
+scripts/output/offers-*

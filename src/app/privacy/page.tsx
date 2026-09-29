@@ -35,6 +35,7 @@ const SECTIONS = [
     title: 'Third-Party Services',
     content: [
       'GetYourGuide — affiliate partner for bookable experiences. Clicking affiliate links may set cookies on GetYourGuide\'s domain. See getYourGuide.com for their privacy policy.',
+      'Viator and Tiqets — affiliate partners for bookable experiences on some pages. Clicking their links may set cookies on their domains. See viator.com and tiqets.com for their privacy policies.',
       'Qdrant — vector search service used to find relevant experiences. No personal data is stored in Qdrant.',
       'Vercel — hosting platform. Access logs may include IP addresses per Vercel\'s standard infrastructure logging. See vercel.com/legal/privacy-policy.',
     ],

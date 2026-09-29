@@ -8,6 +8,10 @@ import RaceSwitcher from '@/components/race/RaceSwitcher';
 import { getRaceBySlug, getAvailableRaces, getRaceContent } from '@/services/race.service';
 import { getExperiencesByRace } from '@/services/experience.service';
 import { CATEGORY_LABELS } from '@/lib/constants/categories';
+import NearbyFeed from '@/components/experiences/NearbyFeed';
+import { getNearbyFeed } from '@/services/nearby-feed.service';
+import { hasLiveExperiences } from '@/data/calendar-2026';
+import { providerName } from '@/lib/providers/meta';
 
 export const revalidate = 3600; // 1 hour
 
@@ -67,6 +71,10 @@ export default async function ExperiencesPage({ params, searchParams }: Props) {
     getAvailableRaces(),
   ]);
   if (!race) notFound();
+
+  if (hasLiveExperiences(raceSlug)) {
+    return <LiveExperiencesPage race={race} availableRaces={availableRaces} />;
+  }
 
   const exps = await getExperiencesByRace(race.id);
 
@@ -173,6 +181,70 @@ export default async function ExperiencesPage({ params, searchParams }: Props) {
         >
           <ExperiencesClient initialExperiences={exps} raceSlug={raceSlug} />
         </Suspense>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Races whose experiences come live from GetYourGuide, Viator and Tiqets
+ * (see src/data/calendar-2026.ts): every product around the circuit, nearest
+ * first, on a map and as cards.
+ */
+async function LiveExperiencesPage({
+  race,
+  availableRaces,
+}: {
+  race: NonNullable<Awaited<ReturnType<typeof getRaceBySlug>>>;
+  availableRaces: Awaited<ReturnType<typeof getAvailableRaces>>;
+}) {
+  const feed = await getNearbyFeed(race);
+  const providers = ['getyourguide', 'viator', 'tiqets'].map(providerName).join(', ');
+
+  const breadcrumbLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://f1weekend.co' },
+      { '@type': 'ListItem', position: 2, name: race.city, item: `https://f1weekend.co/races/${race.slug}` },
+      { '@type': 'ListItem', position: 3, name: 'Experiences', item: `https://f1weekend.co/races/${race.slug}/experiences` },
+    ],
+  };
+
+  return (
+    <div className="min-h-screen pt-24 pb-24 px-4">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-8">
+          <p className="text-xs font-medium uppercase-label text-[var(--accent-red)] mb-2">
+            {race.name} {race.season} · {race.circuitName}
+          </p>
+          <h1 className="font-display font-black text-4xl text-white uppercase-heading">Things to do near the circuit</h1>
+          <p className="text-[var(--text-secondary)] text-sm leading-relaxed max-w-2xl mt-3">
+            Every experience on {providers} within reach of {race.circuitName}, nearest first. Travel times
+            include race-weekend traffic; when the same experience is sold on more than one site, you see every price.
+          </p>
+        </div>
+
+        <div className="mb-8">
+          <RaceSwitcher currentRace={race} availableRaces={availableRaces} pageType="experiences" />
+        </div>
+
+        {feed.cards.length > 0 ? (
+          <NearbyFeed
+            cards={feed.cards}
+            raceSlug={race.slug}
+            circuit={{ lat: race.circuitLat, lng: race.circuitLng, name: race.circuitName }}
+          />
+        ) : (
+          <p className="text-[var(--text-secondary)]">Experiences are loading from our partners — please check back shortly.</p>
+        )}
+
+        <p className="mt-10 text-xs text-[var(--text-secondary)] opacity-70">
+          Prices in {feed.currency}, per person, updated {new Date(feed.fetchedAt).toUTCString().slice(5, 22)} UTC.
+          Most tours are placed at the city they start from; venue tickets at the venue.
+          {feed.failed.length > 0 && <> {feed.failed.join(', ')} unavailable right now.</>}
+        </p>
       </div>
     </div>
   );

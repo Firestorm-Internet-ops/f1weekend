@@ -11,6 +11,10 @@ import ExperienceSuggestions from '@/components/experiences/ExperienceSuggestion
 import OptionsPanel from '@/components/experiences/OptionsPanel';
 import ReviewQuotes from '@/components/experiences/ReviewQuotes';
 import StickyBookingBar from '@/components/experiences/StickyBookingBar';
+import OfferComparison from '@/components/experiences/OfferComparison';
+import { getOffersForExperience } from '@/services/offer.service';
+import { providerName } from '@/lib/providers/meta';
+import type { Offer } from '@/lib/providers';
 import type { Experience } from '@/types/experience';
 import { CATEGORY_COLORS, CATEGORY_LABELS } from '@/lib/constants/categories';
 import { formatPrice } from '@/lib/utils';
@@ -88,7 +92,18 @@ function toISO8601Duration(hours: number): string {
   return `PT${h}H${m}M`;
 }
 
-function buildJsonLd(exp: Experience, raceSlug: string, race: { city: string; country: string; countryCode: string } | null) {
+function offerLd(o: Offer) {
+  return {
+    '@type': 'Offer',
+    price: o.priceAmount?.toFixed(2),
+    priceCurrency: o.priceCurrency,
+    availability: 'https://schema.org/InStock',
+    url: o.url,
+    seller: { '@type': 'Organization', name: providerName(o.provider) },
+  };
+}
+
+function buildJsonLd(exp: Experience, raceSlug: string, race: { city: string; country: string; countryCode: string } | null, offers: Offer[]) {
   const url = `https://f1weekend.co/races/${raceSlug}/experiences/${exp.slug}`;
   const city = race?.city ?? 'Melbourne';
   const countryCode = race?.countryCode ?? 'AU';
@@ -107,14 +122,16 @@ function buildJsonLd(exp: Experience, raceSlug: string, race: { city: string; co
       name: city,
       addressCountry: countryCode,
     },
-    offers: {
-      '@type': 'Offer',
-      price: exp.priceAmount.toFixed(2),
-      priceCurrency: exp.priceCurrency,
-      availability: 'https://schema.org/InStock',
-      url: exp.affiliateUrl,
-      seller: { '@type': 'Organization', name: 'GetYourGuide' },
-    },
+    offers: offers.length > 1
+      ? offers.filter((o) => o.priceAmount !== null).map(offerLd)
+      : {
+          '@type': 'Offer',
+          price: exp.priceAmount.toFixed(2),
+          priceCurrency: exp.priceCurrency,
+          availability: 'https://schema.org/InStock',
+          url: exp.affiliateUrl,
+          seller: { '@type': 'Organization', name: providerName(exp.affiliatePartner) },
+        },
   };
   // Add geo coordinates only if lat is available (omit key entirely if not)
   if (exp.lat != null && exp.lng != null) {
@@ -203,10 +220,15 @@ export default async function ExperienceDetailPage({ params }: Props) {
   const guideHtml = exp.guideArticle ? await marked(stripArticleFrontMatter(exp.guideArticle)) : null;
 
   // Fetch suggested experiences in parallel with guide rendering
-  const suggested = race ? await getSuggestedExperiences(race.id, slug, 4) : [];
+  const [suggested, offers] = await Promise.all([
+    race ? getSuggestedExperiences(race.id, slug, 4) : Promise.resolve([]),
+    getOffersForExperience(exp),
+  ]);
+  const partnerName = providerName(exp.affiliatePartner);
 
   // Build TOC from visible sections
   const tocSections: TOCSection[] = [
+    ...(offers.length > 1 ? [{ id: 'compare', label: 'Compare Prices' }] : []),
     ...((exp.description || exp.abstract) ? [{ id: 'about', label: 'About' }] : []),
     ...(exp.highlights?.length ? [{ id: 'highlights', label: 'Highlights' }] : []),
     ...((exp.includes?.length || exp.excludes?.length) ? [{ id: 'includes', label: "What's Included" }] : []),
@@ -240,7 +262,7 @@ export default async function ExperienceDetailPage({ params }: Props) {
   const f1ContextText = resolveF1Context(exp);
 
   // Consolidate all page schemas into single JSON-LD script tag
-  const allSchemas = [buildJsonLd(exp, raceSlug, race), breadcrumbLd, ...(faqLd ? [faqLd] : [])];
+  const allSchemas = [buildJsonLd(exp, raceSlug, race, offers), breadcrumbLd, ...(faqLd ? [faqLd] : [])];
 
   return (
     <>
@@ -377,6 +399,8 @@ export default async function ExperienceDetailPage({ params }: Props) {
                 />
               </div>
 
+              <OfferComparison experience={exp} offers={offers} />
+
               {exp.optionsSnapshot && exp.optionsSnapshot.length > 1 && (
                 <OptionsPanel experience={exp} options={exp.optionsSnapshot} />
               )}
@@ -476,12 +500,12 @@ export default async function ExperienceDetailPage({ params }: Props) {
                   <ReviewQuotes reviews={exp.reviewsSnapshot} />
                   <div className="flex items-center gap-3 mb-4">
                     <p className="text-sm text-[var(--text-secondary)]">
-                      {exp.reviewCount.toLocaleString()} reviews on GetYourGuide
+                      {exp.reviewCount.toLocaleString()} reviews on {partnerName}
                     </p>
                     <BookButton
                       experience={exp}
                       source="guide"
-                      label="Read all reviews on GetYourGuide →"
+                      label={`Read all reviews on ${partnerName} →`}
                       className="text-sm text-[var(--accent-teal)] hover:underline bg-transparent p-0 font-normal"
                     />
                   </div>
@@ -531,7 +555,7 @@ export default async function ExperienceDetailPage({ params }: Props) {
 
               <div className="flex flex-col sm:flex-row gap-3 items-center justify-between pt-4 border-t border-[var(--border-subtle)]">
                 <div className="text-sm text-[var(--text-secondary)]">
-                  Booked via GetYourGuide · Cancellation policies apply
+                  {offers.length > 1 ? `Compare ${offers.length} booking sites above` : `Booked via ${partnerName}`} · Cancellation policies apply
                 </div>
                 <BookButton experience={exp} source="guide" />
               </div>

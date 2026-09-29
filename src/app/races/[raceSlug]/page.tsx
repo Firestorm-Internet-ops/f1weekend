@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { hasLiveExperiences } from '@/data/calendar-2026';
 import { getRaceBySlug, getRaceContent } from '@/services/race.service';
 import { getExperiencesByWindow } from '@/services/experience.service';
 import CircuitMap from '@/components/race/CircuitMap';
@@ -45,7 +46,7 @@ export default async function RaceLandingPage({ params }: Props) {
   if (!race) notFound();
 
   // Fetch Thursday experiences if they exist
-  const thursdayExperiences = await getExperiencesByWindow('thursday', race.id);
+  const thursdayExperiences = hasLiveExperiences(raceSlug) ? [] : await getExperiencesByWindow('thursday', race.id);
 
   // Compute first–last day dates from raceDate (Sunday = race day)
   const raceDay = new Date(race.raceDate + 'T00:00:00Z');

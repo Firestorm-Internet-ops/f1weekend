@@ -46,6 +46,8 @@ export interface MapBase {
 export interface DistanceMapLayout {
   size: number;
   center: number;
+  /** Where the circuit is drawn (the middle, unless the view is fitted to content). */
+  circuit: { x: number; y: number };
   viewRadiusKm: number;
   rings: { mins: number; r: number }[];
   dots: MapDot[];
@@ -72,11 +74,21 @@ function hasCoords(e: { lat?: number | null; lng?: number | null }): e is { lat:
   return typeof e.lat === 'number' && typeof e.lng === 'number' && Number.isFinite(e.lat) && Number.isFinite(e.lng) && !(e.lat === 0 && e.lng === 0);
 }
 
+export interface LayoutOptions {
+  /**
+   * Centre the view on the circuit, fan bases and near / city activities
+   * together instead of on the circuit. Zooms in when everything sits to one
+   * side of the circuit (Sepang → Kuala Lumpur, 40 km north).
+   */
+  fitContent?: boolean;
+}
+
 export function layoutDistanceMap(
   items: DistanceMapInput[],
   raceSlug: string,
   circuit: LatLng,
-  size = 600
+  size = 600,
+  opts: LayoutOptions = {}
 ): DistanceMapLayout {
   const center = size / 2;
   const bases = RACE_BASES[raceKey(raceSlug)] ?? [];
@@ -96,10 +108,27 @@ export function layoutDistanceMap(
     }
   }
 
+  // View centre, in km from the circuit.
+  let cx = 0;
+  let cy = 0;
+  if (opts.fitContent) {
+    const pts = [{ x: 0, y: 0 }, ...bases.map((b) => toLocalKm(b, circuit))];
+    for (const { item, info } of classified) {
+      if (hasCoords(item) && (info.tier === 'near' || info.tier === 'city')) pts.push(toLocalKm(item, circuit));
+    }
+    const xs = pts.map((p) => p.x);
+    const ys = pts.map((p) => p.y);
+    cx = (Math.min(...xs) + Math.max(...xs)) / 2;
+    cy = (Math.min(...ys) + Math.max(...ys)) / 2;
+    viewRadiusKm = Math.max(5, Math.max(...pts.map((p) => Math.hypot(p.x - cx, p.y - cy))) * 1.15);
+  }
+
   const pxPerKm = (center * EDGE) / viewRadiusKm;
 
   const place = (p: LatLng) => {
-    const { x, y } = toLocalKm(p, circuit);
+    const local = toLocalKm(p, circuit);
+    const x = local.x - cx;
+    const y = local.y - cy;
     const dist = Math.hypot(x, y);
     const maxKm = viewRadiusKm;
     const offMap = dist > maxKm;
@@ -131,6 +160,7 @@ export function layoutDistanceMap(
   return {
     size,
     center,
+    circuit: { x: center - cx * pxPerKm, y: center + cy * pxPerKm },
     viewRadiusKm,
     rings: [NEARBY_LIMITS.nearMins, NEARBY_LIMITS.cityMins].map((mins) => ({
       mins,

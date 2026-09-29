@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
+import { hasLiveExperiences } from '@/data/calendar-2026';
 import { Suspense } from 'react';
 import Link from 'next/link';
 import ExperienceMapClient from '@/components/experiences/ExperienceMapClient';
@@ -28,6 +29,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ExperienceMapPage({ params }: Props) {
   const { raceSlug } = await params;
+  // Live-feed races show the map on the experiences page itself.
+  if (hasLiveExperiences(raceSlug)) redirect(`/races/${raceSlug}/experiences`);
   const race = await getRaceBySlug(raceSlug);
   if (!race) notFound();
 

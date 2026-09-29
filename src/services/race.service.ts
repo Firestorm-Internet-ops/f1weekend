@@ -1,9 +1,10 @@
 import { unstable_cache } from 'next/cache';
 import { getDb } from '@/lib/db';
 import { races, sessions, experience_windows, race_content, experiences } from '@/lib/db/schema';
-import { eq, asc, gte, desc, sql, inArray, notInArray } from 'drizzle-orm';
+import { eq, asc, sql, inArray, notInArray } from 'drizzle-orm';
 import { redis } from '@/lib/redis';
 import type { Race, Session, ExperienceWindow } from '@/types/race';
+import { calendarEntry, nextCalendarRace, sortByCalendar } from '@/data/calendar-2026';
 
 const CACHE_TTL = 3600; // 1 hour
 
@@ -13,7 +14,40 @@ function toDateString(d: unknown): string {
   return String(d).slice(0, 10);
 }
 
+/** Database row + the 2026 calendar (round, date, and venue when a race moved). */
 function mapRace(r: typeof races.$inferSelect, hasThursdayFreeDay?: boolean): Race {
+  return withCalendar(mapRaceRow(r, hasThursdayFreeDay));
+}
+
+function withCalendar(race: Race): Race {
+  const cal = calendarEntry(race.slug);
+  if (!cal) return race;
+  const v = cal.venue;
+  return {
+    ...race,
+    round: cal.round,
+    raceDate: cal.raceDate,
+    ...(v
+      ? {
+          name: cal.name,
+          circuitName: v.circuitName,
+          city: v.city,
+          country: v.country,
+          countryCode: v.countryCode,
+          circuitLat: v.circuitLat,
+          circuitLng: v.circuitLng,
+          timezone: v.timezone,
+          flag: v.flag,
+        }
+      : {}),
+  };
+}
+
+function todayUtc(): string {
+  return new Date().toISOString().split('T')[0];
+}
+
+function mapRaceRow(r: typeof races.$inferSelect, hasThursdayFreeDay?: boolean): Race {
   return {
     id: r.id,
     slug: r.slug ?? '',
@@ -63,51 +97,23 @@ function mapWindow(w: typeof experience_windows.$inferSelect): ExperienceWindow 
   };
 }
 
-// "Active" = first race whose race_date is today or in the future.
-// Once race day passes, the homepage immediately switches to the next upcoming race.
-// Falls back to the most recent past race if all races are done.
+// "Active" = the first race on the 2026 calendar whose weekend hasn't finished
+// (by the calendar's dates, not the older dates in the database), among races
+// the site has content for. After race day it moves to the next race.
 export async function getActiveRace(): Promise<Race | null> {
-  const todayStr = new Date().toISOString().split('T')[0];
-  const fetch = unstable_cache(
-    async () => {
-      const db = await getDb();
-      const rows = await db
-        .select()
-        .from(races)
-        .where(sql`${races.race_date} >= CURDATE() AND ${races.available} = true`)
-        .orderBy(asc(races.race_date))
-        .limit(1);
-      if (rows[0]) return rows;
-
-      // All races are past — return the most recent available one as fallback
-      return db.select().from(races).where(eq(races.available, true)).orderBy(desc(races.race_date)).limit(1);
-    },
-    [`race:active:${todayStr}`],
-    { revalidate: CACHE_TTL, tags: ['races'] }
-  );
-  const rows = await fetch();
-  return rows[0] ? mapRace(rows[0]) : null;
+  const available = await getAvailableRaces();
+  const bySlug = new Map(available.map((r) => [r.slug, r]));
+  const cal = nextCalendarRace(todayUtc(), new Set(bySlug.keys()));
+  if (cal) return bySlug.get(cal.slug) ?? null;
+  return available[available.length - 1] ?? null;
 }
 
-// The race immediately after the active race, or null if no more races.
+// The race after the active race, or null if no more races.
 export async function getNextRace(): Promise<Race | null> {
-  const todayStr = new Date().toISOString().split('T')[0];
-  const fetch = unstable_cache(
-    async () => {
-      const db = await getDb();
-      return db
-        .select()
-        .from(races)
-        .where(sql`${races.race_date} >= CURDATE() AND ${races.available} = true`)
-        .orderBy(asc(races.race_date))
-        .limit(2);
-    },
-    [`race:next:${todayStr}`],
-    { revalidate: CACHE_TTL, tags: ['races'] }
-  );
-  const rows = await fetch();
-  // rows[0] = active race, rows[1] = next race
-  return rows[1] ? mapRace(rows[1]) : null;
+  const [active, available] = await Promise.all([getActiveRace(), getAvailableRaces()]);
+  if (!active) return null;
+  const i = available.findIndex((r) => r.slug === active.slug);
+  return i >= 0 ? available[i + 1] ?? null : null;
 }
 
 export const getAllRaces = unstable_cache(
@@ -118,9 +124,9 @@ export const getAllRaces = unstable_cache(
       .from(races)
       .leftJoin(race_content, eq(races.id, race_content.race_id))
       .orderBy(asc(races.race_date));
-    return rows.map((row) => mapRace(row.race, !!row.content?.has_thursday_free_day));
+    return sortByCalendar(rows.map((row) => mapRace(row.race, !!row.content?.has_thursday_free_day)));
   },
-  ['races:all'],
+  ['races:all:calendar-2026'],
   { revalidate: CACHE_TTL, tags: ['races'] }
 );
 
@@ -133,9 +139,9 @@ export const getAvailableRaces = unstable_cache(
       .leftJoin(race_content, eq(races.id, race_content.race_id))
       .where(eq(races.available, true))
       .orderBy(asc(races.race_date));
-    return rows.map((row) => mapRace(row.race, !!row.content?.has_thursday_free_day));
+    return sortByCalendar(rows.map((row) => mapRace(row.race, !!row.content?.has_thursday_free_day)));
   },
-  ['races:available'],
+  ['races:available:calendar-2026'],
   { revalidate: CACHE_TTL, tags: ['races'] }
 );
 
@@ -148,9 +154,9 @@ export const getRacesWithExperiences = unstable_cache(
       .leftJoin(race_content, eq(races.id, race_content.race_id))
       .where(sql`EXISTS (SELECT 1 FROM experiences WHERE race_id = ${races.id})`)
       .orderBy(asc(races.race_date));
-    return rows.map((row) => mapRace(row.race, !!row.content?.has_thursday_free_day));
+    return sortByCalendar(rows.map((row) => mapRace(row.race, !!row.content?.has_thursday_free_day)));
   },
-  ['races:with-experiences'],
+  ['races:with-experiences:calendar-2026'],
   { revalidate: CACHE_TTL, tags: ['races', 'experiences'] }
 );
 
@@ -191,24 +197,24 @@ export async function getRaceById(id: number): Promise<Race | null> {
 }
 
 export async function getUpcomingRace(): Promise<Race | null> {
-  const fetch = unstable_cache(
-    async () => {
-      const db = await getDb();
-      return db
-        .select()
-        .from(races)
-        .where(gte(races.race_date, new Date()))
-        .orderBy(asc(races.race_date))
-        .limit(1);
-    },
-    ['race:upcoming'],
-    { revalidate: CACHE_TTL, tags: ['races'] }
-  );
-  const rows = await fetch();
-  return rows[0] ? mapRace(rows[0]) : null;
+  const all = await getAllRaces();
+  const bySlug = new Map(all.map((r) => [r.slug, r]));
+  const cal = nextCalendarRace(todayUtc(), new Set(bySlug.keys()));
+  return cal ? bySlug.get(cal.slug) ?? null : null;
+}
+
+/**
+ * True when the race moved venue after its data was stored (Bahrain GP →
+ * Sepang): its sessions, gap windows and written content describe the old
+ * venue and are not shown until they are replaced.
+ */
+async function venueMoved(raceId: number): Promise<boolean> {
+  const race = await getRaceById(raceId);
+  return !!(race && calendarEntry(race.slug)?.venue);
 }
 
 export async function getSessionsByRace(raceId: number): Promise<Session[]> {
+  if (await venueMoved(raceId)) return [];
   const DAY_ORDER = { Thursday: 0, Friday: 1, Saturday: 2, Sunday: 3 };
 
   const fetch = unstable_cache(
@@ -234,6 +240,7 @@ export async function getSessionsByRace(raceId: number): Promise<Session[]> {
 }
 
 export async function getWindowsByRace(raceId: number): Promise<ExperienceWindow[]> {
+  if (await venueMoved(raceId)) return [];
   const fetch = unstable_cache(
     async () => {
       const db = await getDb();
@@ -285,6 +292,7 @@ export interface RaceContentRow {
 }
 
 export async function getRaceContent(raceSlug: string): Promise<RaceContentRow | null> {
+  if (calendarEntry(raceSlug)?.venue) return null; // written for the old venue
   const fetch = unstable_cache(
     async () => {
       const db = await getDb();

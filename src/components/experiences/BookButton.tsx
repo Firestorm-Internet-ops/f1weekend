@@ -2,16 +2,22 @@
 
 import type { Experience } from '@/types/experience';
 import { openBooking, type ClickSource } from '@/lib/analytics';
+import { providerName } from '@/lib/providers/meta';
 
-function deriveLabel(experience: Pick<Experience, 'skipTheLine' | 'instantConfirmation' | 'reviewCount'>): string {
+type BookableExperience = Pick<Experience, 'id' | 'affiliateUrl' | 'instantConfirmation' | 'skipTheLine' | 'reviewCount' | 'rating'> &
+  Partial<Pick<Experience, 'affiliatePartner'>>;
+
+function deriveLabel(experience: BookableExperience): string {
   if (experience.skipTheLine) return 'Skip the Queue — Book Now →';
   if (experience.instantConfirmation) return 'Book Instantly →';
   if ((experience.reviewCount ?? 0) >= 500) return `Book · ${(experience.reviewCount ?? 0).toLocaleString()}+ Reviews →`;
-  return 'Book on GetYourGuide →';
+  return `Book on ${providerName(experience.affiliatePartner)} →`;
 }
 
 interface Props {
-  experience: Pick<Experience, 'id' | 'affiliateUrl' | 'instantConfirmation' | 'skipTheLine' | 'reviewCount' | 'rating'>;
+  experience: BookableExperience;
+  /** A specific provider offer; without it /api/click picks the experience's default offer. */
+  offer?: { id: number | null; provider: string };
   source?: ClickSource;
   className?: string;
   label?: string;
@@ -19,6 +25,7 @@ interface Props {
 
 export default function BookButton({
   experience,
+  offer,
   source = 'feed',
   className = '',
   label,
@@ -27,7 +34,7 @@ export default function BookButton({
 
   const handleBook = (e: React.MouseEvent) => {
     e.stopPropagation();
-    openBooking(experience.id, source);
+    openBooking(experience.id, source, undefined, offer);
   };
 
   return (

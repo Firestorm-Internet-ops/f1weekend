@@ -44,17 +44,33 @@ export type ClickSource = 'feed' | 'itinerary' | 'featured' | 'map' | 'guide';
  * The tab is opened synchronously (inside the click handler) on our own
  * /api/click redirect, so browsers don't treat it as a blocked popup.
  */
-export function openBooking(experienceId: number, source: ClickSource, itineraryId?: string): void {
+export function openBooking(
+  experienceId: number,
+  source: ClickSource,
+  itineraryId?: string,
+  offer?: { id: number | null; provider: string }
+): void {
   trackEvent('book_click', {
     experience_id: experienceId,
     source,
     page: window.location.pathname,
+    ...(offer ? { provider: offer.provider } : {}),
   });
 
   const params = new URLSearchParams({ id: String(experienceId), source });
+  if (offer?.id) params.set('offer', String(offer.id));
   const sessionId = getSessionId();
   if (sessionId) params.set('sid', sessionId);
   if (itineraryId) params.set('itinerary', itineraryId);
 
   window.open(`/api/click?${params.toString()}`, '_blank', 'noopener');
+}
+
+/** Booking click on a live-feed card (a provider product, not a database experience). */
+export function openFeedBooking(raceSlug: string, offer: { provider: string; productId: string }, source: ClickSource = 'feed'): void {
+  trackEvent('book_click', { race: raceSlug, provider: offer.provider, product_id: offer.productId, source, page: window.location.pathname });
+  const params = new URLSearchParams({ race: raceSlug, provider: offer.provider, product: offer.productId, source });
+  const sessionId = getSessionId();
+  if (sessionId) params.set('sid', sessionId);
+  window.open(`/api/go?${params.toString()}`, '_blank', 'noopener');
 }
