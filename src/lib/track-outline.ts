@@ -128,10 +128,11 @@ export function renderTrackSvg(ways: OsmWay[], opts: { width?: number; height?: 
   const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
   return [
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(opts.title ?? 'Circuit layout')}">`,
+    // One clean line, like F1's own track maps. No halo: on tracks with close
+    // parallel straights (Sepang) a wide halo merged into one pale block.
     `<g fill="none" stroke-linecap="round" stroke-linejoin="round">`,
-    ...track.map((w) => `<path d="${path(w)}" stroke="#E3E1DB" stroke-width="22"/>`),
-    ...track.map((w) => `<path d="${path(w)}" stroke="#15151E" stroke-width="9"/>`),
-    ...pit.map((w) => `<path d="${path(w)}" stroke="#80808C" stroke-width="3" stroke-dasharray="6 5"/>`),
+    ...pit.map((w) => `<path d="${path(w)}" fill="none" stroke="#9A9AA5" stroke-width="2" stroke-dasharray="5 5"/>`),
+    ...track.map((w) => `<path d="${path(w)}" fill="none" stroke="#15151E" stroke-width="6"/>`),
     `</g></svg>`,
   ].join('');
 }
