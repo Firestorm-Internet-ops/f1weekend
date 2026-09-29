@@ -6,6 +6,7 @@ import type { Session } from '@/types/race';
 import type { Itinerary, ManualItineraryInput } from '@/types/itinerary';
 import LocalTime from '@/components/race/LocalTime';
 import ItineraryView from '@/components/itinerary/ItineraryView';
+import { raceKey } from '@/lib/race-url';
 
 const ARRIVAL_DAYS = ['Wednesday', 'Thursday', 'Friday', 'Saturday'] as const;
 const DEPARTURE_DAYS = ['Sunday', 'Monday', 'Tuesday'] as const;
@@ -133,7 +134,7 @@ export default function ItineraryForm({ races, raceSlug, sessions, sessionIso, t
                 <select
                     id="race"
                     value={raceSlug}
-                    onChange={(e) => router.push(`/itinerary?race=${e.target.value}`)}
+                    onChange={(e) => router.push(`/itinerary?race=${raceKey(e.target.value)}`)}
                     className="w-full px-4 py-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-primary)] text-sm font-medium text-[var(--text-primary)]"
                 >
                     {races.map((r) => (

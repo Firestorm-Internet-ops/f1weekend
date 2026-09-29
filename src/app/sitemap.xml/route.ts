@@ -1,5 +1,6 @@
 import { getAllRaces } from '@/services/race.service';
 import { hasLiveExperiences } from '@/data/calendar-2026';
+import { raceKey } from '@/lib/race-url';
 
 export const dynamic = 'force-dynamic';
 
@@ -66,7 +67,7 @@ export async function GET() {
       if (route.suffix === '/tips' && race.hasTips === false) continue;
       if (route.suffix === '/experiences/map' && live) continue;
       addUrl({
-        loc: `${baseUrl}/races/${race.slug}${route.suffix}`,
+        loc: `${baseUrl}/races/${raceKey(race.slug)}${route.suffix}`,
         changefreq: route.changefreq,
         priority: route.priority,
       });

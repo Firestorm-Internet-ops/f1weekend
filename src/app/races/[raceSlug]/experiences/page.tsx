@@ -13,6 +13,8 @@ import NearbyFeed from '@/components/experiences/NearbyFeed';
 import { getWeekendFeed } from '@/services/nearby-feed.service';
 import { hasLiveExperiences } from '@/data/calendar-2026';
 import { providerName } from '@/lib/providers/meta';
+import { raceKey } from '@/lib/race-url';
+import { resolveRaceSlug } from '@/services/race.service';
 
 export const revalidate = 3600; // 1 hour
 
@@ -22,7 +24,8 @@ interface Props {
 }
 
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
-  const { raceSlug } = await params;
+  const { raceSlug: raceParam } = await params;
+  const raceSlug = (await resolveRaceSlug(raceParam)) ?? raceParam;
   const { category } = await searchParams;
   const [race, raceContent] = await Promise.all([
     getRaceBySlug(raceSlug),
@@ -31,7 +34,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   if (!race) return {};
 
   const categoryLabel = category ? (CATEGORY_LABELS[category] ?? category) : null;
-  const canonical = `https://f1weekend.co/races/${raceSlug}/experiences`;
+  const canonical = `https://f1weekend.co/races/${raceKey(raceSlug)}/experiences`;
 
   // Use category-specific copy from DB if available
   const categoryCopy = (category && raceContent?.categoryMeta) ? raceContent.categoryMeta[category] : null;
@@ -64,7 +67,8 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
 }
 
 export default async function ExperiencesPage({ params, searchParams }: Props) {
-  const { raceSlug } = await params;
+  const { raceSlug: raceParam } = await params;
+  const raceSlug = (await resolveRaceSlug(raceParam)) ?? raceParam;
   const { category } = await searchParams;
   const [race, raceContent, availableRaces] = await Promise.all([
     getRaceBySlug(raceSlug),
@@ -90,8 +94,8 @@ export default async function ExperiencesPage({ params, searchParams }: Props) {
     '@type': 'BreadcrumbList',
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://f1weekend.co' },
-      { '@type': 'ListItem', position: 2, name: race.city, item: `https://f1weekend.co/races/${raceSlug}` },
-      { '@type': 'ListItem', position: 3, name: 'Experiences', item: `https://f1weekend.co/races/${raceSlug}/experiences` },
+      { '@type': 'ListItem', position: 2, name: race.city, item: `https://f1weekend.co/races/${raceKey(raceSlug)}` },
+      { '@type': 'ListItem', position: 3, name: 'Experiences', item: `https://f1weekend.co/races/${raceKey(raceSlug)}/experiences` },
     ],
   };
 
@@ -99,14 +103,14 @@ export default async function ExperiencesPage({ params, searchParams }: Props) {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
     name: `${race.city} F1 Race Weekend Experiences`,
-    url: `https://f1weekend.co/races/${raceSlug}/experiences`,
+    url: `https://f1weekend.co/races/${raceKey(raceSlug)}/experiences`,
     numberOfItems: exps.length,
     itemListElement: exps.map((exp, i) => {
       const item: Record<string, unknown> = {
         '@type': 'ListItem',
         position: i + 1,
         name: exp.title,
-        url: `https://f1weekend.co/races/${raceSlug}/experiences/${exp.slug}`,
+        url: `https://f1weekend.co/races/${raceKey(raceSlug)}/experiences/${exp.slug}`,
         description: exp.abstract ?? exp.shortDescription,
       };
       const img = exp.photos?.[0] ?? exp.imageUrl;
@@ -147,7 +151,7 @@ export default async function ExperiencesPage({ params, searchParams }: Props) {
             )}
           </div>
           <Link
-            href={`/races/${raceSlug}/experiences/map`}
+            href={`/races/${raceKey(raceSlug)}/experiences/map`}
             className="flex-shrink-0 mt-1 flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-medium)] transition-colors"
           >
             <span>⊙</span>
@@ -163,7 +167,7 @@ export default async function ExperiencesPage({ params, searchParams }: Props) {
           <section className="mb-10 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] p-5">
             <div className="flex items-baseline justify-between gap-4 mb-4">
               <h2 className="font-display font-bold text-lg text-[var(--text-primary)]">How far is everything from the circuit?</h2>
-              <Link href={`/races/${raceSlug}/experiences/map`} className="text-sm text-[var(--accent-teal,#00D2BE)] hover:underline whitespace-nowrap">
+              <Link href={`/races/${raceKey(raceSlug)}/experiences/map`} className="text-sm text-[var(--accent-teal,#00D2BE)] hover:underline whitespace-nowrap">
                 Open full map →
               </Link>
             </div>
@@ -182,7 +186,7 @@ export default async function ExperiencesPage({ params, searchParams }: Props) {
                     tier: nearby.tier,
                     title: e.title,
                     subtitle: nearbyLabel(nearby),
-                    href: `/races/${raceSlug}/experiences/${e.slug}`,
+                    href: `/races/${raceKey(raceSlug)}/experiences/${e.slug}`,
                   };
                 })}
             />
@@ -225,8 +229,8 @@ async function LiveExperiencesPage({
     '@type': 'BreadcrumbList',
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://f1weekend.co' },
-      { '@type': 'ListItem', position: 2, name: race.city, item: `https://f1weekend.co/races/${race.slug}` },
-      { '@type': 'ListItem', position: 3, name: 'Experiences', item: `https://f1weekend.co/races/${race.slug}/experiences` },
+      { '@type': 'ListItem', position: 2, name: race.city, item: `https://f1weekend.co/races/${raceKey(race.slug)}` },
+      { '@type': 'ListItem', position: 3, name: 'Experiences', item: `https://f1weekend.co/races/${raceKey(race.slug)}/experiences` },
     ],
   };
 

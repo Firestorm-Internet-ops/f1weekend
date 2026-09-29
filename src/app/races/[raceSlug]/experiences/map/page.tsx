@@ -5,19 +5,22 @@ import { Suspense } from 'react';
 import Link from 'next/link';
 import ExperienceMapClient from '@/components/experiences/ExperienceMapClient';
 import { getRaceBySlug } from '@/services/race.service';
+import { raceKey } from '@/lib/race-url';
+import { resolveRaceSlug } from '@/services/race.service';
 
 interface Props {
   params: Promise<{ raceSlug: string }>;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { raceSlug } = await params;
+  const { raceSlug: raceParam } = await params;
+  const raceSlug = (await resolveRaceSlug(raceParam)) ?? raceParam;
   const race = await getRaceBySlug(raceSlug);
   if (!race) return {};
 
   const title = `Experience Map — ${race.city} F1 ${race.season} | F1 Weekend`;
   const description = `Interactive map of curated F1 experiences near ${race.circuitName}. Find restaurants, tours, and activities for the ${race.name} weekend.`;
-  const canonical = `https://f1weekend.co/races/${raceSlug}/experiences/map`;
+  const canonical = `https://f1weekend.co/races/${raceKey(raceSlug)}/experiences/map`;
 
   return {
     title: { absolute: title },
@@ -28,9 +31,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ExperienceMapPage({ params }: Props) {
-  const { raceSlug } = await params;
+  const { raceSlug: raceParam } = await params;
+  const raceSlug = (await resolveRaceSlug(raceParam)) ?? raceParam;
   // Live-feed races show the map on the experiences page itself.
-  if (hasLiveExperiences(raceSlug)) redirect(`/races/${raceSlug}/experiences`);
+  if (hasLiveExperiences(raceSlug)) redirect(`/races/${raceKey(raceSlug)}/experiences`);
   const race = await getRaceBySlug(raceSlug);
   if (!race) notFound();
 
@@ -50,7 +54,7 @@ export default async function ExperienceMapPage({ params }: Props) {
             </p>
           </div>
           <Link
-            href={`/races/${raceSlug}/experiences`}
+            href={`/races/${raceKey(raceSlug)}/experiences`}
             className="flex-shrink-0 mt-1 flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-medium)] transition-colors"
           >
             <span>≡</span>

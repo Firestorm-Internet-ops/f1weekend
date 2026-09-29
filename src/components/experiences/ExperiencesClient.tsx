@@ -7,6 +7,7 @@ import ExperienceCard from './ExperienceCard';
 import SortSelector, { type SortOption } from './SortSelector';
 import { CATEGORY_LABELS, CATEGORY_COLORS } from '@/lib/constants/categories';
 import { openBooking } from '@/lib/analytics';
+import { raceKey } from '@/lib/race-url';
 
 
 const WINDOW_LABELS: Record<string, string> = {
@@ -102,7 +103,7 @@ export default function ExperiencesClient({
       if (win) params.set('window', win);
       if (newCat) params.set('category', newCat);
       if (newSort !== 'popular') params.set('sort', newSort);
-      const base = `/races/${raceSlug}/experiences`;
+      const base = `/races/${raceKey(raceSlug)}/experiences`;
       return `${base}${params.size ? `?${params.toString()}` : ''}`;
     },
     [raceSlug]
@@ -268,7 +269,7 @@ export default function ExperiencesClient({
               experience={exp}
               onBook={handleBook}
               index={i}
-              detailHref={`/races/${raceSlug}/experiences/${exp.slug}`}
+              detailHref={`/races/${raceKey(raceSlug)}/experiences/${exp.slug}`}
             />
           ))}
         </div>

@@ -8,6 +8,8 @@ import { venueGuide } from '@/data/venue-guides-2026';
 import { timetableFor } from '@/data/timetables-2026';
 import { getRaceBySlug, getSessionsByRace, getAvailableRaces, getRaceContent } from '@/services/race.service';
 import { getTimezoneAbbr } from '@/lib/utils';
+import { raceKey } from '@/lib/race-url';
+import { resolveRaceSlug } from '@/services/race.service';
 
 export const revalidate = 604800; // 1 week
 
@@ -16,13 +18,14 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { raceSlug } = await params;
+  const { raceSlug: raceParam } = await params;
+  const raceSlug = (await resolveRaceSlug(raceParam)) ?? raceParam;
   const race = await getRaceBySlug(raceSlug);
   if (!race) return {};
 
   const title = `Getting to ${race.circuitName} — ${race.name} | F1 Weekend`;
   const description = `Transport options, parking tips, and gate times for the ${race.name} at ${race.circuitName}, ${race.city}.`;
-  const canonical = `https://f1weekend.co/races/${raceSlug}/getting-there`;
+  const canonical = `https://f1weekend.co/races/${raceKey(raceSlug)}/getting-there`;
 
   return {
     title: { absolute: title },
@@ -39,7 +42,8 @@ function formatGateTime(time: string, h: number, tzLabel: string): string {
 }
 
 export default async function GettingTherePage({ params }: Props) {
-  const { raceSlug } = await params;
+  const { raceSlug: raceParam } = await params;
+  const raceSlug = (await resolveRaceSlug(raceParam)) ?? raceParam;
   const [race, raceContent, availableRaces] = await Promise.all([
     getRaceBySlug(raceSlug),
     getRaceContent(raceSlug),
@@ -48,7 +52,7 @@ export default async function GettingTherePage({ params }: Props) {
   if (!race) notFound();
 
   // Venues without a stored guide for this year's circuit (Bahrain GP → Sepang) use the one in code.
-  const guide = venueGuide(raceSlug);
+  const guide = race.venueMoved ? venueGuide(raceSlug) : undefined;
   const transport = raceContent?.transportGuide?.options ?? guide?.options ?? [];
   const mapsUrl = raceContent?.transportGuide?.mapsUrl ?? `https://www.google.com/maps/dir/?api=1&destination=${race.circuitLat},${race.circuitLng}&travelmode=transit`;
   const tzLabel = getTimezoneAbbr(race.timezone, new Date(race.raceDate));
@@ -68,7 +72,7 @@ export default async function GettingTherePage({ params }: Props) {
   // First track action each day: the full timetable (support races included)
   // when we have one, otherwise the stored sessions.
   const allSessions = await getSessionsByRace(race.id);
-  const timetable = timetableFor(raceSlug);
+  const timetable = race.rolledFrom ? undefined : timetableFor(raceSlug);
   // Timetable names already carry the series ("Formula Trophy Malaysia · Race 2"): never prefix it twice.
   const label = (series: string, name: string) =>
     series === 'Formula 1' || name.startsWith(series) ? name : `${series} · ${name}`;
@@ -105,7 +109,7 @@ export default async function GettingTherePage({ params }: Props) {
           <div className="mb-10">
             <Breadcrumb items={[
               { label: 'Home', href: '/' },
-              { label: race.city, href: `/races/${raceSlug}` },
+              { label: race.city, href: `/races/${raceKey(raceSlug)}` },
               { label: 'Getting There' },
             ]} />
             <p className="text-xs font-medium uppercase-label text-[var(--accent-teal)] tracking-widest mb-3">
@@ -240,7 +244,7 @@ export default async function GettingTherePage({ params }: Props) {
                 : `Curated activities in ${race.city} matched to every F1 session gap in the race weekend schedule.`}
             </p>
             <Link
-              href={`/races/${raceSlug}/experiences`}
+              href={`/races/${raceKey(raceSlug)}/experiences`}
               className="inline-block text-sm font-medium text-[var(--accent-teal)] hover:text-[var(--text-primary)] transition-colors"
             >
               Browse {race.city} experiences →

@@ -3,12 +3,13 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import type { ManualItineraryInput } from '@/types/itinerary';
+import { raceKey } from '@/lib/race-url';
 
 /** "Edit" (reopens the form with the same choices) and "Share" (native share sheet, else copy link). */
 export default function ItineraryActions({ input, title }: { input?: ManualItineraryInput; title: string }) {
     const [copied, setCopied] = useState(false);
     const editHref = input
-        ? `/itinerary?race=${input.raceSlug}&arrive=${input.arrivalDay}&depart=${input.departureDay}&sessions=${input.sessionIds.join(',')}`
+        ? `/itinerary?race=${raceKey(input.raceSlug)}&arrive=${input.arrivalDay}&depart=${input.departureDay}&sessions=${input.sessionIds.join(',')}`
         : '/itinerary';
 
     async function share() {

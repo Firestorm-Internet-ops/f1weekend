@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { Experience } from '@/types/experience';
 import { CATEGORY_COLORS, CATEGORY_LABELS } from '@/lib/constants/categories';
 import BookButton from '@/components/experiences/BookButton';
+import { raceKey } from '@/lib/race-url';
 
 interface Props {
   experiences: Experience[];
@@ -25,7 +26,7 @@ export default function ExperienceSuggestions({ experiences, raceSlug }: Props) 
               className="flex flex-col p-3 rounded-xl border border-[var(--border-subtle)] hover:border-[var(--border-medium)] hover:bg-[var(--bg-secondary)] transition-all duration-200 group"
             >
               <Link
-                href={`/races/${raceSlug}/experiences/${exp.slug}`}
+                href={`/races/${raceKey(raceSlug)}/experiences/${exp.slug}`}
                 className="flex items-start gap-3 mb-2"
               >
                 <span className="text-2xl leading-none shrink-0 mt-0.5">{exp.imageEmoji}</span>

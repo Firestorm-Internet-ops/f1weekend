@@ -4,6 +4,8 @@ import Link from 'next/link';
 import Breadcrumb from '@/components/Breadcrumb';
 import RaceSwitcher from '@/components/race/RaceSwitcher';
 import { getRaceBySlug, getRaceContent, getAvailableRaces } from '@/services/race.service';
+import { raceKey } from '@/lib/race-url';
+import { resolveRaceSlug } from '@/services/race.service';
 
 // Inline TipsContent type (was previously in src/data/race-content.ts)
 interface TipsContent {
@@ -40,7 +42,8 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { raceSlug } = await params;
+  const { raceSlug: raceParam } = await params;
+  const raceSlug = (await resolveRaceSlug(raceParam)) ?? raceParam;
   const [race, raceContentRow] = await Promise.all([
     getRaceBySlug(raceSlug),
     getRaceContent(raceSlug),
@@ -49,7 +52,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!race) return {};
 
   const tipsContent = raceContentRow?.tipsContent as TipsContent | null | undefined;
-  const canonical = `https://f1weekend.co/races/${raceSlug}/tips`;
+  const canonical = `https://f1weekend.co/races/${raceKey(raceSlug)}/tips`;
 
   if (!tipsContent || !tipsContent.meta) {
     return {
@@ -74,7 +77,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function TipsPage({ params }: Props) {
-  const { raceSlug } = await params;
+  const { raceSlug: raceParam } = await params;
+  const raceSlug = (await resolveRaceSlug(raceParam)) ?? raceParam;
   const [raceContentRow, race, availableRaces] = await Promise.all([
     getRaceContent(raceSlug),
     getRaceBySlug(raceSlug),
@@ -99,8 +103,8 @@ export default async function TipsPage({ params }: Props) {
     '@type': 'BreadcrumbList',
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://f1weekend.co' },
-      { '@type': 'ListItem', position: 2, name: race.name, item: `https://f1weekend.co/races/${raceSlug}` },
-      { '@type': 'ListItem', position: 3, name: 'Tips & FAQ', item: `https://f1weekend.co/races/${raceSlug}/tips` },
+      { '@type': 'ListItem', position: 2, name: race.name, item: `https://f1weekend.co/races/${raceKey(raceSlug)}` },
+      { '@type': 'ListItem', position: 3, name: 'Tips & FAQ', item: `https://f1weekend.co/races/${raceKey(raceSlug)}/tips` },
     ],
   };
 
@@ -112,7 +116,7 @@ export default async function TipsPage({ params }: Props) {
       <div className="max-w-3xl mx-auto">
         <Breadcrumb items={[
           { label: 'Home', href: '/' },
-          { label: race.name, href: `/races/${raceSlug}` },
+          { label: race.name, href: `/races/${raceKey(raceSlug)}` },
           { label: 'Tips & FAQ' },
         ]} />
 
@@ -222,13 +226,13 @@ export default async function TipsPage({ params }: Props) {
         {/* CTA */}
         <div className="mt-12 pt-8 border-t border-[var(--border-subtle)] flex flex-wrap gap-4">
           <Link
-            href={`/races/${raceSlug}/experiences`}
+            href={`/races/${raceKey(raceSlug)}/experiences`}
             className="px-5 py-2.5 bg-[var(--accent-red)] hover:bg-[var(--accent-red-hover)] text-white font-semibold text-sm rounded-full transition-colors"
           >
             Browse All Experiences
           </Link>
           <Link
-            href={`/races/${raceSlug}/schedule`}
+            href={`/races/${raceKey(raceSlug)}/schedule`}
             className="px-5 py-2.5 border border-[var(--border-medium)] hover:border-[var(--text-tertiary)] text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] font-semibold text-sm rounded-full transition-colors"
           >
             View Full Schedule

@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useState, useRef, useEffect } from 'react';
 import type { Race } from '@/types/race';
 import { formatRaceDates } from '@/lib/utils';
+import { raceKey } from '@/lib/race-url';
 
 interface Props {
   currentRace: Race;
@@ -58,7 +59,7 @@ export default function RaceSwitcher({ currentRace, availableRaces, pageType }: 
             <div key={race.slug} role="option" aria-selected={race.slug === currentRace.slug}>
               {race.available ? (
                 <Link
-                  href={`/races/${race.slug}/${pageType}`}
+                  href={`/races/${raceKey(race.slug)}/${pageType}`}
                   onClick={() => setOpen(false)}
                   className={`flex items-center gap-3 px-4 py-3 hover:bg-[var(--bg-secondary)] transition-colors ${race.slug === currentRace.slug ? 'bg-[var(--bg-secondary)]' : ''}`}
                 >

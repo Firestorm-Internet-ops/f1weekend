@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getAllRaces } from '@/services/race.service';
 import { formatRaceDates } from '@/lib/utils';
+import { raceKey } from '@/lib/race-url';
 
 export const dynamic = 'force-dynamic';
 
@@ -99,7 +100,7 @@ export default async function F12026Page() {
       '@type': 'ListItem',
       position: i + 1,
       name: race.name,
-      item: race.slug ? `https://f1weekend.co/races/${race.slug}` : `https://f1weekend.co/f1-2026`,
+      item: race.slug ? `https://f1weekend.co/races/${raceKey(race.slug)}` : `https://f1weekend.co/f1-2026`,
     })),
   };
 
@@ -168,7 +169,7 @@ export default async function F12026Page() {
               {guideRaces.map((race) => (
                 <Link
                   key={race.slug}
-                  href={`/races/${race.slug}`}
+                  href={`/races/${raceKey(race.slug)}`}
                   className="group p-5 rounded-xl border border-[var(--accent-teal)]/30 bg-[var(--bg-secondary)] hover:border-[var(--accent-teal)]/70 hover:bg-[var(--bg-surface)] transition-all"
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -221,7 +222,7 @@ export default async function F12026Page() {
                   </div>
                   {race.hasGuide && race.slug ? (
                     <Link
-                      href={`/races/${race.slug}`}
+                      href={`/races/${raceKey(race.slug)}`}
                       className="shrink-0 text-xs font-bold px-3 py-1.5 rounded-full bg-[var(--accent-teal)]/15 text-[var(--accent-teal)] hover:bg-[var(--accent-teal)]/25 transition-colors whitespace-nowrap"
                     >
                       Guide →
@@ -272,7 +273,7 @@ export default async function F12026Page() {
               {F1_2026.filter(r => r.isAvailable && r.raceEnd && new Date(r.raceEnd) >= today).slice(0, 3).map(race => (
                 <Link
                   key={race.slug}
-                  href={`/itinerary?race=${race.slug}`}
+                  href={`/itinerary?race=${raceKey(race.slug)}`}
                   className="px-6 py-3 rounded-xl bg-[var(--accent-red)] hover:bg-[var(--accent-red-hover)] text-white font-display font-bold transition-colors"
                 >
                   {race.flag} Plan {race.city}
