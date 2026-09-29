@@ -11,6 +11,7 @@ export type SeriesKey =
   | 'ferrari_challenge'
   | 'press'
   | 'promoter'
+  | 'support'
   | 'experiences';
 
 export interface ScheduleEntry {

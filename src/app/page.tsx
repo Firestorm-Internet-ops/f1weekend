@@ -157,7 +157,7 @@ export default async function HomePage() {
   }
 
   const [sessions, windows, featuredExps, popularExps, topRatedExps, feed] = await Promise.all([
-    venueMoved ? Promise.resolve([]) : getSessionsByRace(race.id),
+    getSessionsByRace(race.id), // timetable in code for moved races
     venueMoved ? Promise.resolve([]) : getWindowsByRace(race.id),
     live ? Promise.resolve([]) : getFeaturedExperiences(race.id),
     live ? Promise.resolve([]) : getMostPopularExperiences(race.id, 5), // Fetch more to allow for dedup

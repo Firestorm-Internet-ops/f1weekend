@@ -49,7 +49,7 @@ export default async function SchedulePage({ params }: Props) {
   if (!race) notFound();
 
   const [schedule, sessions, windows] = await Promise.all([
-    getScheduleByRace(race.id, race.raceDate),
+    getScheduleByRace(race.id, race.raceDate, race.slug),
     getSessionsByRace(race.id),
     getWindowsByRace(race.id),
   ]);
@@ -66,6 +66,7 @@ export default async function SchedulePage({ params }: Props) {
       'Asia/Shanghai': '+08:00',
       'Australia/Melbourne': '+11:00',
       'Asia/Bahrain': '+03:00',
+      'Asia/Kuala_Lumpur': '+08:00',
       'Asia/Riyadh': '+03:00',
       'Asia/Tokyo': '+09:00',
     };
