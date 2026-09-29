@@ -255,6 +255,7 @@ async function LiveExperiencesPage({
             raceSlug={race.slug}
             circuit={{ lat: race.circuitLat, lng: race.circuitLng, name: race.circuitName }}
             mapsApiKey={process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ''}
+            cities={[race.city]}
           />
         ) : (
           <p className="text-[var(--text-secondary)]">Experiences are loading from our partners — please check back shortly.</p>

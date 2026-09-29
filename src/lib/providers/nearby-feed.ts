@@ -3,7 +3,7 @@
  * Tiqets product around a race, one card per experience, nearest first.
  * Pure functions here; fetching and caching live in services/nearby-feed.service.ts.
  */
-import { applyNearbyRules, haversineKm as haversine, nearbyLabel, type NearbyInfo, type NearbyTier } from '@/lib/nearby';
+import { applyNearbyRules, estimateTravelMins, haversineKm as haversine, nearbyLabel, RACE_TRAFFIC_FACTOR, type NearbyInfo, type NearbyTier } from '@/lib/nearby';
 import { scorePair, MATCH_THRESHOLDS } from './match';
 import type { NormalizedOffer, ProviderId } from './types';
 
@@ -16,6 +16,7 @@ export interface FeedOffer {
   rating: number | null;
   reviewCount: number;
   freeCancellation: boolean;
+  instantConfirmation: boolean;
 }
 
 export type FeedCategory = 'food' | 'nightlife' | 'daytrip' | 'adventure' | 'attraction' | 'culture';
@@ -68,6 +69,10 @@ export interface FeedCard {
   nearbyLabel: string | null;
   /** Straight-line km from the circuit. */
   circuitKm: number | null;
+  /** Estimated race-day minutes from the circuit (traffic included). */
+  circuitMins: number | null;
+  /** The one travel line the card shows, e.g. "~1h 55 from the circuit" or "Day trip · 1h 30 from Kuala Lumpur". */
+  travelLabel: string | null;
   rating: number | null;
   reviewCount: number;
   /** Every site selling it, cheapest first. */
@@ -81,6 +86,52 @@ export interface FeedRace {
   lng: number;
   /** Place names that appear in most titles and say nothing about the product. */
   placeWords?: string[];
+  /** Named places (where fans stay) used to fix approximate locations, e.g. Putrajaya. */
+  places?: { name: string; lat: number; lng: number }[];
+}
+
+/**
+ * Providers often file a tour under the town it's sold in, not where it
+ * happens: GetYourGuide puts "Putrajaya Tour: …" in Sepang. When a title
+ * starts with a known place and the approximate point is more than 5 km from
+ * it, the place wins.
+ */
+export function relocateByTitle<T extends Pick<NormalizedOffer, 'title' | 'lat' | 'lng' | 'locationName' | 'approximateLocation'>>(
+  o: T,
+  places: { name: string; lat: number; lng: number }[]
+): T {
+  if (!o.approximateLocation) return o;
+  const start = o.title.replace(/^from\s+/i, '').toLowerCase();
+  const place = places.find((p) => start.startsWith(p.name.toLowerCase()));
+  if (!place) return o;
+  if (o.lat != null && o.lng != null && haversine({ lat: o.lat, lng: o.lng }, place) <= 5) return o;
+  return { ...o, lat: place.lat, lng: place.lng, locationName: place.name };
+}
+
+const hm = (mins: number) => (mins >= 60 ? `${Math.floor(mins / 60)}h${mins % 60 ? ` ${String(mins % 60).padStart(2, '0')}` : ''}` : `${mins} min`);
+
+/** Race-day travel from the circuit, rounded to 5 min. */
+export function raceDayMinsFromCircuit(km: number): number {
+  return Math.max(5, Math.round((estimateTravelMins(km) * RACE_TRAFFIC_FACTOR) / 5) * 5);
+}
+
+/** Card travel line: time from the circuit for near/city, the day-trip label otherwise. */
+export function travelLabelFor(nearby: NearbyInfo, circuitMins: number | null): string | null {
+  if (nearby.tier === 'daytrip') return nearbyLabel(nearby);
+  if (circuitMins == null) return null;
+  return `${nearby.tier === 'near' ? '' : '~'}${hm(circuitMins)} from the circuit`;
+}
+
+/**
+ * "Recommended" order: well-reviewed experiences first, closer ones favoured.
+ * Ratings are smoothed toward 4.2 so a single 5★ review doesn't beat
+ * thousands of 4.6★ ones, and more reviews count more (log scale).
+ */
+export function recommendedScore(c: { rating: number | null; reviewCount: number; nearby: NearbyInfo }): number {
+  const n = c.reviewCount;
+  const smoothed = ((c.rating ?? 4.2) * n + 4.2 * 10) / (n + 10);
+  const weight = { near: 1.25, city: 1, daytrip: 0.9, unknown: 0.8, 'too-far': 0.5 }[c.nearby.tier];
+  return smoothed * Math.log10(n + 10) * weight;
 }
 
 /** Travel services, not things to do. */
@@ -104,6 +155,7 @@ function toFeedOffer(o: NormalizedOffer): FeedOffer {
     rating: o.rating,
     reviewCount: o.reviewCount,
     freeCancellation: o.flags.freeCancellation ?? false,
+    instantConfirmation: o.flags.instantConfirmation ?? false,
   };
 }
 
@@ -127,7 +179,11 @@ export function groupSameProducts(offers: NormalizedOffer[], placeWords: string[
 
 export function buildNearbyFeed(offers: NormalizedOffer[], race: FeedRace): FeedCard[] {
   const circuit = { lat: race.lat, lng: race.lng };
-  const groups = groupSameProducts(offers.filter((o) => o.url && isExperience(o)), race.placeWords);
+  const places = race.places ?? [];
+  const groups = groupSameProducts(
+    offers.filter((o) => o.url && isExperience(o)).map((o) => relocateByTitle(o, places)),
+    race.placeWords
+  );
 
   const items = groups.map((g) => {
     const lead = g[0];
@@ -138,15 +194,12 @@ export function buildNearbyFeed(offers: NormalizedOffer[], race: FeedRace): Feed
 
   // Agreed nearby rules: drop > 2 h, keep at most 3 day trips (the most popular ones).
   const { visible } = applyNearbyRules(items, race.slug, circuit);
-  // Nearest first (near → city → no location → day trips); equal travel time → most popular first.
-  const sorted = [...visible].sort((a, b) =>
-    TIER_ORDER[a.nearby.tier] - TIER_ORDER[b.nearby.tier] ||
-    (a.nearby.travelMins ?? Infinity) - (b.nearby.travelMins ?? Infinity) ||
-    popularity(b.item.lead) - popularity(a.item.lead));
-
-  return sorted.map(({ item, nearby }) => {
+  const cards = visible.map(({ item, nearby }) => {
     const { group, lead, located } = item;
     const reviewTotal = group.reduce((n, o) => n + o.reviewCount, 0);
+    const km = located.lat != null && located.lng != null ? haversine(circuit, { lat: located.lat, lng: located.lng }) : null;
+    const circuitKm = km == null ? null : Math.round(km);
+    const circuitMins = km == null ? null : raceDayMinsFromCircuit(km);
     const rated = group.filter((o) => o.rating != null && o.reviewCount > 0);
     const rating = rated.length
       ? Math.round((rated.reduce((n, o) => n + o.rating! * o.reviewCount, 0) / rated.reduce((n, o) => n + o.reviewCount, 0)) * 10) / 10
@@ -162,15 +215,45 @@ export function buildNearbyFeed(offers: NormalizedOffer[], race: FeedRace): Feed
       approximateLocation: located.approximateLocation ?? false,
       nearby,
       nearbyLabel: nearbyLabel(nearby),
-      circuitKm: located.lat != null && located.lng != null
-        ? Math.round(haversine(circuit, { lat: located.lat, lng: located.lng }))
-        : null,
+      circuitKm,
+      circuitMins,
+      // Out-of-town trips that pick up in the city ("From Kuala Lumpur: Cameron Highlands")
+      // are day trips, not a city activity ~2 h from the circuit.
+      travelLabel: nearby.tier !== 'daytrip' && categorize(lead, nearby.tier) === 'daytrip' && located.locationName
+        ? `Day trip from ${located.locationName}`
+        : travelLabelFor(nearby, circuitMins),
       rating,
       reviewCount: reviewTotal,
       offers: group.map(toFeedOffer).sort((a, b) => (a.priceAmount ?? Infinity) - (b.priceAmount ?? Infinity)),
       category: categorize(lead, nearby.tier),
-    };
+    } satisfies FeedCard;
   });
+
+  // Recommended order; ties (e.g. no reviews yet) → nearest first.
+  return cards.sort((a, b) =>
+    recommendedScore(b) - recommendedScore(a) ||
+    TIER_ORDER[a.nearby.tier] - TIER_ORDER[b.nearby.tier] ||
+    (a.circuitMins ?? Infinity) - (b.circuitMins ?? Infinity));
+}
+
+/** Nearest-first order (the "Nearest" sort). */
+export function byNearest(a: FeedCard, b: FeedCard): number {
+  return (a.circuitMins ?? Infinity) - (b.circuitMins ?? Infinity) || recommendedScore(b) - recommendedScore(a);
+}
+
+/**
+ * Title without a leading "<race city>: " — the page already says where you
+ * are ("Kuala Lumpur: Batu Caves Tour" → "Batu Caves Tour").
+ */
+export function displayTitle(title: string, cities: string[]): string {
+  for (const c of cities) {
+    const re = new RegExp(`^${c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*:\\s*`, 'i');
+    if (re.test(title)) {
+      const rest = title.replace(re, '');
+      return rest.charAt(0).toUpperCase() + rest.slice(1);
+    }
+  }
+  return title;
 }
 
 export function feedStats(cards: FeedCard[]) {

@@ -2,6 +2,7 @@ import { unstable_cache } from 'next/cache';
 import { ALL_SEARCH_ADAPTERS, PROVIDER_NAMES, type NormalizedOffer } from '@/lib/providers';
 import { buildNearbyFeed, type FeedCard } from '@/lib/providers/nearby-feed';
 import type { Race } from '@/types/race';
+import { RACE_BASES, raceKey } from '@/lib/nearby';
 
 /** Refreshed from the providers every 6 hours. */
 const FEED_TTL = 6 * 3600;
@@ -49,10 +50,11 @@ export async function getNearbyFeed(race: Race): Promise<NearbyFeed> {
         lat: race.circuitLat,
         lng: race.circuitLng,
         placeWords: [race.city, race.country],
+        places: RACE_BASES[raceKey(race.slug)] ?? [],
       });
       return { cards, currency, fetchedAt: new Date().toISOString(), failed };
     },
-    [`nearby-feed:${race.slug}:${race.circuitLat},${race.circuitLng}:v2`],
+    [`nearby-feed:${race.slug}:${race.circuitLat},${race.circuitLng}:v3`],
     { revalidate: FEED_TTL, tags: ['nearby-feed', `nearby-feed:${race.slug}`] }
   )();
 }
