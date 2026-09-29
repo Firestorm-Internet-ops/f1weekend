@@ -11,15 +11,20 @@ import { formatRaceDates } from '@/lib/utils';
 import BookButton from '@/components/experiences/BookButton';
 import type { Experience } from '@/types/experience';
 import HomepageExploreSection, { type ExploreDayData } from '@/components/homepage/HomepageExploreSection';
+import NearbyFeed from '@/components/experiences/NearbyFeed';
+import { getNearbyFeed } from '@/services/nearby-feed.service';
+import { calendarEntry, hasLiveExperiences } from '@/data/calendar-2026';
 
 export const dynamic = 'force-dynamic';
 
 export async function generateMetadata(): Promise<Metadata> {
   const activeRaceSlug = await getActiveRaceSlug();
-  const [race, raceContent] = await Promise.all([
+  const [race, storedContent] = await Promise.all([
     getRaceBySlug(activeRaceSlug),
     getRaceContent(activeRaceSlug),
   ]);
+  // Written for the old venue when the race has moved (Bahrain GP → Sepang).
+  const raceContent = calendarEntry(activeRaceSlug)?.venue ? null : storedContent;
 
   if (!race) {
     return {
@@ -132,11 +137,16 @@ function FeaturedCard({ exp, badge, activeRaceSlug }: { exp: Experience, badge?:
 
 export default async function HomePage() {
   const activeRaceSlug = await getActiveRaceSlug();
-  const [raceContent, race, availableRaces] = await Promise.all([
+  const [storedContent, race, availableRaces] = await Promise.all([
     getRaceContent(activeRaceSlug),
     getRaceBySlug(activeRaceSlug),
     getAvailableRaces(),
   ]);
+  // When a race has moved (Bahrain GP → Sepang), its stored copy, circuit
+  // image, sessions and gap windows describe the old venue: don't show them.
+  const venueMoved = !!calendarEntry(activeRaceSlug)?.venue;
+  const raceContent = venueMoved ? null : storedContent;
+  const live = hasLiveExperiences(activeRaceSlug);
 
   if (!race) {
     return (
@@ -146,12 +156,13 @@ export default async function HomePage() {
     );
   }
 
-  const [sessions, windows, featuredExps, popularExps, topRatedExps] = await Promise.all([
-    getSessionsByRace(race.id),
-    getWindowsByRace(race.id),
-    getFeaturedExperiences(race.id),
-    getMostPopularExperiences(race.id, 5), // Fetch more to allow for dedup
-    getTopRatedExperiences(race.id, 5),    // Fetch more to allow for dedup
+  const [sessions, windows, featuredExps, popularExps, topRatedExps, feed] = await Promise.all([
+    venueMoved ? Promise.resolve([]) : getSessionsByRace(race.id),
+    venueMoved ? Promise.resolve([]) : getWindowsByRace(race.id),
+    live ? Promise.resolve([]) : getFeaturedExperiences(race.id),
+    live ? Promise.resolve([]) : getMostPopularExperiences(race.id, 5), // Fetch more to allow for dedup
+    live ? Promise.resolve([]) : getTopRatedExperiences(race.id, 5),    // Fetch more to allow for dedup
+    live ? getNearbyFeed(race) : Promise.resolve(null),
   ]);
 
   // Deduplication logic
@@ -356,13 +367,13 @@ export default async function HomePage() {
               </div>
             </div>
 
-            <div className="hidden md:flex items-center justify-center relative">
+            {!venueMoved && <div className="hidden md:flex items-center justify-center relative">
               <CircuitMap
                 src={raceContent?.circuitMapSrc ?? undefined}
                 alt={`${race.circuitName} — Circuit Map`}
                 className="w-full max-w-2xl opacity-90"
               />
-            </div>
+            </div>}
           </div>
         </div>
       </section>
@@ -382,7 +393,10 @@ export default async function HomePage() {
               <h2 className="font-display font-black text-xl text-white uppercase-heading mb-4">
                 Plan Your {race.city} F1 Weekend Around the Sessions
               </h2>
-              <p>{raceContent?.howItWorksText}</p>
+              <p>
+                {raceContent?.howItWorksText ??
+                  `The ${race.name} runs ${heroDateRange} at ${race.circuitName}. Below is everything you can book nearby, sorted by how long it takes to get there on a race weekend — near the circuit first, then ${race.city} and a few day trips.`}
+              </p>
             </>
           )}
         </div>
@@ -396,7 +410,9 @@ export default async function HomePage() {
               {raceContent?.homepageCopy?.featuredHeading ?? `Best Things to Do in ${race.city} During the F1 Race`}
             </h2>
             <p className="text-sm text-[var(--text-secondary)] mt-1.5">
-              {raceContent?.homepageCopy?.featuredDescription ?? `Curated for the ${race.city} Grand Prix weekend — activities matched to every session gap.`}
+              {raceContent?.homepageCopy?.featuredDescription ?? (live
+                ? `GetYourGuide, Viator and Tiqets experiences around ${race.circuitName}, nearest first. Tap a dot on the map to see what’s there.`
+                : `Curated for the ${race.city} Grand Prix weekend — activities matched to every session gap.`)}
             </p>
           </div>
           <Link href={expBasePath} className="text-sm font-medium text-[var(--accent-teal)] hover:text-white transition-colors shrink-0 mt-1">
@@ -404,6 +420,16 @@ export default async function HomePage() {
           </Link>
         </div>
 
+        {feed ? (
+          <NearbyFeed
+            compact
+            pageSize={6}
+            cards={feed.cards}
+            raceSlug={activeRaceSlug}
+            circuit={{ lat: race.circuitLat, lng: race.circuitLng, name: race.circuitName }}
+            moreHref={expBasePath}
+          />
+        ) : (
         <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide lg:grid lg:grid-cols-5 lg:overflow-visible">
           {dedupedPopular.map((exp) => (
             <FeaturedCard key={`pop-${exp.id}`} exp={exp} badge="Most Popular" activeRaceSlug={activeRaceSlug} />
@@ -415,6 +441,7 @@ export default async function HomePage() {
             <FeaturedCard key={`top-${exp.id}`} exp={exp} badge="Top Rated" activeRaceSlug={activeRaceSlug} />
           ))}
         </div>
+        )}
       </section>
 
       {/* ── Season Preview Strip ── */}
@@ -457,16 +484,18 @@ export default async function HomePage() {
       </section>
 
       {/* ── Explore City (Session-based) ── */}
-      <HomepageExploreSection
-        city={race.city}
-        days={exploreDays}
-        expBasePath={expBasePath}
-        tzLabel={tzLabel}
-        scheduleHref={`/races/${activeRaceSlug}/schedule`}
-      />
+      {exploreDays.length > 0 && (
+        <HomepageExploreSection
+          city={race.city}
+          days={exploreDays}
+          expBasePath={expBasePath}
+          tzLabel={tzLabel}
+          scheduleHref={`/races/${activeRaceSlug}/schedule`}
+        />
+      )}
 
       {/* ── FAQ ── */}
-      <section className="max-w-3xl mx-auto px-4 pb-24">
+      {HOME_FAQ.length > 0 && <section className="max-w-3xl mx-auto px-4 pb-24">
         <h2 className="font-display font-black text-2xl text-white uppercase-heading mb-8">
           Frequently Asked Questions
         </h2>
@@ -483,7 +512,7 @@ export default async function HomePage() {
             </details>
           ))}
         </div>
-      </section>
+      </section>}
     </div>
   );
 }

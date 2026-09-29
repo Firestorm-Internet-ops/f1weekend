@@ -17,14 +17,23 @@ interface Props {
   circuit: { lat: number; lng: number; name: string };
   /** Smaller version for the experiences list page. */
   compact?: boolean;
+  /** When set, dots are buttons that call this instead of linking to experience pages. */
+  onSelect?: (id: number) => void;
+  selectedId?: number | null;
+  /** Text drawn on a dot, e.g. how many experiences share that spot. */
+  badges?: Record<number, string>;
+  /** Zoom to where the activities are instead of centring on the circuit. */
+  fitContent?: boolean;
+  /** Legend numbers; defaults to the number of dots per group. */
+  legendCounts?: Partial<Record<NearbyTier, number>>;
 }
 
 const SIZE = 600;
 
-export default function DistanceMap({ experiences, raceSlug, circuit, compact = false }: Props) {
+export default function DistanceMap({ experiences, raceSlug, circuit, compact = false, onSelect, selectedId = null, badges, fitContent = false, legendCounts }: Props) {
   const layout = useMemo(
-    () => layoutDistanceMap(experiences, raceSlug, { lat: circuit.lat, lng: circuit.lng }, SIZE),
-    [experiences, raceSlug, circuit.lat, circuit.lng]
+    () => layoutDistanceMap(experiences, raceSlug, { lat: circuit.lat, lng: circuit.lng }, SIZE, { fitContent }),
+    [experiences, raceSlug, circuit.lat, circuit.lng, fitContent]
   );
   const [hoverId, setHoverId] = useState<number | null>(null);
   const hovered = hoverId !== null ? layout.dots.find((d) => d.id === hoverId) : null;
@@ -32,8 +41,8 @@ export default function DistanceMap({ experiences, raceSlug, circuit, compact = 
   const counts = useMemo(() => {
     const c: Record<NearbyTier, number> = { near: 0, city: 0, daytrip: 0, 'too-far': 0, unknown: 0 };
     layout.dots.forEach((d) => c[d.tier]++);
-    return c;
-  }, [layout]);
+    return { ...c, ...legendCounts };
+  }, [layout, legendCounts]);
 
   // Scale bar: a round number of km close to a fifth of the view
   const pxPerKm = (layout.center * 0.94) / layout.viewRadiusKm;
@@ -62,8 +71,8 @@ export default function DistanceMap({ experiences, raceSlug, circuit, compact = 
             return (
               <g key={ring.mins} pointerEvents="none">
                 <circle
-                  cx={layout.center}
-                  cy={layout.center}
+                  cx={layout.circuit.x}
+                  cy={layout.circuit.y}
                   r={ring.r}
                   fill={TIER_STYLE[tier].color}
                   fillOpacity={0.06}
@@ -72,8 +81,8 @@ export default function DistanceMap({ experiences, raceSlug, circuit, compact = 
                   strokeDasharray="6 5"
                 />
                 <text
-                  x={layout.center}
-                  y={layout.center - ring.r - 6}
+                  x={layout.circuit.x}
+                  y={layout.circuit.y - ring.r - 6}
                   textAnchor="middle"
                   fontSize="13"
                   fill={TIER_STYLE[tier].color}
@@ -97,37 +106,70 @@ export default function DistanceMap({ experiences, raceSlug, circuit, compact = 
           {/* Activities */}
           {dots.map((d) => {
             const style = TIER_STYLE[d.tier];
-            const active = d.id === hoverId;
-            return (
+            const active = d.id === hoverId || d.id === selectedId;
+            const badge = badges?.[d.id];
+            const r = badge ? (active ? 15 : 13) : active ? 10 : d.offMap ? 6 : 7;
+            const hoverProps = {
+              onMouseEnter: () => setHoverId(d.id),
+              onMouseLeave: () => setHoverId((id) => (id === d.id ? null : id)),
+              onFocus: () => setHoverId(d.id),
+              onBlur: () => setHoverId((id) => (id === d.id ? null : id)),
+            };
+            const marker = (
+              <>
+                <circle
+                  cx={d.x}
+                  cy={d.y}
+                  r={r}
+                  fill={d.offMap ? '#1a1a26' : style.color}
+                  fillOpacity={d.offMap ? 1 : style.opacity}
+                  stroke={d.id === selectedId ? '#ffffff' : d.offMap ? style.color : '#ffffff'}
+                  strokeWidth={d.id === selectedId ? 3 : d.offMap ? 2 : 1.5}
+                  strokeOpacity={d.offMap ? 0.8 : 0.9}
+                  style={{ cursor: 'pointer', transition: 'r 120ms' }}
+                />
+                {badge && (
+                  <text x={d.x} y={d.y + 4} textAnchor="middle" fontSize="11" fontWeight="700" fill={d.offMap ? style.color : '#0b0b12'} pointerEvents="none">
+                    {badge}
+                  </text>
+                )}
+                {/* Larger invisible target for easier hovering / tapping */}
+                <circle cx={d.x} cy={d.y} r={Math.max(14, r + 4)} fill="transparent" />
+              </>
+            );
+            return onSelect ? (
+              <g
+                key={d.id}
+                role="button"
+                tabIndex={0}
+                aria-label={`${d.title}${d.label ? `, ${d.label}` : ''}`}
+                aria-pressed={d.id === selectedId}
+                onClick={() => onSelect(d.id)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onSelect(d.id);
+                  }
+                }}
+                {...hoverProps}
+              >
+                {marker}
+              </g>
+            ) : (
               <Link
                 key={d.id}
                 href={`/races/${raceSlug}/experiences/${d.slug}`}
                 aria-label={`${d.title}${d.label ? `, ${d.label}` : ''}`}
-                onMouseEnter={() => setHoverId(d.id)}
-                onMouseLeave={() => setHoverId((id) => (id === d.id ? null : id))}
-                onFocus={() => setHoverId(d.id)}
-                onBlur={() => setHoverId((id) => (id === d.id ? null : id))}
+                {...hoverProps}
               >
-                <circle
-                  cx={d.x}
-                  cy={d.y}
-                  r={active ? 10 : d.offMap ? 6 : 7}
-                  fill={d.offMap ? '#1a1a26' : style.color}
-                  fillOpacity={d.offMap ? 1 : style.opacity}
-                  stroke={d.offMap ? style.color : '#ffffff'}
-                  strokeWidth={d.offMap ? 2 : 1.5}
-                  strokeOpacity={d.offMap ? 0.8 : 0.9}
-                  style={{ cursor: 'pointer', transition: 'r 120ms' }}
-                />
-                {/* Larger invisible target for easier hovering / tapping */}
-                <circle cx={d.x} cy={d.y} r={14} fill="transparent" />
+                {marker}
               </Link>
             );
           })}
 
           {/* Circuit */}
-          <text x={layout.center} y={layout.center + 8} textAnchor="middle" fontSize="22" pointerEvents="none">🏁</text>
-          <text x={layout.center} y={layout.center + 28} textAnchor="middle" fontSize="12" fontWeight="600" fill="#ffffff" pointerEvents="none">
+          <text x={layout.circuit.x} y={layout.circuit.y + 8} textAnchor="middle" fontSize="22" pointerEvents="none">🏁</text>
+          <text x={layout.circuit.x} y={layout.circuit.y + 28} textAnchor="middle" fontSize="12" fontWeight="600" fill="#ffffff" pointerEvents="none">
             {circuit.name}
           </text>
 
@@ -186,7 +228,7 @@ export default function DistanceMap({ experiences, raceSlug, circuit, compact = 
       </div>
       {!compact && (
         <p className="mt-1 text-center text-xs text-[var(--text-secondary)] opacity-70">
-          Travel times are estimates for race day (traffic included). Hover or tap a dot for details.
+          Travel times are estimates for race day (traffic included). {onSelect ? 'Tap a dot to see what’s there.' : 'Hover or tap a dot for details.'}
         </p>
       )}
     </div>

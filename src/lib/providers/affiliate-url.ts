@@ -3,6 +3,11 @@
  */
 import type { AffiliateContext, ProviderId } from './types';
 
+/** Our reference in partner reports: experience id, or "p<productId>" for live-feed products. */
+function ref(ctx: AffiliateContext): string {
+  return ctx.experienceId != null ? String(ctx.experienceId) : `p${ctx.productId ?? ''}`;
+}
+
 const GYG_TRACKING_PARAMS = ['partner_id', 'utm_medium', 'utm_source', 'utm_content', 'utm_term'];
 
 /** Removes GYG tracking params stored on legacy affiliate_url values. */
@@ -22,14 +27,14 @@ function gyg(baseUrl: string, ctx: AffiliateContext): string {
   url.searchParams.set('utm_medium', 'online_publisher');
   url.searchParams.set('utm_source', 'pitlane');
   url.searchParams.set('utm_content', ctx.source);
-  url.searchParams.set('utm_term', String(ctx.experienceId));
+  url.searchParams.set('utm_term', ref(ctx));
   return url.toString();
 }
 
 /** Viator: product URL already carries pid/mcid; `campaign` is the sub-ID shown in Viator reports. */
 function viator(baseUrl: string, ctx: AffiliateContext): string {
   const url = new URL(baseUrl);
-  url.searchParams.set('campaign', `f1w-${ctx.experienceId}-${ctx.source}`);
+  url.searchParams.set('campaign', `f1w-${ref(ctx)}-${ctx.source}`);
   return url.toString();
 }
 
@@ -39,7 +44,7 @@ function tiqets(baseUrl: string, ctx: AffiliateContext): string {
   if (!url.searchParams.get('partner') && process.env.TIQETS_PARTNER_ID) {
     url.searchParams.set('partner', process.env.TIQETS_PARTNER_ID);
   }
-  url.searchParams.set('tq_campaign', `f1w-${ctx.experienceId}-${ctx.source}`);
+  url.searchParams.set('tq_campaign', `f1w-${ref(ctx)}-${ctx.source}`);
   return url.toString();
 }
 

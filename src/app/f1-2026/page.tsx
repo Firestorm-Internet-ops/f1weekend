@@ -6,9 +6,9 @@ import { formatRaceDates } from '@/lib/utils';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'F1 2026 Season Travel Guide — All 24 Races, Cities & Dates | F1 Weekend',
+  title: 'F1 2026 Season Travel Guide — All 23 Races, Cities & Dates | F1 Weekend',
   description:
-    'Complete F1 2026 calendar with travel guides, city breakdowns, and race dates for all 24 grands prix. Plan your Formula 1 travel for Melbourne, Shanghai, Monaco, Silverstone and more.',
+    'Complete F1 2026 calendar with travel guides, city breakdowns, and race dates for all 23 grands prix. Plan your Formula 1 travel for Melbourne, Shanghai, Monaco, Silverstone and more.',
   alternates: { canonical: 'https://f1weekend.co/f1-2026' },
   keywords: [
     'F1 2026 calendar',
@@ -19,15 +19,15 @@ export const metadata: Metadata = {
     'F1 grand prix 2026',
   ],
   openGraph: {
-    title: 'F1 2026 Season Travel Guide — All 24 Races | F1 Weekend',
-    description: 'Complete F1 2026 calendar with travel guides for every race city. 24 races, 24 cities, 5 continents.',
+    title: 'F1 2026 Season Travel Guide — All 23 Races | F1 Weekend',
+    description: 'Complete F1 2026 calendar with travel guides for every race city. 23 races, 23 cities, 5 continents.',
     url: 'https://f1weekend.co/f1-2026',
     siteName: 'F1 Weekend',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'F1 2026 Season Travel Guide — All 24 Races | F1 Weekend',
+    title: 'F1 2026 Season Travel Guide — All 23 Races | F1 Weekend',
     description: 'Complete F1 2026 calendar with travel guides for every race city.',
   },
 };
@@ -35,7 +35,7 @@ export const metadata: Metadata = {
 const FAQ = [
   {
     q: 'When is the 2026 F1 season?',
-    a: 'The 2026 Formula 1 season runs from March 5 to December 6, spanning 24 grands prix across 24 cities on 5 continents. It starts in Melbourne, Australia and finishes at Yas Marina in Abu Dhabi.',
+    a: 'The 2026 Formula 1 season runs from March 6 to December 6, spanning 23 grands prix across 23 cities on 5 continents. It starts in Melbourne, Australia and finishes at Yas Marina in Abu Dhabi.',
   },
   {
     q: 'Which cities host F1 races in 2026?',
@@ -59,7 +59,7 @@ const FAQ = [
   },
 ];
 
-const CANCELLED_RACES = new Set(['bahrain-2026', 'saudi-2026']);
+const CANCELLED_RACES = new Set(['saudi-2026']);
 
 export default async function F12026Page() {
   const allRaces = await getAllRaces();
@@ -87,16 +87,16 @@ export default async function F12026Page() {
     '@type': 'EventSeries',
     name: '2026 Formula 1 World Championship',
     url: 'https://f1weekend.co/f1-2026',
-    description: 'The 2026 FIA Formula One World Championship — 24 grands prix across 24 cities.',
+    description: 'The 2026 FIA Formula One World Championship — 23 grands prix across 23 cities.',
     organizer: { '@type': 'Organization', name: 'Formula One Management', url: 'https://www.formula1.com' },
-    startDate: '2026-03-05',
+    startDate: '2026-03-06',
     endDate: '2026-12-06',
   };
 
   const itemListLd = {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
-    name: '2026 F1 Calendar — All 24 Grands Prix',
+    name: '2026 F1 Calendar — All 23 Grands Prix',
     url: 'https://f1weekend.co/f1-2026',
     numberOfItems: F1_2026.length,
     itemListElement: F1_2026.map((race, i) => ({
@@ -141,15 +141,15 @@ export default async function F12026Page() {
               <span className="text-[var(--accent-teal)]">Travel Guide</span>
             </h1>
             <p className="text-[var(--text-secondary)] text-lg max-w-xl">
-              24 races. 24 cities. One insane year. Your complete guide to following Formula 1 around the world.
+              23 races. 23 cities. One insane year. Your complete guide to following Formula 1 around the world.
             </p>
           </div>
 
           {/* Stat pills */}
           <div className="flex flex-wrap gap-3 mb-12">
             {[
-              { value: '24', label: 'Races' },
-              { value: '24', label: 'Host Cities' },
+              { value: '23', label: 'Races' },
+              { value: '23', label: 'Host Cities' },
               { value: '5', label: 'Continents' },
               { value: '10', label: 'Months' },
             ].map(({ value, label }) => (

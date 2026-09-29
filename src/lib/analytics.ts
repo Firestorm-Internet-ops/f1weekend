@@ -65,3 +65,12 @@ export function openBooking(
 
   window.open(`/api/click?${params.toString()}`, '_blank', 'noopener');
 }
+
+/** Booking click on a live-feed card (a provider product, not a database experience). */
+export function openFeedBooking(raceSlug: string, offer: { provider: string; productId: string }, source: ClickSource = 'feed'): void {
+  trackEvent('book_click', { race: raceSlug, provider: offer.provider, product_id: offer.productId, source, page: window.location.pathname });
+  const params = new URLSearchParams({ race: raceSlug, provider: offer.provider, product: offer.productId, source });
+  const sessionId = getSessionId();
+  if (sessionId) params.set('sid', sessionId);
+  window.open(`/api/go?${params.toString()}`, '_blank', 'noopener');
+}

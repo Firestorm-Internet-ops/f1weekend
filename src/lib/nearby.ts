@@ -37,7 +37,11 @@ export const RACE_TRAFFIC_FACTOR = 1.5;
 export const RACE_BASES: Record<string, Anchor[]> = {
   'abu-dhabi': [{ name: 'Abu Dhabi city', lat: 24.4539, lng: 54.3773 }],
   austria: [{ name: 'Graz', lat: 47.0707, lng: 15.4395 }],
-  bahrain: [{ name: 'Manama', lat: 26.2235, lng: 50.5876 }],
+  // 2026: the Bahrain GP is held at Sepang, Malaysia. Fans stay in Kuala Lumpur or Putrajaya.
+  bahrain: [
+    { name: 'Kuala Lumpur', lat: 3.1579, lng: 101.7116 },
+    { name: 'Putrajaya', lat: 2.9264, lng: 101.6964 },
+  ],
   barcelona: [{ name: 'Barcelona', lat: 41.3874, lng: 2.1686 }],
   belgium: [
     { name: 'Spa', lat: 50.492, lng: 5.8636 },
@@ -70,7 +74,7 @@ export const RACE_BASES: Record<string, Anchor[]> = {
 };
 
 /** Races with evening sessions — city activities fit all day, not just mornings/evenings. */
-export const NIGHT_RACES = new Set(['singapore', 'las-vegas', 'bahrain', 'saudi', 'qatar', 'abu-dhabi']);
+export const NIGHT_RACES = new Set(['singapore', 'las-vegas', 'saudi', 'qatar', 'abu-dhabi']);
 
 /** 'britain-2026' → 'britain' */
 export function raceKey(raceSlug: string): string {

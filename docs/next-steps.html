@@ -46,6 +46,19 @@
   </div>
 
   <div class="step now">
+    <div class="label">Now · Race weekend 2–4 Oct</div>
+    <h2>Bahrain GP at Sepang: live experiences, nearest first</h2>
+    <ul>
+      <li>✓ The site follows the 2026 calendar in <code>src/data/calendar-2026.ts</code> (23 races). The home page leads with the next race: Bahrain GP in Malaysia, Sepang, 2–4 Oct, then Singapore. Saudi is off the calendar and hidden.</li>
+      <li>✓ Bahrain experiences come live from GetYourGuide, Viator and Tiqets around Sepang (about 340, refreshed every 6 h), sorted by travel time: near the circuit, then Kuala Lumpur / Putrajaya, then up to 3 day trips.</li>
+      <li>✓ Map and cards together: tap a dot to see what's there; each card shows travel time, km from the circuit and every site's price.</li>
+      <li>✓ The old Sakhir/Manama copy, sessions and gap windows are no longer shown.</li>
+      <li>☐ Sepang session times (the schedule page is empty until we have them).</li>
+      <li>☐ <code>npm run db:sync-calendar -- --dry-run</code>, then without: writes the calendar into the database.</li>
+    </ul>
+  </div>
+
+  <div class="step now">
     <div class="label">Step 2 · Next</div>
     <h2>Show only activities near the race</h2>
     <p><strong>The problem:</strong> race pages mix nearby activities with far-away day trips. Nothing checks distance. Activities are found by keyword search, some are tagged "day trip" on purpose, and the distance and travel-time fields are empty.</p>

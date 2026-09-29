@@ -4,6 +4,7 @@
  * Auth: exp-api-key header (VIATOR_API_KEY).
  */
 import type { NormalizedOffer, ProviderAdapter, SearchQuery } from './types';
+import { haversineKm } from './match';
 
 const BASE = 'https://api.viator.com/partner';
 const PAGE_SIZE = 50; // API maximum per page
@@ -76,7 +77,7 @@ export function normalizeViator(p: ViatorProduct): NormalizedOffer {
     rating: p.reviews?.combinedAverageRating != null ? Math.round(p.reviews.combinedAverageRating * 10) / 10 : null,
     reviewCount: p.reviews?.totalReviews ?? 0,
     durationHours: durationHours(p.duration),
-    lat: null, // not in search results; needs /locations/bulk
+    lat: null, // not in search results; search() uses the destination centre
     lng: null,
     imageUrl: coverImage(p),
     flags: {
@@ -89,40 +90,82 @@ export function normalizeViator(p: ViatorProduct): NormalizedOffer {
   };
 }
 
-async function findDestinationId(city: string): Promise<string | null> {
-  const res = await post<{ destinations?: { results?: { id: number; name: string; parentDestinationId?: number; parentDestinationName?: string }[] } }>(
-    '/search/freetext',
-    { searchTerm: city, searchTypes: [{ searchType: 'DESTINATIONS', pagination: { start: 1, count: 5 } }], currency: 'EUR' }
-  );
-  const results = res.destinations?.results ?? [];
-  const exact = results.find((d) => d.name.toLowerCase() === city.toLowerCase());
-  if (exact) return String(exact.id);
-  // e.g. "Monaco" returns "Monaco-Ville" whose parent is Monaco (948)
-  const parent = results.find((d) => d.parentDestinationName?.toLowerCase() === city.toLowerCase());
-  if (parent?.parentDestinationId) return String(parent.parentDestinationId);
-  return results[0] ? String(results[0].id) : null;
+interface ViatorDestination {
+  destinationId: number;
+  name: string;
+  type?: string;
+  center?: { latitude: number; longitude: number };
+}
+
+let destinationsCache: Promise<ViatorDestination[]> | null = null;
+
+/** All Viator destinations (≈3,400), with centre coordinates. Cached per process. */
+function allDestinations(): Promise<ViatorDestination[]> {
+  destinationsCache ??= fetch(`${BASE}/destinations`, { headers: headers() })
+    .then(async (res) => {
+      if (!res.ok) throw new Error(`Viator /destinations → HTTP ${res.status}`);
+      const j = (await res.json()) as { destinations?: ViatorDestination[] } | ViatorDestination[];
+      return Array.isArray(j) ? j : j.destinations ?? [];
+    })
+    .catch((err) => {
+      destinationsCache = null;
+      throw err;
+    });
+  return destinationsCache;
+}
+
+/** Destinations whose centre is within radiusKm of the point, nearest first. */
+export async function destinationsNear(lat: number, lng: number, radiusKm: number) {
+  return (await allDestinations())
+    // Places, not parks or regions: those centres can be far from where tours start.
+    .filter((d) => d.center && ['CITY', 'TOWN', 'NEIGHBORHOOD', 'ISLAND'].includes(d.type ?? 'CITY'))
+    .map((d) => ({ ...d, km: haversineKm(lat, lng, d.center!.latitude, d.center!.longitude) }))
+    .filter((d) => d.km <= radiusKm)
+    .sort((a, b) => a.km - b.km);
+}
+
+async function searchDestination(destination: string, limit: number, currency: string): Promise<ViatorProduct[]> {
+  const out: ViatorProduct[] = [];
+  for (let start = 1; out.length < limit; start += PAGE_SIZE) {
+    const res = await post<{ products?: ViatorProduct[]; totalCount?: number }>('/products/search', {
+      filtering: { destination },
+      sorting: { sort: 'TRAVELER_RATING', order: 'DESCENDING' },
+      pagination: { start, count: Math.min(PAGE_SIZE, limit - out.length) },
+      currency,
+    });
+    const products = res.products ?? [];
+    out.push(...products);
+    if (products.length === 0 || start + PAGE_SIZE > (res.totalCount ?? 0)) break;
+  }
+  return out;
 }
 
 export const viator: ProviderAdapter = {
   id: 'viator',
   isConfigured: () => Boolean(process.env.VIATOR_API_KEY),
 
+  /**
+   * Best-rated products in every Viator destination whose centre is within
+   * radiusKm. Search results carry no coordinates (product locations are
+   * Google place IDs), so each product gets its destination's centre.
+   */
   async search(q: SearchQuery): Promise<NormalizedOffer[]> {
-    const destination = await findDestinationId(q.city);
-    if (!destination) return [];
-    const limit = q.limit ?? 200;
-    const out: NormalizedOffer[] = [];
-    for (let start = 1; out.length < limit; start += PAGE_SIZE) {
-      const res = await post<{ products?: ViatorProduct[]; totalCount?: number }>('/products/search', {
-        filtering: { destination },
-        sorting: { sort: 'TRAVELER_RATING', order: 'DESCENDING' },
-        pagination: { start, count: Math.min(PAGE_SIZE, limit - out.length) },
-        currency: q.currency ?? 'EUR',
-      });
-      const products = res.products ?? [];
-      out.push(...products.map(normalizeViator));
-      if (products.length === 0 || start + PAGE_SIZE > (res.totalCount ?? 0)) break;
+    const perDestination = q.limit ?? 100;
+    const currency = q.currency ?? 'EUR';
+    const dests = await destinationsNear(q.lat, q.lng, q.radiusKm ?? 50);
+    const byCode = new Map<string, NormalizedOffer>();
+    for (const d of dests) {
+      const products = await searchDestination(String(d.destinationId), perDestination, currency);
+      for (const p of products) {
+        if (byCode.has(p.productCode)) continue;
+        const n = normalizeViator(p);
+        n.lat = d.center!.latitude;
+        n.lng = d.center!.longitude;
+        n.locationName = d.name;
+        n.approximateLocation = true;
+        byCode.set(p.productCode, n);
+      }
     }
-    return out;
+    return [...byCode.values()];
   },
 };

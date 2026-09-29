@@ -38,8 +38,20 @@ const STOPWORDS = new Set([
   'optional', 'skip', 'line', 'the', 'best', 'top', 'your', 'our', 'combo', 'pass', 'access', 'fast', 'track', 'option',
 ]);
 
+const tokenCache = new Map<string, Set<string>>();
+
 // Place words (the city itself) appear in nearly every title for that race.
 export function tokenize(title: string, ignore: string[] = []): Set<string> {
+  const key = `${title}\u0000${ignore.join('|')}`;
+  const hit = tokenCache.get(key);
+  if (hit) return hit;
+  const tokens = tokenizeUncached(title, ignore);
+  if (tokenCache.size > 5000) tokenCache.clear();
+  tokenCache.set(key, tokens);
+  return tokens;
+}
+
+function tokenizeUncached(title: string, ignore: string[]): Set<string> {
   const ignored = new Set(ignore.flatMap((w) => w.toLowerCase().split(/\s+/)));
   const words = title
     .normalize('NFD').replace(/[̀-ͯ]/g, '')

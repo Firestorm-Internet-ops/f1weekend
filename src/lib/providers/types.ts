@@ -31,6 +31,10 @@ export interface NormalizedOffer {
   durationHours: number | null;
   lat: number | null;
   lng: number | null;
+  /** Where the lat/lng point is, e.g. "Kuala Lumpur" or a venue name. */
+  locationName?: string | null;
+  /** True when lat/lng is a city or area centre, not the activity itself. */
+  approximateLocation?: boolean;
   imageUrl: string | null;
   flags: OfferFlags;
   categories: string[];
@@ -73,6 +77,9 @@ export interface ProviderAdapter {
 }
 
 export interface AffiliateContext {
-  experienceId: number;
+  /** Our experience id; null for live-feed products that aren't in the database. */
+  experienceId: number | null;
+  /** Used in the sub-ID when there is no experience id. */
+  productId?: string;
   source: ClickSource;
 }

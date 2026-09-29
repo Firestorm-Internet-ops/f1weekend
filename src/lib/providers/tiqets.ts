@@ -17,6 +17,7 @@ interface TiqetsProduct {
   title: string;
   product_url: string;
   city_name?: string;
+  venue?: { name?: string } | null;
   geolocation?: { lat: number; lng: number } | null;
   ratings?: { total?: number; average?: number } | null;
   currency?: string;
@@ -68,6 +69,8 @@ export function normalizeTiqets(p: TiqetsProduct): NormalizedOffer {
     durationHours: durationHours(p.duration),
     lat: p.geolocation?.lat ?? null,
     lng: p.geolocation?.lng ?? null,
+    locationName: p.venue?.name ?? p.city_name ?? null,
+    approximateLocation: false,
     imageUrl: p.images?.[0]?.large ?? p.images?.[0]?.medium ?? null,
     flags: {
       instantConfirmation: p.instant_ticket_delivery ?? undefined,
@@ -110,7 +113,7 @@ export const tiqets: ProviderAdapter = {
     const cityWord = new RegExp(`\\b${q.city.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
     const nearEnough = (p: TiqetsProduct) =>
       p.geolocation
-        ? haversineKm(q.lat, q.lng, p.geolocation.lat, p.geolocation.lng) <= MAX_TEXT_RESULT_KM
+        ? haversineKm(q.lat, q.lng, p.geolocation.lat, p.geolocation.lng) <= Math.max(MAX_TEXT_RESULT_KM, q.radiusKm ?? 0)
         : cityWord.test(p.title);
     const byId = new Map<string, TiqetsProduct>();
     // Out-of-season products are kept: the race weekend may fall in season.
