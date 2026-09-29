@@ -6,6 +6,30 @@ import { redis } from '@/lib/redis';
 import type { Race, Session, ExperienceWindow } from '@/types/race';
 import { calendarEntry, nextCalendarRace, sortByCalendar } from '@/data/calendar-2026';
 import { timetableSessions, timetableFor } from '@/data/timetables-2026';
+import { fetchSeasonSchedule, findJolpicaRace, mergeSessions, sessionsOf, toSessionRows, type JolpicaRace } from '@/lib/jolpica';
+
+/** Jolpica season schedule, refreshed every 12 h. [] when the API is unreachable. */
+export async function getJolpicaSeason(season: number): Promise<JolpicaRace[]> {
+  return unstable_cache(
+    async () => {
+      try {
+        return await fetchSeasonSchedule(season);
+      } catch (err) {
+        console.warn('[jolpica]', (err as Error).message);
+        return [];
+      }
+    },
+    [`jolpica:season:${season}`],
+    { revalidate: 12 * 3600, tags: ['races', 'jolpica'] }
+  )();
+}
+
+/** F1 track sessions from Jolpica for a race, in its local time; [] if not published or not found. */
+async function jolpicaSessions(race: Race): Promise<Session[]> {
+  const season = await getJolpicaSeason(race.season || Number(race.raceDate.slice(0, 4)));
+  const match = findJolpicaRace(season, race);
+  return match ? toSessionRows(sessionsOf(match), race.id, race.timezone) : [];
+}
 
 const CACHE_TTL = 3600; // 1 hour
 
@@ -214,11 +238,25 @@ async function venueMoved(raceId: number): Promise<boolean> {
   return !!(race && calendarEntry(race.slug)?.venue);
 }
 
+/**
+ * Sessions for a race, most authoritative first:
+ *  1. a full timetable in code (src/data/timetables-2026.ts);
+ *  2. for races not yet finished, F1 session times from Jolpica, merged over
+ *     the stored sessions (stored support races and events are kept);
+ *  3. the stored sessions (none for a race whose venue moved).
+ */
 export async function getSessionsByRace(raceId: number): Promise<Session[]> {
   const race = await getRaceById(raceId);
-  // A timetable in code (src/data/timetables-2026.ts) wins over stored sessions.
   if (race && timetableFor(race.slug)) return timetableSessions(race.slug, raceId);
-  if (await venueMoved(raceId)) return [];
+  const moved = await venueMoved(raceId);
+  const stored = moved ? [] : await getStoredSessions(raceId);
+  if (race && race.raceDate >= todayUtc()) {
+    return mergeSessions(stored, await jolpicaSessions(race));
+  }
+  return stored;
+}
+
+async function getStoredSessions(raceId: number): Promise<Session[]> {
   const DAY_ORDER = { Thursday: 0, Friday: 1, Saturday: 2, Sunday: 3 };
 
   const fetch = unstable_cache(

@@ -54,6 +54,7 @@
       <li>✓ Map and cards together: tap a dot to see what's there; each card shows travel time, km from the circuit and every site's price.</li>
       <li>✓ The old Sakhir/Manama copy, sessions and gap windows are no longer shown.</li>
       <li>✓ Sepang timetable (F1 sessions, Formula Trophy Malaysia, press, parade) in <code>src/data/timetables-2026.ts</code>: schedule page, home page sessions and the FP1 countdown.</li>
+      <li>✓ F1 session times sync automatically from Jolpica (free F1 timing API) for every upcoming race. <code>/api/schedule-check</code> on staging lists anything that differs from our calendar or hand-entered timetables.</li>
       <li>☐ <code>npm run db:sync-calendar -- --dry-run</code>, then without: writes the calendar into the database.</li>
     </ul>
   </div>
