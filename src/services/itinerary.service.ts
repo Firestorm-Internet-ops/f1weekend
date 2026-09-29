@@ -68,7 +68,11 @@ function findBestWindow(
     return best;
 }
 
-export async function buildManualItinerary(input: ManualItineraryInput): Promise<Itinerary> {
+/**
+ * Builds the itinerary and saves it. If saving fails the plan is still
+ * returned (saved: false) so the visitor sees it instead of an error.
+ */
+export async function buildManualItinerary(input: ManualItineraryInput): Promise<{ itinerary: Itinerary; saved: boolean }> {
     const race = await getRaceBySlug(input.raceSlug);
     if (!race) throw new Error(`Race not found: ${input.raceSlug}`);
 
@@ -174,22 +178,31 @@ export async function buildManualItinerary(input: ManualItineraryInput): Promise
 
     const id = generateId();
     const title = `${race.city} ${race.season} — ${input.arrivalDay} to ${input.departureDay}`;
-    const itinerary: Itinerary = { id, title, days, raceId: race.id, raceSlug: race.slug };
+    const itinerary: Itinerary = {
+        id, title, days, raceId: race.id, raceSlug: race.slug,
+        input: { raceSlug: race.slug, arrivalDay: input.arrivalDay, departureDay: input.departureDay, sessionIds: input.sessionIds },
+    };
 
-    const db = await getDb();
-    await db.insert(itineraries).values({
-        id,
-        race_id: race.id,
-        arrival_day: input.arrivalDay,
-        departure_day: input.departureDay,
-        interests: null,
-        group_size: 1,
-        itinerary_json: itinerary,
-        prompt_hash: null,
-        generation_model: 'manual',
-    });
+    try {
+        const db = await getDb();
+        await db.insert(itineraries).values({
+            id,
+            race_id: race.id,
+            // The column predates Saturday arrivals; the choice itself is kept in itinerary_json.input.
+            arrival_day: input.arrivalDay === 'Saturday' ? null : input.arrivalDay,
+            departure_day: input.departureDay,
+            interests: null,
+            group_size: 1,
+            itinerary_json: itinerary,
+            prompt_hash: null,
+            generation_model: 'manual',
+        });
+    } catch (err) {
+        console.error('[itinerary] save failed, returning unsaved plan:', (err as Error).message.slice(0, 200));
+        return { itinerary, saved: false };
+    }
 
-    return itinerary;
+    return { itinerary, saved: true };
 }
 
 export async function getItinerary(id: string): Promise<Itinerary | null> {

@@ -5,6 +5,7 @@ import { getItinerary } from '@/services/itinerary.service';
 import { getRaceBySlug, getRaceById, getActiveRace } from '@/services/race.service';
 import { getExperiencesByRace } from '@/services/experience.service';
 import ItineraryView from '@/components/itinerary/ItineraryView';
+import ItineraryActions from '@/components/itinerary/ItineraryActions';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,13 +56,14 @@ export default async function ItineraryDetailPage({ params }: Props) {
   return (
     <div className="min-h-screen pt-24 pb-24 px-4">
       <div className="max-w-2xl mx-auto">
-        <div className="mb-6">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <Link
-            href="/itinerary"
+            href={itinerary.raceSlug ? `/itinerary?race=${itinerary.raceSlug}` : '/itinerary'}
             className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
           >
-            ← Build another
+            ← Start a new plan
           </Link>
+          <ItineraryActions input={itinerary.input} title={itinerary.title} />
         </div>
 
         <ItineraryView itinerary={itinerary} experiences={experiences} tzLabel={tzLabel} />

@@ -1,6 +1,6 @@
 export interface ManualItineraryInput {
     raceSlug: string
-    arrivalDay: 'Wednesday' | 'Thursday' | 'Friday'
+    arrivalDay: 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday'
     departureDay: 'Sunday' | 'Monday' | 'Tuesday'
     sessionIds: number[]
 }
@@ -57,5 +57,7 @@ export interface Itinerary {
     raceId?: number
     /** Race slug, for booking links on live-feed suggestions. */
     raceSlug?: string
+    /** What the visitor chose, so "Edit" can reopen the form with it. */
+    input?: ManualItineraryInput
     days: ItineraryDay[]
 }
