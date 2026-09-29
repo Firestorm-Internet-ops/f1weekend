@@ -115,12 +115,12 @@ function FeaturedCard({ exp, badge, activeRaceSlug }: { exp: Experience, badge?:
         </span>
       )}
       <span className="text-3xl mb-3">{exp.imageEmoji}</span>
-      <h3 className="font-display font-bold text-white group-hover:text-[var(--accent-teal)] transition-colors mb-2 line-clamp-2 min-h-[2.5rem]">
+      <h3 className="font-display font-bold text-[var(--text-primary)] group-hover:text-[var(--accent-teal)] transition-colors mb-2 line-clamp-2 min-h-[2.5rem]">
         {exp.title}
       </h3>
       <div className="flex items-center gap-2 mb-2">
-        <span className="text-yellow-400 text-xs">★</span>
-        <span className="text-xs font-medium text-white">{exp.rating.toFixed(1)}</span>
+        <span className="text-amber-500 text-xs">★</span>
+        <span className="text-xs font-medium text-[var(--text-primary)]">{exp.rating.toFixed(1)}</span>
         <span className="text-[var(--text-secondary)] text-xs">({exp.reviewCount.toLocaleString()})</span>
       </div>
       <div className="mt-auto pt-3 space-y-1">
@@ -132,6 +132,52 @@ function FeaturedCard({ exp, badge, activeRaceSlug }: { exp: Experience, badge?:
         </p>
       </div>
     </Link>
+  );
+}
+
+const GLANCE_DAYS = ['Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
+const GLANCE_OFFSET: Record<string, number> = { Thursday: -3, Friday: -2, Saturday: -1, Sunday: 0 };
+
+/** Hero card with the weekend's F1 sessions, shown when there is no circuit image. */
+function WeekendGlance({ sessions, raceDate, circuitName, tzLabel, scheduleHref }: {
+  sessions: { name: string; dayOfWeek: string; startTime: string; sessionType: string }[];
+  raceDate: string;
+  circuitName: string;
+  tzLabel: string;
+  scheduleHref: string;
+}) {
+  if (sessions.length === 0) return null;
+  const dateOf = (day: string) => {
+    const d = new Date(`${raceDate}T00:00:00Z`);
+    d.setUTCDate(d.getUTCDate() + (GLANCE_OFFSET[day] ?? 0));
+    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+  };
+  return (
+    <div className="hidden md:block">
+      <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] shadow-[0_8px_30px_rgba(21,21,30,0.06)] p-6">
+        <p className="text-xs font-bold uppercase-label text-[var(--accent-red)] mb-1">Race weekend</p>
+        <p className="font-display font-bold text-xl text-[var(--text-primary)] mb-5">{circuitName}</p>
+        <div className="space-y-4">
+          {GLANCE_DAYS.filter((d) => sessions.some((s) => s.dayOfWeek === d)).map((day) => (
+            <div key={day}>
+              <p className="text-xs font-semibold uppercase-label text-[var(--text-muted)] mb-1.5">{day} · {dateOf(day)}</p>
+              <ul className="divide-y divide-[var(--border-subtle)]">
+                {sessions.filter((s) => s.dayOfWeek === day).map((s) => (
+                  <li key={s.name} className="flex items-center justify-between py-1.5">
+                    <span className={`text-sm ${s.sessionType === 'race' ? 'font-bold text-[var(--accent-red)]' : 'text-[var(--text-primary)]'}`}>{s.name}</span>
+                    <span className="text-sm mono-data text-[var(--text-secondary)]">{s.startTime.slice(0, 5)}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+        <div className="mt-5 pt-4 border-t border-[var(--border-subtle)] flex items-center justify-between text-xs text-[var(--text-muted)]">
+          <span>Local time ({tzLabel})</span>
+          <Link href={scheduleHref} className="font-medium text-[var(--accent-teal)] hover:underline">Full schedule →</Link>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -332,7 +378,7 @@ export default async function HomePage() {
                 </p>
               </div>
 
-              <h1 className="font-display font-black text-5xl md:text-6xl text-white uppercase-heading leading-tight mb-4">
+              <h1 className="font-display font-black text-5xl md:text-6xl text-[var(--text-primary)] uppercase-heading leading-tight mb-4">
                 {raceContent?.homepageCopy?.heroHeading ? (
                   raceContent.homepageCopy.heroHeading
                 ) : (
@@ -353,7 +399,7 @@ export default async function HomePage() {
                 </Link>
                 <Link
                   href="/itinerary"
-                  className="px-5 py-2.5 border border-white/20 hover:border-white/40 text-white hover:bg-white/5 font-semibold text-sm rounded-full transition-colors whitespace-nowrap"
+                  className="px-5 py-2.5 border border-[var(--border-medium)] hover:border-[var(--text-tertiary)] text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] font-semibold text-sm rounded-full transition-colors whitespace-nowrap"
                 >
                   Build Itinerary
                 </Link>
@@ -367,30 +413,40 @@ export default async function HomePage() {
               </div>
             </div>
 
-            {!venueMoved && <div className="hidden md:flex items-center justify-center relative">
+            {raceContent?.circuitMapSrc ? (
+              <div className="hidden md:flex items-center justify-center relative">
               <CircuitMap
                 src={raceContent?.circuitMapSrc ?? undefined}
                 alt={`${race.circuitName} — Circuit Map`}
                 className="w-full max-w-2xl opacity-90"
               />
-            </div>}
+            </div>
+            ) : (
+              <WeekendGlance
+                sessions={sessions.filter((s) => ['practice', 'qualifying', 'sprint', 'race'].includes(s.sessionType))}
+                raceDate={race.raceDate}
+                circuitName={race.circuitName}
+                tzLabel={tzLabel}
+                scheduleHref={`/races/${activeRaceSlug}/schedule`}
+              />
+            )}
           </div>
         </div>
       </section>
 
       {/* ── SEO Intro Section ── */}
       <section className="max-w-6xl mx-auto px-4 py-10 border-b border-[var(--border-subtle)]">
-        <div className="text-[var(--text-secondary)] text-base leading-relaxed max-w-4xl prose prose-invert">
+        <div className="text-[var(--text-secondary)] text-base leading-relaxed max-w-4xl prose">
           {raceContent?.homepageIntro ? (
             <div className="space-y-4">
-              <h2 className="font-display font-black text-2xl text-white uppercase-heading">
+              <h2 className="font-display font-black text-2xl text-[var(--text-primary)] uppercase-heading">
                 {raceContent.homepageIntro.split('\n')[0]}
               </h2>
               <p>{raceContent.homepageIntro.split('\n').slice(1).join('\n')}</p>
             </div>
           ) : (
             <>
-              <h2 className="font-display font-black text-xl text-white uppercase-heading mb-4">
+              <h2 className="font-display font-black text-xl text-[var(--text-primary)] uppercase-heading mb-4">
                 Plan Your {race.city} F1 Weekend Around the Sessions
               </h2>
               <p>
@@ -406,7 +462,7 @@ export default async function HomePage() {
       <section className="max-w-6xl mx-auto px-4 py-10">
         <div className="flex items-start justify-between mb-5">
           <div>
-            <h2 className="font-display font-black text-xl text-white uppercase-heading">
+            <h2 className="font-display font-black text-xl text-[var(--text-primary)] uppercase-heading">
               {raceContent?.homepageCopy?.featuredHeading ?? `Best Things to Do in ${race.city} During the F1 Race`}
             </h2>
             <p className="text-sm text-[var(--text-secondary)] mt-1.5">
@@ -415,7 +471,7 @@ export default async function HomePage() {
                 : `Curated for the ${race.city} Grand Prix weekend — activities matched to every session gap.`)}
             </p>
           </div>
-          <Link href={expBasePath} className="text-sm font-medium text-[var(--accent-teal)] hover:text-white transition-colors shrink-0 mt-1">
+          <Link href={expBasePath} className="text-sm font-medium text-[var(--accent-teal)] hover:text-[var(--text-primary)] transition-colors shrink-0 mt-1">
             View all →
           </Link>
         </div>
@@ -451,7 +507,7 @@ export default async function HomePage() {
           <p className="text-xs font-medium uppercase-label text-[var(--text-secondary)] tracking-widest">
             {new Date().getFullYear()} SEASON · {availableRaces.length} RACES
           </p>
-          <Link href="/f1-2026" className="text-xs font-medium text-[var(--accent-teal)] hover:text-white transition-colors">
+          <Link href="/f1-2026" className="text-xs font-medium text-[var(--accent-teal)] hover:text-[var(--text-primary)] transition-colors">
             Full calendar →
           </Link>
         </div>
@@ -463,7 +519,7 @@ export default async function HomePage() {
             return (
               <Link key={r.slug} href={`/races/${r.slug}`} className={tileClass}>
                 <span className="text-lg leading-none">{r.flag}</span>
-                <span className={`text-[10px] font-bold uppercase-label tracking-wider ${r.active ? 'text-white' : 'text-[var(--text-secondary)]'}`}>
+                <span className={`text-[10px] font-bold uppercase-label tracking-wider ${r.active ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}>
                   {r.short}
                 </span>
                 {r.active ? (
@@ -476,7 +532,7 @@ export default async function HomePage() {
           })}
           <Link
             href="/f1-2026"
-            className="shrink-0 flex flex-col items-center justify-center gap-1 px-3 py-2.5 rounded-lg border border-dashed border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-white hover:border-[var(--border-medium)] transition-colors min-w-[56px]"
+            className="shrink-0 flex flex-col items-center justify-center gap-1 px-3 py-2.5 rounded-lg border border-dashed border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-medium)] transition-colors min-w-[56px]"
           >
             <span className="text-base font-bold">+{availableRaces.length - 5}</span>
             <span className="text-[10px] uppercase-label tracking-wider">more</span>
@@ -497,13 +553,13 @@ export default async function HomePage() {
 
       {/* ── FAQ ── */}
       {HOME_FAQ.length > 0 && <section className="max-w-3xl mx-auto px-4 pb-24">
-        <h2 className="font-display font-black text-2xl text-white uppercase-heading mb-8">
+        <h2 className="font-display font-black text-2xl text-[var(--text-primary)] uppercase-heading mb-8">
           Frequently Asked Questions
         </h2>
         <div className="space-y-4">
           {HOME_FAQ.map(({ q, a }) => (
             <details key={q} className="group rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] overflow-hidden">
-              <summary className="px-6 py-4 cursor-pointer font-bold text-white list-none flex items-center justify-between gap-4 hover:bg-[var(--bg-surface)] transition-colors">
+              <summary className="px-6 py-4 cursor-pointer font-bold text-[var(--text-primary)] list-none flex items-center justify-between gap-4 hover:bg-[var(--bg-surface)] transition-colors">
                 <span>{q}</span>
                 <span className="text-[var(--text-secondary)] group-open:rotate-180 transition-transform">▾</span>
               </summary>

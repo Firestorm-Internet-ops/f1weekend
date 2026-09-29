@@ -61,7 +61,7 @@ export default function RaceCountdown({ targetDate }: { targetDate: string }) {
           )}
           <div className="text-center">
             <div
-              className="font-display font-black text-3xl md:text-5xl text-white mono-data tabular-nums"
+              className="font-display font-black text-3xl md:text-5xl text-[var(--text-primary)] mono-data tabular-nums"
               style={{ minWidth: '2.5ch' }}
             >
               {String(value).padStart(2, '0')}

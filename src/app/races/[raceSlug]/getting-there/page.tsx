@@ -87,7 +87,7 @@ export default async function GettingTherePage({ params }: Props) {
             <div className="mb-4">
               <RaceSwitcher currentRace={race} availableRaces={availableRaces} pageType="getting-there" />
             </div>
-            <h1 className="font-display font-black text-4xl sm:text-5xl text-white uppercase-heading leading-none mb-4">
+            <h1 className="font-display font-black text-4xl sm:text-5xl text-[var(--text-primary)] uppercase-heading leading-none mb-4">
               GETTING<br />THERE
             </h1>
             <p className="text-[var(--text-secondary)] text-lg leading-relaxed">
@@ -122,7 +122,7 @@ export default async function GettingTherePage({ params }: Props) {
         <div className="max-w-3xl mx-auto">
           {transport.length > 0 && (
             <section className="mb-12">
-              <h2 className="font-display font-bold text-xl text-white uppercase-heading mb-6">
+              <h2 className="font-display font-bold text-xl text-[var(--text-primary)] uppercase-heading mb-6">
                 HOW TO GET THERE
               </h2>
               <div className="space-y-4">
@@ -135,7 +135,7 @@ export default async function GettingTherePage({ params }: Props) {
                       <span className="text-2xl mt-0.5 shrink-0">{t.icon}</span>
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-display font-bold text-white">{t.title}</h3>
+                          <h3 className="font-display font-bold text-[var(--text-primary)]">{t.title}</h3>
                           {t.bestFor && t.bestFor !== 'General' && (
                             <span
                               className="text-[10px] px-2 py-0.5 rounded-full font-medium uppercase tracking-wider"
@@ -174,7 +174,7 @@ export default async function GettingTherePage({ params }: Props) {
           )}
 
           <section>
-            <h2 className="font-display font-bold text-xl text-white uppercase-heading mb-6">
+            <h2 className="font-display font-bold text-xl text-[var(--text-primary)] uppercase-heading mb-6">
               GATE OPENING TIMES
             </h2>
             <p className="text-sm text-[var(--text-secondary)] mb-4">
@@ -189,7 +189,7 @@ export default async function GettingTherePage({ params }: Props) {
                   }`}
                 >
                   <div>
-                    <p className="font-medium text-white">{g.day}</p>
+                    <p className="font-medium text-[var(--text-primary)]">{g.day}</p>
                     <p className="text-sm text-[var(--text-secondary)]">{g.session}</p>
                   </div>
                   <span className="mono-data text-sm text-[var(--accent-teal)] font-medium">
@@ -201,7 +201,7 @@ export default async function GettingTherePage({ params }: Props) {
           </section>
 
           <section className="mt-12 pt-8 border-t border-[var(--border-subtle)]">
-            <h2 className="font-display font-bold text-xl text-white uppercase-heading mb-3">
+            <h2 className="font-display font-bold text-xl text-[var(--text-primary)] uppercase-heading mb-3">
               Things to Do Between Sessions
             </h2>
             <p className="text-[var(--text-secondary)] text-sm leading-relaxed mb-4">
@@ -211,7 +211,7 @@ export default async function GettingTherePage({ params }: Props) {
             </p>
             <Link
               href={`/races/${raceSlug}/experiences`}
-              className="inline-block text-sm font-medium text-[var(--accent-teal)] hover:text-white transition-colors"
+              className="inline-block text-sm font-medium text-[var(--accent-teal)] hover:text-[var(--text-primary)] transition-colors"
             >
               Browse {race.city} experiences →
             </Link>

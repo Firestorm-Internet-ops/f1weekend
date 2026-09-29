@@ -123,7 +123,7 @@ export default async function ExperiencesPage({ params, searchParams }: Props) {
             <p className="text-xs font-medium uppercase-label text-[var(--accent-red)] mb-2">
               {race.city} {race.season}
             </p>
-            <h1 className="font-display font-black text-4xl text-white uppercase-heading">
+            <h1 className="font-display font-black text-4xl text-[var(--text-primary)] uppercase-heading">
               Experiences
             </h1>
             <p className="text-[var(--text-secondary)] mt-2">
@@ -143,7 +143,7 @@ export default async function ExperiencesPage({ params, searchParams }: Props) {
           </div>
           <Link
             href={`/races/${raceSlug}/experiences/map`}
-            className="flex-shrink-0 mt-1 flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] text-sm text-[var(--text-secondary)] hover:text-white hover:border-[var(--border-medium)] transition-colors"
+            className="flex-shrink-0 mt-1 flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-medium)] transition-colors"
           >
             <span>⊙</span>
             <span>Map</span>
@@ -157,7 +157,7 @@ export default async function ExperiencesPage({ params, searchParams }: Props) {
         {Number.isFinite(race.circuitLat) && Number.isFinite(race.circuitLng) && !(race.circuitLat === 0 && race.circuitLng === 0) && exps.length > 0 && (
           <section className="mb-10 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] p-5">
             <div className="flex items-baseline justify-between gap-4 mb-4">
-              <h2 className="font-display font-bold text-lg text-white">How far is everything from the circuit?</h2>
+              <h2 className="font-display font-bold text-lg text-[var(--text-primary)]">How far is everything from the circuit?</h2>
               <Link href={`/races/${raceSlug}/experiences/map`} className="text-sm text-[var(--accent-teal,#00D2BE)] hover:underline whitespace-nowrap">
                 Open full map →
               </Link>
@@ -233,7 +233,7 @@ async function LiveExperiencesPage({
           <p className="text-xs font-medium uppercase-label text-[var(--accent-red)] mb-2">
             {race.name} {race.season} · {race.circuitName}
           </p>
-          <h1 className="font-display font-black text-4xl text-white uppercase-heading">Things to do near the circuit</h1>
+          <h1 className="font-display font-black text-4xl text-[var(--text-primary)] uppercase-heading">Things to do near the circuit</h1>
           <p className="text-[var(--text-secondary)] text-sm leading-relaxed max-w-2xl mt-3">
             Every experience on {providers} within reach of {race.circuitName}, nearest first. Travel times
             include race-weekend traffic; when the same experience is sold on more than one site, you see every price.

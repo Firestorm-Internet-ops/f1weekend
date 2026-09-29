@@ -41,7 +41,7 @@ export default async function ItineraryPage({ searchParams }: Props) {
                     <p className="text-xs font-medium uppercase-label text-[var(--accent-teal)] mb-2">
                         Weekend Planner
                     </p>
-                    <h1 className="font-display font-black text-4xl text-white uppercase-heading leading-tight">
+                    <h1 className="font-display font-black text-4xl text-[var(--text-primary)] uppercase-heading leading-tight">
                         Build Your<br />Itinerary
                     </h1>
                     <p className="text-[var(--text-secondary)] mt-3">

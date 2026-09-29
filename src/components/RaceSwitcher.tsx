@@ -20,8 +20,8 @@ export default function RaceSwitcher({ races, currentSlug, pathTemplate, label =
   const btnClass = (active: boolean) =>
     `px-3 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2 ${
       active
-        ? 'border-[var(--accent-red)] bg-[#e1060012] text-white'
-        : 'border-[var(--border-subtle)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:border-[var(--border-medium)] hover:text-white'
+        ? 'border-[var(--accent-red)] bg-[#e1060012] text-[var(--text-primary)]'
+        : 'border-[var(--border-subtle)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:border-[var(--border-medium)] hover:text-[var(--text-primary)]'
     }`;
 
   return (

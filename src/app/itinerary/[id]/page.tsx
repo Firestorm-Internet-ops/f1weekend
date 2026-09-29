@@ -55,7 +55,7 @@ export default async function ItineraryDetailPage({ params }: Props) {
         <div className="mb-6">
           <Link
             href="/itinerary"
-            className="text-sm text-[var(--text-secondary)] hover:text-white transition-colors"
+            className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
           >
             ← Build another
           </Link>

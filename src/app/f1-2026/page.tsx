@@ -136,7 +136,7 @@ export default async function F12026Page() {
             <p className="text-xs font-medium uppercase-label text-[var(--accent-red)] mb-3 tracking-widest">
               2026 SEASON
             </p>
-            <h1 className="font-display font-black text-4xl sm:text-5xl text-white uppercase-heading leading-none mb-4">
+            <h1 className="font-display font-black text-4xl sm:text-5xl text-[var(--text-primary)] uppercase-heading leading-none mb-4">
               The 2026 F1 Season<br />
               <span className="text-[var(--accent-teal)]">Travel Guide</span>
             </h1>
@@ -157,7 +157,7 @@ export default async function F12026Page() {
                 key={label}
                 className="px-5 py-3 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-secondary)]"
               >
-                <span className="font-display font-black text-white text-lg">{value}</span>
+                <span className="font-display font-black text-[var(--text-primary)] text-lg">{value}</span>
                 <span className="text-[var(--text-secondary)] text-sm ml-2">{label}</span>
               </div>
             ))}
@@ -165,7 +165,7 @@ export default async function F12026Page() {
 
           {/* Full guides section */}
           <section className="mb-10">
-            <h2 className="font-display font-bold text-xl text-white uppercase-heading mb-5">
+            <h2 className="font-display font-bold text-xl text-[var(--text-primary)] uppercase-heading mb-5">
               Full Guides Available
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
@@ -183,7 +183,7 @@ export default async function F12026Page() {
                           Round {race.round}
                         </span>
                       </div>
-                      <h3 className="font-display font-bold text-white group-hover:text-[var(--accent-teal)] transition-colors">
+                      <h3 className="font-display font-bold text-[var(--text-primary)] group-hover:text-[var(--accent-teal)] transition-colors">
                         {race.name}
                       </h3>
                       <p className="text-sm text-[var(--text-secondary)] mt-0.5">
@@ -204,7 +204,7 @@ export default async function F12026Page() {
 
           {/* Full calendar grid */}
           <section className="mb-14">
-            <h2 className="font-display font-bold text-xl text-white uppercase-heading mb-5">
+            <h2 className="font-display font-bold text-xl text-[var(--text-primary)] uppercase-heading mb-5">
               Full 2026 Calendar
             </h2>
             <div className="rounded-xl border border-[var(--border-subtle)] overflow-hidden">
@@ -220,7 +220,7 @@ export default async function F12026Page() {
                   </span>
                   <span className="text-xl shrink-0">{race.flag}</span>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-white truncate">{race.name}</p>
+                    <p className="font-medium text-[var(--text-primary)] truncate">{race.name}</p>
                     <p className="text-xs text-[var(--text-secondary)] mono-data">{race.circuit} · {race.dates}</p>
                   </div>
                   {race.hasGuide && race.slug ? (
@@ -231,7 +231,7 @@ export default async function F12026Page() {
                       Guide →
                     </Link>
                   ) : race.isCancelled ? (
-                    <span className="shrink-0 text-xs font-medium px-3 py-1.5 rounded-full border border-dashed border-red-500/30 text-red-400/70 whitespace-nowrap cursor-default">
+                    <span className="shrink-0 text-xs font-medium px-3 py-1.5 rounded-full border border-dashed border-red-500/30 text-red-700/70 whitespace-nowrap cursor-default">
                       Called off
                     </span>
                   ) : (
@@ -246,7 +246,7 @@ export default async function F12026Page() {
 
           {/* FAQ */}
           <section className="mb-14">
-            <h2 className="font-display font-bold text-2xl text-white uppercase-heading mb-6">
+            <h2 className="font-display font-bold text-2xl text-[var(--text-primary)] uppercase-heading mb-6">
               F1 Travel FAQ
             </h2>
             <div className="space-y-4">
@@ -255,7 +255,7 @@ export default async function F12026Page() {
                   key={q}
                   className="group rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] overflow-hidden"
                 >
-                  <summary className="px-5 py-4 cursor-pointer font-medium text-white list-none flex items-center justify-between gap-3 hover:text-[var(--accent-teal)] transition-colors">
+                  <summary className="px-5 py-4 cursor-pointer font-medium text-[var(--text-primary)] list-none flex items-center justify-between gap-3 hover:text-[var(--accent-teal)] transition-colors">
                     <span>{q}</span>
                     <span className="text-[var(--text-secondary)] group-open:rotate-180 transition-transform shrink-0">▾</span>
                   </summary>

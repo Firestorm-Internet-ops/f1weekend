@@ -217,14 +217,14 @@ export default async function ExperienceDetailPage({ params }: Props) {
                   </span>
                   {exp.rating && (
                     <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
-                      <span className="text-yellow-400">★</span>
-                      <span className="text-sm font-medium text-white">{exp.rating}</span>
+                      <span className="text-amber-500">★</span>
+                      <span className="text-sm font-medium text-[var(--text-primary)]">{exp.rating}</span>
                       <span className="text-xs text-[var(--text-secondary)]">({exp.reviewCount})</span>
                     </div>
                   )}
                 </div>
 
-                <h1 className="font-display font-black text-4xl sm:text-5xl text-white uppercase-heading leading-tight mb-6">
+                <h1 className="font-display font-black text-4xl sm:text-5xl text-[var(--text-primary)] uppercase-heading leading-tight mb-6">
                   {exp.title}
                 </h1>
 
@@ -247,10 +247,10 @@ export default async function ExperienceDetailPage({ params }: Props) {
                 </div>
               )}
 
-              <div className="prose prose-invert max-w-none">
+              <div className="prose max-w-none">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                   <section>
-                    <h2 className="font-display font-bold text-2xl text-white uppercase-heading mb-4">
+                    <h2 className="font-display font-bold text-2xl text-[var(--text-primary)] uppercase-heading mb-4">
                       The Experience
                     </h2>
                     <div
@@ -262,7 +262,7 @@ export default async function ExperienceDetailPage({ params }: Props) {
                   <div className="space-y-12">
                     {exp.highlights && exp.highlights.length > 0 && (
                       <section>
-                        <h2 className="font-display font-bold text-2xl text-white uppercase-heading mb-4">
+                        <h2 className="font-display font-bold text-2xl text-[var(--text-primary)] uppercase-heading mb-4">
                           Highlights
                         </h2>
                         <ul className="space-y-3">
@@ -278,7 +278,7 @@ export default async function ExperienceDetailPage({ params }: Props) {
 
                     {exp.includes && exp.includes.length > 0 && (
                       <section>
-                        <h2 className="font-display font-bold text-2xl text-white uppercase-heading mb-4">
+                        <h2 className="font-display font-bold text-2xl text-[var(--text-primary)] uppercase-heading mb-4">
                           What&apos;s Included
                         </h2>
                         <ul className="space-y-3">
@@ -299,7 +299,7 @@ export default async function ExperienceDetailPage({ params }: Props) {
                     <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                       <span className="text-6xl">🏁</span>
                     </div>
-                    <h2 className="font-display font-black text-2xl text-white uppercase-heading mb-4 flex items-center gap-3">
+                    <h2 className="font-display font-black text-2xl text-[var(--text-primary)] uppercase-heading mb-4 flex items-center gap-3">
                       <span className="text-[var(--accent-red)]">F1</span> Weekend Context
                     </h2>
                     <div
@@ -311,7 +311,7 @@ export default async function ExperienceDetailPage({ params }: Props) {
 
                 {exp.importantInfo && (
                   <section className="mt-16">
-                    <h2 className="font-display font-bold text-2xl text-white uppercase-heading mb-4">
+                    <h2 className="font-display font-bold text-2xl text-[var(--text-primary)] uppercase-heading mb-4">
                       Important Information
                     </h2>
                     <div
@@ -330,7 +330,7 @@ export default async function ExperienceDetailPage({ params }: Props) {
                   <div className="mb-6">
                     <p className="text-sm text-[var(--text-secondary)] uppercase-label mb-1">From</p>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-4xl font-display font-black text-white">
+                      <span className="text-4xl font-display font-black text-[var(--text-primary)]">
                         {exp.priceLabel}
                       </span>
                     </div>
@@ -368,7 +368,7 @@ export default async function ExperienceDetailPage({ params }: Props) {
 
                 {exp.meetingPoint && (
                   <div className="p-6 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-primary)]">
-                    <h3 className="font-display font-bold text-lg text-white uppercase-heading mb-3 flex items-center gap-2">
+                    <h3 className="font-display font-bold text-lg text-[var(--text-primary)] uppercase-heading mb-3 flex items-center gap-2">
                       <span>📍</span> Meeting Point
                     </h3>
                     <p className="text-xs text-[var(--text-secondary)] leading-relaxed">

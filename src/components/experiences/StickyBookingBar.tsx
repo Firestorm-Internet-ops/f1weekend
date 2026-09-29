@@ -35,7 +35,7 @@ export default function StickyBookingBar({ experience, topCtaId = 'top-book-cta'
         style={{ background: 'var(--bg-primary)' }}
       >
         <div className="min-w-0">
-          <p className="text-xs font-medium text-white truncate">{experience.title}</p>
+          <p className="text-xs font-medium text-[var(--text-primary)] truncate">{experience.title}</p>
           <p className="text-xs text-[var(--text-secondary)]">{experience.priceLabel} per person</p>
         </div>
         <BookButton

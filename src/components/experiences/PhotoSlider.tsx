@@ -29,7 +29,7 @@ export default function PhotoSlider({ photos, imageUrl, title, color, imageEmoji
         <div
           className="w-full h-full flex items-center justify-center"
           style={{
-            background: `linear-gradient(135deg, ${color}40 0%, #15151E 55%, ${color}18 100%)`,
+            background: `linear-gradient(135deg, ${color}40 0%, #F6F5F2 55%, ${color}18 100%)`,
           }}
         >
           <span className="text-9xl select-none" style={{ filter: 'drop-shadow(0 8px 24px rgba(0,0,0,0.5))' }}>
@@ -38,7 +38,7 @@ export default function PhotoSlider({ photos, imageUrl, title, color, imageEmoji
         </div>
         <div
           className="absolute inset-x-0 bottom-0 h-24 pointer-events-none"
-          style={{ background: 'linear-gradient(to top, #15151E 0%, transparent 100%)' }}
+          style={{ background: 'linear-gradient(to top, #F6F5F2 0%, transparent 100%)' }}
         />
         <div className="absolute top-0 left-0 right-0 h-1" style={{ backgroundColor: color }} />
       </div>
@@ -102,7 +102,7 @@ export default function PhotoSlider({ photos, imageUrl, title, color, imageEmoji
       {/* Bottom fade */}
       <div
         className="absolute inset-x-0 bottom-0 h-24 pointer-events-none"
-        style={{ background: 'linear-gradient(to top, #15151E 0%, transparent 100%)' }}
+        style={{ background: 'linear-gradient(to top, #F6F5F2 0%, transparent 100%)' }}
       />
 
       {/* Top colour strip */}

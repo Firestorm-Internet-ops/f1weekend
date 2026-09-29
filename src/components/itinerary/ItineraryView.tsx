@@ -44,7 +44,7 @@ export default function ItineraryView({ itinerary, experiences }: Props) {
         <div>
             {/* Header */}
             <div className="mb-8">
-                <h1 className="font-display font-black text-3xl text-white uppercase-heading mb-2 leading-tight">
+                <h1 className="font-display font-black text-3xl text-[var(--text-primary)] uppercase-heading mb-2 leading-tight">
                     {itinerary.title}
                 </h1>
                 {itinerary.summary && (
@@ -52,7 +52,7 @@ export default function ItineraryView({ itinerary, experiences }: Props) {
                 )}
                 <button
                     onClick={handleShare}
-                    className="mt-4 text-sm px-4 py-1.5 rounded-full border border-[var(--border-medium)] text-[var(--text-secondary)] hover:text-white transition-colors"
+                    className="mt-4 text-sm px-4 py-1.5 rounded-full border border-[var(--border-medium)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
                 >
                     {copied ? '✓ Copied!' : 'Share Itinerary ↗'}
                 </button>
@@ -67,7 +67,7 @@ export default function ItineraryView({ itinerary, experiences }: Props) {
                         className={`px-5 py-2.5 rounded-full text-base font-medium transition-all ${
                             activeDay === i
                                 ? 'bg-[var(--accent-red)] text-white'
-                                : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-white'
+                                : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                         }`}
                     >
                         {d.dayLabel}
@@ -123,7 +123,7 @@ export default function ItineraryView({ itinerary, experiences }: Props) {
             {/* Book All section */}
             {allSuggestedExps.length > 0 && (
                 <div className="mt-10 pt-8 border-t border-[var(--border-subtle)]">
-                    <h2 className="font-display font-bold text-white text-xl mb-1">Your Experiences</h2>
+                    <h2 className="font-display font-bold text-[var(--text-primary)] text-xl mb-1">Your Experiences</h2>
                     <p className="text-sm text-[var(--text-secondary)] mb-5">
                         Lock in your plan — book before race week sells out
                     </p>
@@ -136,7 +136,7 @@ export default function ItineraryView({ itinerary, experiences }: Props) {
                                 <div className="flex items-center gap-3 min-w-0">
                                     <span className="text-2xl leading-none shrink-0">{exp.imageEmoji}</span>
                                     <div className="min-w-0">
-                                        <p className="text-sm font-medium text-white truncate">{exp.title}</p>
+                                        <p className="text-sm font-medium text-[var(--text-primary)] truncate">{exp.title}</p>
                                         <p className="text-xs text-[var(--text-secondary)]">
                                             {exp.priceLabel} · {exp.durationLabel}
                                         </p>
@@ -161,8 +161,8 @@ function SessionBlock({ slot }: { slot: SessionSlot }) {
     return (
         <div className="rounded-lg border border-[#E1060030] bg-[#E1060010] p-3">
             <p className="text-sm text-[#E10600] font-medium mb-1">🏎 {slot.series}</p>
-            <p className="font-bold text-white text-base">{slot.name}</p>
-            <p className="text-base mono-data text-white/60 mt-0.5">
+            <p className="font-bold text-[var(--text-primary)] text-base">{slot.name}</p>
+            <p className="text-base mono-data text-[var(--text-secondary)] mt-0.5">
                 {formatTime(slot.startTime)} – {formatTime(slot.endTime)} AEDT
             </p>
         </div>
@@ -197,7 +197,7 @@ function ExperienceCard({ exp }: { exp: Experience }) {
     return (
         <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-secondary)] p-3">
             <div className="flex items-start justify-between gap-2 mb-1">
-                <p className="font-semibold text-white text-base">
+                <p className="font-semibold text-[var(--text-primary)] text-base">
                     {exp.imageEmoji} {exp.title}
                 </p>
                 {exp.distanceKm != null && (
@@ -214,7 +214,7 @@ function ExperienceCard({ exp }: { exp: Experience }) {
                 {exp.shortDescription}
             </p>
 
-            <div className="flex items-center gap-3 mt-2 text-sm text-white/60">
+            <div className="flex items-center gap-3 mt-2 text-sm text-[var(--text-primary)]/60">
                 <span>{exp.durationLabel}</span>
                 <span>{exp.priceLabel}</span>
                 <span>★ {exp.rating.toFixed(1)}</span>

@@ -127,8 +127,8 @@ function SessionRow({ entry, status, liveProgress, index, tzLabel }: SessionRowP
           {/* Session name */}
           <p
             className={isF1
-              ? 'font-display font-bold text-base uppercase-heading text-white leading-tight'
-              : 'text-sm font-medium text-white leading-tight'
+              ? 'font-display font-bold text-base uppercase-heading text-[var(--text-primary)] leading-tight'
+              : 'text-sm font-medium text-[var(--text-primary)] leading-tight'
             }
           >
             {entry.name}
@@ -239,7 +239,7 @@ export default function ScheduleView({ schedule, initialDay = 'Thursday', tzLabe
             className={`px-5 py-2.5 rounded-full text-base font-semibold transition-all uppercase-label ${
               activeDay === day
                 ? 'bg-[var(--accent-red)] text-white'
-                : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-white hover:bg-[var(--bg-tertiary)]'
+                : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'
             }`}
           >
             {DAY_SHORT[day]}
@@ -249,14 +249,14 @@ export default function ScheduleView({ schedule, initialDay = 'Thursday', tzLabe
 
       {/* Series filter chips */}
       <div className="flex gap-2 mb-6 flex-wrap">
-        {FILTER_CHIPS.map((chip) => (
+        {FILTER_CHIPS.filter((chip) => chip.key === 'all' || schedule.some((d) => d.entries.some((e) => e.seriesKey === chip.key || (chip.key === 'porsche-cup' && e.seriesKey === 'porsche') || (chip.key === 'f1-exp' && e.seriesKey === 'experiences')))).map((chip) => (
           <button
             key={chip.key}
             onClick={() => setActiveFilter(chip.key)}
             className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
               activeFilter === chip.key
                 ? 'bg-[var(--accent-teal)] text-[var(--bg-primary)]'
-                : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-white hover:bg-[var(--bg-surface)]'
+                : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface)]'
             }`}
           >
             {chip.label}

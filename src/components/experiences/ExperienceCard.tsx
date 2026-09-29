@@ -70,8 +70,8 @@ export default function ExperienceCard({ experience, onBook, loading, index = 0,
           {/* Badges */}
           <div className="absolute top-3 left-3 right-3 flex items-start justify-between">
             <span
-              className="text-xs font-medium px-2.5 py-1 rounded-full uppercase-badge shadow-lg"
-              style={{ color, backgroundColor: 'rgba(15,15,30,0.72)', border: `1px solid ${color}55`, backdropFilter: 'blur(8px)' }}
+              className="text-xs font-semibold px-2.5 py-1 rounded-full uppercase-badge shadow-sm"
+              style={{ color, backgroundColor: 'rgba(255,255,255,0.94)', border: `1px solid ${color}40` }}
             >
               {categoryLabel}
             </span>
@@ -82,12 +82,12 @@ export default function ExperienceCard({ experience, onBook, loading, index = 0,
                 </span>
               )}
               {experience.bestseller && (
-                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-500/25 text-amber-400 uppercase-badge shadow-lg backdrop-blur-sm">
+                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 uppercase-badge shadow-lg backdrop-blur-sm">
                   🏆 Best
                 </span>
               )}
               {experience.skipTheLine && (
-                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-teal-500/25 text-teal-400 uppercase-badge shadow-lg backdrop-blur-sm">
+                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-teal-100 text-teal-700 uppercase-badge shadow-lg backdrop-blur-sm">
                   ⚡ Skip line
                 </span>
               )}
@@ -100,7 +100,7 @@ export default function ExperienceCard({ experience, onBook, loading, index = 0,
       <div className="p-5 pt-3">
         {/* Title (links to detail page) */}
         <Link href={href}>
-          <h3 className="font-display font-bold text-white text-xl leading-snug mb-2 hover:text-[var(--accent-teal)] transition-colors">
+          <h3 className="font-display font-bold text-[var(--text-primary)] text-xl leading-snug mb-2 hover:text-[var(--accent-teal)] transition-colors">
             {experience.title}
           </h3>
         </Link>
@@ -111,7 +111,7 @@ export default function ExperienceCard({ experience, onBook, loading, index = 0,
         </p>
 
         {/* Meta */}
-        <div className="flex items-center gap-4 text-base text-white/60 mb-1">
+        <div className="flex items-center gap-4 text-base text-[var(--text-secondary)] mb-1">
           <span className="mono-data">⏱ {experience.durationLabel}</span>
           <span className="mono-data">
             ★ {experience.rating.toFixed(1)}{' '}
@@ -133,14 +133,14 @@ export default function ExperienceCard({ experience, onBook, loading, index = 0,
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="flex items-baseline gap-2">
-              <span className="text-xl font-display font-bold text-white">{experience.priceLabel}</span>
+              <span className="text-xl font-display font-bold text-[var(--text-primary)]">{experience.priceLabel}</span>
               {experience.originalPrice && experience.discountPct && (
                 <span className="text-sm text-[var(--text-secondary)] line-through">
                   {formatPrice(Math.round(experience.originalPrice * 100), experience.priceCurrency)}
                 </span>
               )}
               {experience.discountPct && (
-                <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-green-500/15 text-green-400">
+                <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-green-100 text-green-700">
                   -{experience.discountPct}%
                 </span>
               )}
@@ -148,14 +148,14 @@ export default function ExperienceCard({ experience, onBook, loading, index = 0,
             <div className="flex items-center gap-2">
               <span className="text-base text-[var(--text-secondary)]">per person</span>
               {experience.bestseller && (
-                <span className="text-xs text-amber-400">⚡ Race-week favourite</span>
+                <span className="text-xs text-amber-700">⚡ Race-week favourite</span>
               )}
             </div>
           </div>
           <div className="flex items-center gap-2">
             <Link
               href={href}
-              className="px-3 py-2 rounded-full text-base font-medium border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:border-[var(--border-medium)] hover:text-white transition-colors"
+              className="px-3 py-2 rounded-full text-base font-medium border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:border-[var(--border-medium)] hover:text-[var(--text-primary)] transition-colors"
             >
               Details
             </Link>

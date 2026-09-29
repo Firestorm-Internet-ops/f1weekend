@@ -160,7 +160,7 @@ export default function ExperiencesClient({
             className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-150 border ${
               category === ''
                 ? 'bg-[var(--accent-red)] text-white border-[var(--accent-red)]'
-                : 'border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-white hover:border-[var(--border-medium)]'
+                : 'border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-medium)]'
             }`}
           >
             All <span className="opacity-60 ml-1 text-xs">{initialExperiences.length}</span>
@@ -179,7 +179,7 @@ export default function ExperiencesClient({
                 className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-150 border ${
                   isActive
                     ? ''
-                    : 'border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-white hover:border-[var(--border-medium)]'
+                    : 'border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-medium)]'
                 }`}
               >
                 {CATEGORY_EMOJIS[cat]}{' '}

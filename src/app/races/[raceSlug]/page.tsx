@@ -87,7 +87,7 @@ export default async function RaceLandingPage({ params }: Props) {
           <RaceSwitcher currentRace={race} availableRaces={availableRaces} pageType="schedule" />
         </div>
 
-        <h1 className="font-display font-black text-4xl sm:text-5xl text-white uppercase-heading leading-none mb-3">
+        <h1 className="font-display font-black text-4xl sm:text-5xl text-[var(--text-primary)] uppercase-heading leading-none mb-3">
           {race.name}
         </h1>
         <p className="text-[var(--text-secondary)] text-lg mb-1">
@@ -105,7 +105,7 @@ export default async function RaceLandingPage({ params }: Props) {
               className="group p-5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] hover:border-[var(--accent-teal)]/50 hover:bg-[var(--bg-surface)] transition-all"
             >
               <span className="text-2xl block mb-3">{icon}</span>
-              <p className="font-display font-bold text-white group-hover:text-[var(--accent-teal)] transition-colors mb-1">
+              <p className="font-display font-bold text-[var(--text-primary)] group-hover:text-[var(--accent-teal)] transition-colors mb-1">
                 {label}
               </p>
               <p className="text-xs text-[var(--text-secondary)]">{desc}</p>
@@ -125,7 +125,7 @@ export default async function RaceLandingPage({ params }: Props) {
           <section className="mt-12 pt-8 border-t border-[var(--border-subtle)]">
             {raceContent?.whyCityText && (
               <>
-                <h2 className="font-display font-bold text-xl text-white uppercase-heading mb-4">
+                <h2 className="font-display font-bold text-xl text-[var(--text-primary)] uppercase-heading mb-4">
                   Why {race.city} Is the Perfect F1 City
                 </h2>
                 <p className="text-[var(--text-secondary)] text-base leading-relaxed max-w-2xl mb-6">
@@ -158,7 +158,7 @@ export default async function RaceLandingPage({ params }: Props) {
               ].map(({ label, value }) => (
                 <div key={label} className="p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
                   <p className="text-xs font-medium uppercase-label text-[var(--text-secondary)] mb-1">{label}</p>
-                  <p className="font-display font-bold text-white text-sm">{value}</p>
+                  <p className="font-display font-bold text-[var(--text-primary)] text-sm">{value}</p>
                 </div>
               ))}
             </div>
@@ -168,7 +168,7 @@ export default async function RaceLandingPage({ params }: Props) {
         {/* Race Weekend Format — if has Thursday free day */}
         {hasThursdayFreeDay && (
           <section className="mt-12 pt-8 border-t border-[var(--border-subtle)]">
-            <h2 className="font-display font-bold text-2xl text-white uppercase-heading mb-4">
+            <h2 className="font-display font-bold text-2xl text-[var(--text-primary)] uppercase-heading mb-4">
               Race Weekend Format
             </h2>
             <p className="text-[var(--text-secondary)] text-base leading-relaxed mb-6">
@@ -208,7 +208,7 @@ export default async function RaceLandingPage({ params }: Props) {
               ].map(({ day, badge, badgeColor, desc, gap }) => (
                 <div key={day} className="p-5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
                   <div className="flex items-center gap-2 mb-2">
-                    <p className="font-display font-bold text-white">{day}</p>
+                    <p className="font-display font-bold text-[var(--text-primary)]">{day}</p>
                     <span
                       className="text-xs px-2 py-0.5 rounded-full font-medium"
                       style={{ color: badgeColor, backgroundColor: `${badgeColor}20`, border: `1px solid ${badgeColor}40` }}
@@ -227,7 +227,7 @@ export default async function RaceLandingPage({ params }: Props) {
         {/* Thursday Free Day — if has Thursday free day */}
         {hasThursdayFreeDay && (
           <section id="thursday" className="mt-12 pt-8 border-t border-[var(--border-subtle)]">
-            <h2 className="font-display font-bold text-2xl text-white uppercase-heading mb-4">
+            <h2 className="font-display font-bold text-2xl text-[var(--text-primary)] uppercase-heading mb-4">
               Thursday — Your Free Day
             </h2>
             <p className="text-[var(--text-secondary)] text-base leading-relaxed mb-6">
@@ -241,11 +241,11 @@ export default async function RaceLandingPage({ params }: Props) {
                     <p className="text-xs font-medium uppercase-label text-[var(--accent-teal)] mb-2">
                       {exp.durationLabel}
                     </p>
-                    <p className="font-display font-bold text-white mb-2">{exp.title}</p>
+                    <p className="font-display font-bold text-[var(--text-primary)] mb-2">{exp.title}</p>
                     <p className="text-xs text-[var(--text-secondary)] mb-4 line-clamp-3">
                       {exp.abstract ?? exp.shortDescription}
                     </p>
-                    <Link href={`/races/${raceSlug}/experiences/${exp.slug}`} className="text-xs font-medium text-[var(--accent-teal)] hover:text-white transition-colors">
+                    <Link href={`/races/${raceSlug}/experiences/${exp.slug}`} className="text-xs font-medium text-[var(--accent-teal)] hover:text-[var(--text-primary)] transition-colors">
                       See experience →
                     </Link>
                   </div>
@@ -258,7 +258,7 @@ export default async function RaceLandingPage({ params }: Props) {
             )}
             <Link
               href={`/races/${raceSlug}/experiences?window=thursday`}
-              className="inline-block text-sm font-medium text-[var(--accent-teal)] hover:text-white transition-colors"
+              className="inline-block text-sm font-medium text-[var(--accent-teal)] hover:text-[var(--text-primary)] transition-colors"
             >
               Browse all Thursday options →
             </Link>

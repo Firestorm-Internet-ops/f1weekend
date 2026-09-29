@@ -124,7 +124,7 @@ export default function ItineraryForm({ races, sessionsByRace, defaultRaceSlug }
         `px-4 py-2 rounded-lg text-sm font-medium border transition-all ${
             active
                 ? 'border-[var(--accent-teal)] bg-[var(--accent-teal-muted)] text-[var(--accent-teal)]'
-                : 'border-[var(--border-subtle)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:border-[var(--border-medium)] hover:text-white'
+                : 'border-[var(--border-subtle)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:border-[var(--border-medium)] hover:text-[var(--text-primary)]'
         }`;
 
     return (
@@ -142,7 +142,7 @@ export default function ItineraryForm({ races, sessionsByRace, defaultRaceSlug }
                             <button
                                 type="button"
                                 onClick={() => setRaceDropOpen(o => !o)}
-                                className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] text-sm font-medium text-white hover:border-[var(--border-medium)] transition-colors"
+                                className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] text-sm font-medium text-[var(--text-primary)] hover:border-[var(--border-medium)] transition-colors"
                                 aria-expanded={raceDropOpen}
                                 aria-haspopup="listbox"
                             >
@@ -180,7 +180,7 @@ export default function ItineraryForm({ races, sessionsByRace, defaultRaceSlug }
                                             >
                                                 <span className="text-xl">{race.flag}</span>
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="text-sm font-medium text-white">{race.name}</p>
+                                                    <p className="text-sm font-medium text-[var(--text-primary)]">{race.name}</p>
                                                     <p className="text-xs text-[var(--text-secondary)]">{race.city} · {formatRaceDates(race.raceDate, race.hasThursdayFreeDay)}</p>
                                                 </div>
                                                 {isActive && (
@@ -273,9 +273,9 @@ export default function ItineraryForm({ races, sessionsByRace, defaultRaceSlug }
                                                         className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg border text-left transition-all ${
                                                             isChecked
                                                                 ? isMandatory
-                                                                    ? 'border-[var(--accent-red)] bg-[#e1060012] text-white'
-                                                                    : 'border-[var(--accent-teal)] bg-[var(--accent-teal-muted)] text-white'
-                                                                : 'border-[var(--border-subtle)] bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:border-[var(--border-medium)] hover:text-white'
+                                                                    ? 'border-[var(--accent-red)] bg-[#e1060012] text-[var(--text-primary)]'
+                                                                    : 'border-[var(--accent-teal)] bg-[var(--accent-teal-muted)] text-[var(--text-primary)]'
+                                                                : 'border-[var(--border-subtle)] bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:border-[var(--border-medium)] hover:text-[var(--text-primary)]'
                                                         }`}
                                                     >
                                                         {/* Checkbox indicator */}
@@ -337,7 +337,7 @@ export default function ItineraryForm({ races, sessionsByRace, defaultRaceSlug }
             >
                 {loading ? (
                     <span className="flex items-center justify-center gap-2">
-                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        <span className="w-4 h-4 border-2 border-[var(--border-medium)] border-t-white rounded-full animate-spin" />
                         Building your itinerary…
                     </span>
                 ) : (
