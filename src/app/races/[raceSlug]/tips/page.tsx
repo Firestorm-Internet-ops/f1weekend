@@ -53,7 +53,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!tipsContent || !tipsContent.meta) {
     return {
-      title: `${race.city} F1 Travel Tips & FAQ | F1 Weekend`,
+      title: { absolute: `${race.city} F1 Travel Tips & FAQ | F1 Weekend` },
       description: `Everything you need to know for your ${race.city} F1 race weekend. Local tips, FAQ, and transport guides.`,
       alternates: { canonical },
     };
@@ -121,7 +121,7 @@ export default async function TipsPage({ params }: Props) {
         <p className="text-xs font-medium uppercase-label text-[var(--accent-red)] mb-2 tracking-widest">
           Round {race.round} · {race.season} Season
         </p>
-        <h1 className="font-display font-black text-4xl sm:text-5xl text-white uppercase-heading leading-none mb-3">
+        <h1 className="font-display font-black text-4xl sm:text-5xl text-[var(--text-primary)] uppercase-heading leading-none mb-3">
           {race.city} F1<br />
           <span className="text-[var(--accent-teal)]">Tips &amp; FAQ</span>
         </h1>
@@ -132,7 +132,7 @@ export default async function TipsPage({ params }: Props) {
         {/* Experiences by Category */}
         {tipsContent.categories && tipsContent.categories.length > 0 && (
           <section className="mb-12">
-            <h2 className="font-display font-bold text-2xl text-white uppercase-heading mb-4">
+            <h2 className="font-display font-bold text-2xl text-[var(--text-primary)] uppercase-heading mb-4">
               Experiences by Category
             </h2>
             <div className="space-y-8">
@@ -144,7 +144,7 @@ export default async function TipsPage({ params }: Props) {
                   <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-3">
                     {description}
                   </p>
-                  <Link href={linkHref} className="text-sm font-medium text-[var(--accent-teal)] hover:text-white transition-colors">
+                  <Link href={linkHref} className="text-sm font-medium text-[var(--accent-teal)] hover:text-[var(--text-primary)] transition-colors">
                     {linkLabel}
                   </Link>
                 </div>
@@ -156,13 +156,13 @@ export default async function TipsPage({ params }: Props) {
         {/* Travel Tips */}
         {tipsContent.travelTips && tipsContent.travelTips.length > 0 && (
           <section className="mb-12 border-t border-[var(--border-subtle)] pt-10">
-            <h2 className="font-display font-bold text-2xl text-white uppercase-heading mb-6">
+            <h2 className="font-display font-bold text-2xl text-[var(--text-primary)] uppercase-heading mb-6">
               {race.city} Travel Tips
             </h2>
             <div className="space-y-4">
               {tipsContent.travelTips.map(({ heading, body }) => (
                 <div key={heading} className="p-5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
-                  <p className="font-medium text-white mb-2">{heading}</p>
+                  <p className="font-medium text-[var(--text-primary)] mb-2">{heading}</p>
                   <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{body}</p>
                 </div>
               ))}
@@ -173,7 +173,7 @@ export default async function TipsPage({ params }: Props) {
         {/* Getting There */}
         {tipsContent.gettingThere && (
           <section className="mb-12 border-t border-[var(--border-subtle)] pt-10">
-            <h2 className="font-display font-bold text-2xl text-white uppercase-heading mb-4">
+            <h2 className="font-display font-bold text-2xl text-[var(--text-primary)] uppercase-heading mb-4">
               {tipsContent.gettingThere.heading}
             </h2>
             <p className="text-[var(--text-secondary)] text-base leading-relaxed mb-4">
@@ -184,7 +184,7 @@ export default async function TipsPage({ params }: Props) {
                 <div key={title} className="flex items-start gap-4 p-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
                   <span className="text-xl mt-0.5 shrink-0">{icon}</span>
                   <div>
-                    <p className="font-medium text-white mb-1">{title}</p>
+                    <p className="font-medium text-[var(--text-primary)] mb-1">{title}</p>
                     <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{desc}</p>
                   </div>
                 </div>
@@ -193,7 +193,7 @@ export default async function TipsPage({ params }: Props) {
             {tipsContent.gettingThere.fullGuideHref && (
               <Link
                 href={tipsContent.gettingThere.fullGuideHref}
-                className="text-sm font-medium text-[var(--accent-teal)] hover:text-white transition-colors"
+                className="text-sm font-medium text-[var(--accent-teal)] hover:text-[var(--text-primary)] transition-colors"
               >
                 Full transport guide →
               </Link>
@@ -204,12 +204,12 @@ export default async function TipsPage({ params }: Props) {
         {/* FAQ */}
         {tipsContent.faq && tipsContent.faq.length > 0 && (
           <section className="border-t border-[var(--border-subtle)] pt-10">
-            <h2 className="font-display font-bold text-2xl text-white uppercase-heading mb-6">
+            <h2 className="font-display font-bold text-2xl text-[var(--text-primary)] uppercase-heading mb-6">
               Frequently Asked Questions
             </h2>
             {tipsContent.faq.map(({ q, a }) => (
               <details key={q} className="border-b border-[var(--border-subtle)] py-4">
-                <summary className="font-display font-bold text-white cursor-pointer list-none flex items-center justify-between gap-2">
+                <summary className="font-display font-bold text-[var(--text-primary)] cursor-pointer list-none flex items-center justify-between gap-2">
                   {q}
                   <span className="text-[var(--text-secondary)] text-sm shrink-0">+</span>
                 </summary>
@@ -223,13 +223,13 @@ export default async function TipsPage({ params }: Props) {
         <div className="mt-12 pt-8 border-t border-[var(--border-subtle)] flex flex-wrap gap-4">
           <Link
             href={`/races/${raceSlug}/experiences`}
-            className="px-5 py-2.5 bg-[var(--accent-teal)] hover:bg-[var(--accent-teal-hover)] text-[var(--bg-primary)] font-semibold text-sm rounded-full transition-colors"
+            className="px-5 py-2.5 bg-[var(--accent-red)] hover:bg-[var(--accent-red-hover)] text-white font-semibold text-sm rounded-full transition-colors"
           >
             Browse All Experiences
           </Link>
           <Link
             href={`/races/${raceSlug}/schedule`}
-            className="px-5 py-2.5 border border-white/20 hover:border-white/40 text-white hover:bg-white/5 font-semibold text-sm rounded-full transition-colors"
+            className="px-5 py-2.5 border border-[var(--border-medium)] hover:border-[var(--text-tertiary)] text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] font-semibold text-sm rounded-full transition-colors"
           >
             View Full Schedule
           </Link>

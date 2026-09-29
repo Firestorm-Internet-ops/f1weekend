@@ -30,7 +30,7 @@ export default function ExperienceSuggestions({ experiences, raceSlug }: Props) 
               >
                 <span className="text-2xl leading-none shrink-0 mt-0.5">{exp.imageEmoji}</span>
                 <div className="min-w-0">
-                  <p className="text-xs font-medium text-[var(--text-secondary)] group-hover:text-white transition-colors leading-snug line-clamp-2 mb-1">
+                  <p className="text-xs font-medium text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors leading-snug line-clamp-2 mb-1">
                     {exp.title}
                   </p>
                   <div className="flex items-center gap-1.5">

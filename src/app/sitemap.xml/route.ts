@@ -1,11 +1,7 @@
 import { getAllRaces } from '@/services/race.service';
-import { getExperiencesByRace } from '@/services/experience.service';
+import { hasLiveExperiences } from '@/data/calendar-2026';
 
 export const dynamic = 'force-dynamic';
-
-function fmt(date: Date): string {
-  return date.toISOString().split('T')[0];
-}
 
 function trimTrailingSlash(url: string): string {
   return url.endsWith('/') ? url.slice(0, -1) : url;
@@ -20,89 +16,59 @@ function xmlEscape(value: string): string {
     .replaceAll("'", '&apos;');
 }
 
-const STATIC_ROUTES: Array<{
-  path: string;
-  changefreq: string;
-  priority: string;
-  useStaticDate?: boolean;
-}> = [
+// No <lastmod>: pages have no reliable "last changed" date yet, and Google
+// distrusts a sitemap whose dates are just "today". Better none than fake.
+const STATIC_ROUTES: Array<{ path: string; changefreq: string; priority: string }> = [
   { path: '/', changefreq: 'daily', priority: '1.0' },
-  { path: '/f1-2026', changefreq: 'weekly', priority: '0.8', useStaticDate: true },
-  { path: '/about', changefreq: 'monthly', priority: '0.4', useStaticDate: true },
-  { path: '/contact', changefreq: 'monthly', priority: '0.3', useStaticDate: true },
-  { path: '/experiences', changefreq: 'daily', priority: '0.7' },
-  { path: '/experiences/map', changefreq: 'weekly', priority: '0.6' },
-  { path: '/guide', changefreq: 'weekly', priority: '0.7' },
-  { path: '/schedule', changefreq: 'weekly', priority: '0.5', useStaticDate: true },
-  { path: '/getting-there', changefreq: 'monthly', priority: '0.5', useStaticDate: true },
-  // /privacy and /itinerary are intentionally omitted (noindex pages)
+  { path: '/f1-2026', changefreq: 'weekly', priority: '0.8' },
+  { path: '/about', changefreq: 'monthly', priority: '0.4' },
+  { path: '/contact', changefreq: 'monthly', priority: '0.3' },
+  // /experiences, /experiences/map, /guide, /schedule and /getting-there only
+  // redirect to the current race; /privacy and /itinerary are noindex. Not listed.
 ];
 
-const RACE_ROUTE_SUFFIXES: Array<{
-  suffix: string;
-  changefreq: string;
-  priority: string;
-  useStaticDate?: boolean;
-}> = [
+const RACE_ROUTE_SUFFIXES: Array<{ suffix: string; changefreq: string; priority: string }> = [
   { suffix: '', changefreq: 'daily', priority: '0.9' },
   { suffix: '/experiences', changefreq: 'daily', priority: '0.9' },
-  { suffix: '/guide', changefreq: 'weekly', priority: '0.85' },
-  { suffix: '/schedule', changefreq: 'weekly', priority: '0.7', useStaticDate: true },
-  { suffix: '/getting-there', changefreq: 'monthly', priority: '0.6', useStaticDate: true },
+  { suffix: '/schedule', changefreq: 'weekly', priority: '0.7' },
+  { suffix: '/getting-there', changefreq: 'monthly', priority: '0.6' },
   { suffix: '/experiences/map', changefreq: 'weekly', priority: '0.6' },
   { suffix: '/tips', changefreq: 'weekly', priority: '0.6' },
 ];
+// Individual experience pages (/races/*/experiences/*) are noindex — they carry
+// the provider's own copy — so they're not listed either.
 
 export async function GET() {
-  const now = new Date();
-  const staticDate = new Date('2026-01-01');
   const baseUrl = trimTrailingSlash(process.env.NEXT_PUBLIC_SITE_URL || 'https://f1weekend.co');
   const races = await getAllRaces();
 
-  type UrlEntry = {
-    loc: string;
-    lastmod: string;
-    changefreq: string;
-    priority: string;
-  };
+  type UrlEntry = { loc: string; changefreq: string; priority: string };
 
   const urlsMap = new Map<string, UrlEntry>();
   const addUrl = (entry: UrlEntry) => {
-    urlsMap.set(entry.loc, entry);
+    // Percent-encode non-ASCII slugs (e.g. "fundació").
+    const loc = encodeURI(entry.loc);
+    urlsMap.set(loc, { ...entry, loc });
   };
 
   for (const route of STATIC_ROUTES) {
     addUrl({
       loc: `${baseUrl}${route.path === '/' ? '' : route.path}`,
-      lastmod: fmt(route.useStaticDate ? staticDate : now),
       changefreq: route.changefreq,
       priority: route.priority,
     });
   }
 
-  const experiencesByRace = await Promise.all(
-    races.map(async (race) => ({
-      race,
-      experiences: await getExperiencesByRace(race.id),
-    })),
-  );
-
-  for (const { race, experiences } of experiencesByRace) {
+  for (const race of races) {
+    const live = hasLiveExperiences(race.slug);
     for (const route of RACE_ROUTE_SUFFIXES) {
+      // Only list pages that exist and don't redirect.
+      if (route.suffix === '/tips' && race.hasTips === false) continue;
+      if (route.suffix === '/experiences/map' && live) continue;
       addUrl({
         loc: `${baseUrl}/races/${race.slug}${route.suffix}`,
-        lastmod: fmt(route.useStaticDate ? staticDate : now),
         changefreq: route.changefreq,
         priority: route.priority,
-      });
-    }
-
-    for (const experience of experiences) {
-      addUrl({
-        loc: `${baseUrl}/races/${race.slug}/experiences/${experience.slug}`,
-        lastmod: fmt(now),
-        changefreq: 'weekly',
-        priority: '0.8',
       });
     }
   }
@@ -113,7 +79,6 @@ export async function GET() {
     .map(
       (u) => `  <url>
     <loc>${xmlEscape(u.loc)}</loc>
-    <lastmod>${u.lastmod}</lastmod>
     <changefreq>${u.changefreq}</changefreq>
     <priority>${u.priority}</priority>
   </url>`,

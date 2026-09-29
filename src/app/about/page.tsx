@@ -6,7 +6,7 @@ import { eq, count } from 'drizzle-orm';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'About | F1 Weekend',
+  title: { absolute: 'About | F1 Weekend' },
   description:
     'F1 Weekend is an F1 travel companion for the 2026 Australian Grand Prix, built by Firestorm Internet.',
   alternates: { canonical: 'https://f1weekend.co/about' },
@@ -48,7 +48,7 @@ export default async function AboutPage() {
           <p className="text-xs font-medium uppercase-label text-[var(--accent-teal)] tracking-widest mb-3">
             ABOUT US
           </p>
-          <h1 className="font-display font-black text-4xl sm:text-5xl text-white uppercase-heading leading-none mb-6">
+          <h1 className="font-display font-black text-4xl sm:text-5xl text-[var(--text-primary)] uppercase-heading leading-none mb-6">
             About F1 Weekend
           </h1>
           <div className="space-y-4 text-[var(--text-secondary)] text-lg leading-relaxed">
@@ -72,7 +72,7 @@ export default async function AboutPage() {
 
         {/* Section 2 — Feature Cards */}
         <div className="mb-16">
-          <h2 className="font-display font-bold text-xl sm:text-2xl text-white uppercase-heading mb-2">
+          <h2 className="font-display font-bold text-xl sm:text-2xl text-[var(--text-primary)] uppercase-heading mb-2">
             What F1 Weekend Does
           </h2>
           <p className="text-[var(--text-secondary)] mb-8">
@@ -101,7 +101,7 @@ export default async function AboutPage() {
                 className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] p-5"
               >
                 <div className="text-2xl mb-3">{card.icon}</div>
-                <h3 className="font-display font-bold text-white mb-1">{card.title}</h3>
+                <h3 className="font-display font-bold text-[var(--text-primary)] mb-1">{card.title}</h3>
                 <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{card.desc}</p>
               </div>
             ))}
@@ -124,7 +124,7 @@ export default async function AboutPage() {
                 <div className="font-display font-black text-3xl text-[var(--accent-teal)] leading-none mb-2">
                   {stat.number}
                 </div>
-                <div className="font-display font-bold text-white text-sm mb-1">{stat.label}</div>
+                <div className="font-display font-bold text-[var(--text-primary)] text-sm mb-1">{stat.label}</div>
                 <div className="text-sm text-[var(--text-secondary)]">{stat.sub}</div>
               </div>
             ))}

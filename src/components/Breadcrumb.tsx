@@ -21,7 +21,7 @@ export default function Breadcrumb({ items }: BreadcrumbProps) {
           <>
             <span className="text-xs">←</span>
             {secondLast.href ? (
-              <Link href={secondLast.href} className="hover:text-white transition-colors shrink-0">
+              <Link href={secondLast.href} className="hover:text-[var(--text-primary)] transition-colors shrink-0">
                 {secondLast.label}
               </Link>
             ) : (
@@ -41,7 +41,7 @@ export default function Breadcrumb({ items }: BreadcrumbProps) {
           <span key={i} className="flex items-center gap-1.5">
             {i > 0 && <span aria-hidden="true">/</span>}
             {item.href ? (
-              <Link href={item.href} className="hover:text-white transition-colors">
+              <Link href={item.href} className="hover:text-[var(--text-primary)] transition-colors">
                 {item.label}
               </Link>
             ) : (

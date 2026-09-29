@@ -10,6 +10,8 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'cdn.getyourguide.com' },
       { protocol: 'https', hostname: 'img.getyourguide.com' },
       { protocol: 'https', hostname: '**.getyourguide.com' },
+      // F1 track maps (Sepang for the Bahrain GP in Malaysia): fetched once by the image optimiser.
+      { protocol: 'https', hostname: 'media.formula1.com', pathname: '/image/upload/**' },
     ],
   },
   async headers() {
@@ -20,6 +22,8 @@ const nextConfig: NextConfig = {
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'X-Frame-Options', value: 'DENY' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          // Staging is public (no Vercel login) — keep it out of search results.
+          ...(process.env.VERCEL_ENV === 'preview' ? [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }] : []),
         ],
       },
       {

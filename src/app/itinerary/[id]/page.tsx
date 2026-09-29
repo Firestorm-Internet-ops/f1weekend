@@ -1,9 +1,11 @@
+import { getTimezoneAbbr } from '@/lib/utils';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getItinerary } from '@/services/itinerary.service';
 import { getRaceBySlug, getRaceById, getActiveRace } from '@/services/race.service';
 import { getExperiencesByRace } from '@/services/experience.service';
 import ItineraryView from '@/components/itinerary/ItineraryView';
+import ItineraryActions from '@/components/itinerary/ItineraryActions';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,7 +16,7 @@ interface Props {
 export async function generateMetadata({ params }: Props) {
   const { id } = await params;
   const itinerary = await getItinerary(id);
-  if (!itinerary) return { title: 'Itinerary | F1 Weekend' };
+  if (!itinerary) return { title: { absolute: 'Itinerary | F1 Weekend' } };
 
   const race = itinerary.raceId ? await getRaceById(itinerary.raceId) : await getActiveRace();
   const raceName = race?.name ?? '2026 Australian Grand Prix';
@@ -48,20 +50,23 @@ export default async function ItineraryDetailPage({ params }: Props) {
 
   const race = itinerary.raceId ? await getRaceById(itinerary.raceId) : await getActiveRace();
   const experiences = race ? await getExperiencesByRace(race.id) : [];
+  const firstDate = itinerary.days[0]?.date;
+  const tzLabel = race?.timezone ? getTimezoneAbbr(race.timezone, firstDate ? new Date(`${firstDate}T12:00:00Z`) : new Date()) : '';
 
   return (
     <div className="min-h-screen pt-24 pb-24 px-4">
       <div className="max-w-2xl mx-auto">
-        <div className="mb-6">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <Link
-            href="/itinerary"
-            className="text-sm text-[var(--text-secondary)] hover:text-white transition-colors"
+            href={itinerary.raceSlug ? `/itinerary?race=${itinerary.raceSlug}` : '/itinerary'}
+            className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
           >
-            ← Build another
+            ← Start a new plan
           </Link>
+          <ItineraryActions input={itinerary.input} title={itinerary.title} />
         </div>
 
-        <ItineraryView itinerary={itinerary} experiences={experiences} />
+        <ItineraryView itinerary={itinerary} experiences={experiences} tzLabel={tzLabel} />
       </div>
     </div>
   );

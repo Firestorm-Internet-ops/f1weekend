@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
+import { hasLiveExperiences } from '@/data/calendar-2026';
 import { Suspense } from 'react';
 import Link from 'next/link';
 import ExperienceMapClient from '@/components/experiences/ExperienceMapClient';
@@ -19,7 +20,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const canonical = `https://f1weekend.co/races/${raceSlug}/experiences/map`;
 
   return {
-    title,
+    title: { absolute: title },
     description,
     alternates: { canonical },
     openGraph: { title, description, url: canonical, type: 'website' },
@@ -28,6 +29,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ExperienceMapPage({ params }: Props) {
   const { raceSlug } = await params;
+  // Live-feed races show the map on the experiences page itself.
+  if (hasLiveExperiences(raceSlug)) redirect(`/races/${raceSlug}/experiences`);
   const race = await getRaceBySlug(raceSlug);
   if (!race) notFound();
 
@@ -39,16 +42,16 @@ export default async function ExperienceMapPage({ params }: Props) {
             <p className="text-xs font-medium uppercase-label text-[var(--accent-red)] mb-2">
               {race.city} {race.season}
             </p>
-            <h1 className="font-display font-black text-4xl text-white uppercase-heading">
+            <h1 className="font-display font-black text-4xl text-[var(--text-primary)] uppercase-heading">
               Experience Map
             </h1>
             <p className="text-[var(--text-secondary)] mt-2">
-              All experiences relative to {race.circuitName}.
+              All experiences relative to {race.circuitName}. Rings show roughly 30 and 60 minutes away on race day.
             </p>
           </div>
           <Link
             href={`/races/${raceSlug}/experiences`}
-            className="flex-shrink-0 mt-1 flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] text-sm text-[var(--text-secondary)] hover:text-white hover:border-[var(--border-medium)] transition-colors"
+            className="flex-shrink-0 mt-1 flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-medium)] transition-colors"
           >
             <span>≡</span>
             <span>Grid</span>
@@ -56,7 +59,11 @@ export default async function ExperienceMapPage({ params }: Props) {
         </div>
 
         <Suspense fallback={<div className="h-[600px] bg-[var(--bg-secondary)] rounded-2xl animate-pulse" />}>
-          <ExperienceMapClient raceSlug={raceSlug} />
+          <ExperienceMapClient
+            raceSlug={raceSlug}
+            circuit={{ lat: race.circuitLat, lng: race.circuitLng, name: race.circuitName }}
+            mapsApiKey={process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ''}
+          />
         </Suspense>
       </div>
     </div>

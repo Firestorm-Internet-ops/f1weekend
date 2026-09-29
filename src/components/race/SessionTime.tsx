@@ -39,7 +39,7 @@ export function SessionTime({ raceDate, time, raceTz, localOnly = false }: Sessi
 
   return (
     <span className="font-mono tabular-nums">
-      <span className="text-white">
+      <span className="text-[var(--text-primary)]">
         {raceLocalTime}
       </span>
       <span className="text-[var(--text-secondary)] text-xs ml-1">

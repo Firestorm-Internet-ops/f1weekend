@@ -63,9 +63,12 @@ function getSessionWindows(raceSlug: string): SessionWindow[] {
 export default function ExperiencesClient({
   initialExperiences = [],
   raceSlug,
+  windowCounts,
 }: {
   initialExperiences?: Experience[];
   raceSlug: string;
+  /** Experiences per session window for this race; windows missing or at 0 are hidden. */
+  windowCounts?: Record<string, number>;
 }) {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -79,7 +82,10 @@ export default function ExperiencesClient({
   const [loading, setLoading] = useState(false);
   const isFirstRender = useRef(true);
 
-  const sessionWindows = useMemo(() => getSessionWindows(raceSlug), [raceSlug]);
+  const sessionWindows = useMemo(
+    () => getSessionWindows(raceSlug).filter((w) => !windowCounts || (windowCounts[w.slug] ?? 0) > 0),
+    [raceSlug, windowCounts]
+  );
 
   // Stable category counts from initial data (don't change with filter)
   const categoryCounts = useMemo(() => {
@@ -160,7 +166,7 @@ export default function ExperiencesClient({
             className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-150 border ${
               category === ''
                 ? 'bg-[var(--accent-red)] text-white border-[var(--accent-red)]'
-                : 'border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-white hover:border-[var(--border-medium)]'
+                : 'border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-medium)]'
             }`}
           >
             All <span className="opacity-60 ml-1 text-xs">{initialExperiences.length}</span>
@@ -179,7 +185,7 @@ export default function ExperiencesClient({
                 className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-150 border ${
                   isActive
                     ? ''
-                    : 'border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-white hover:border-[var(--border-medium)]'
+                    : 'border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-medium)]'
                 }`}
               >
                 {CATEGORY_EMOJIS[cat]}{' '}

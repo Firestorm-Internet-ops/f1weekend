@@ -1,9 +1,36 @@
 import { unstable_cache } from 'next/cache';
 import { getDb } from '@/lib/db';
 import { races, sessions, experience_windows, race_content, experiences } from '@/lib/db/schema';
-import { eq, asc, gte, desc, sql, inArray, notInArray } from 'drizzle-orm';
+import { eq, asc, sql, inArray, notInArray, or, and } from 'drizzle-orm';
 import { redis } from '@/lib/redis';
 import type { Race, Session, ExperienceWindow } from '@/types/race';
+import { correctContent } from '@/lib/content-corrections';
+import { calendarEntry, isRaceOver, nextCalendarRace, sortByCalendar, LIVE_EXPERIENCE_SLUGS } from '@/data/calendar-2026';
+import { timetableSessions, timetableFor } from '@/data/timetables-2026';
+import { fetchSeasonSchedule, findJolpicaRace, mergeSessions, sessionsOf, toSessionRows, type JolpicaRace } from '@/lib/jolpica';
+
+/** Jolpica season schedule, refreshed every 12 h. [] when the API is unreachable. */
+export async function getJolpicaSeason(season: number): Promise<JolpicaRace[]> {
+  return unstable_cache(
+    async () => {
+      try {
+        return await fetchSeasonSchedule(season);
+      } catch (err) {
+        console.warn('[jolpica]', (err as Error).message);
+        return [];
+      }
+    },
+    [`jolpica:season:${season}`],
+    { revalidate: 12 * 3600, tags: ['races', 'jolpica'] }
+  )();
+}
+
+/** F1 track sessions from Jolpica for a race, in its local time; [] if not published or not found. */
+async function jolpicaSessions(race: Race): Promise<Session[]> {
+  const season = await getJolpicaSeason(race.season || Number(race.raceDate.slice(0, 4)));
+  const match = findJolpicaRace(season, race);
+  return match ? toSessionRows(sessionsOf(match), race.id, race.timezone) : [];
+}
 
 const CACHE_TTL = 3600; // 1 hour
 
@@ -13,7 +40,41 @@ function toDateString(d: unknown): string {
   return String(d).slice(0, 10);
 }
 
-function mapRace(r: typeof races.$inferSelect, hasThursdayFreeDay?: boolean): Race {
+/** Database row + the 2026 calendar (round, date, and venue when a race moved). */
+function mapRace(r: typeof races.$inferSelect, hasThursdayFreeDay?: boolean, hasTips?: boolean): Race {
+  return withCalendar({ ...mapRaceRow(r, hasThursdayFreeDay), hasTips });
+}
+
+function withCalendar(race: Race): Race {
+  const cal = calendarEntry(race.slug);
+  if (!cal) return race;
+  const v = cal.venue;
+  return {
+    ...race,
+    round: cal.round,
+    raceDate: cal.raceDate,
+    // Live-feed races have experiences from providers, whatever the stored flag says.
+    available: race.available || cal.liveExperiences === true,
+    ...(v
+      ? {
+          hasTips: false, // stored tips are for the old venue
+          name: cal.name,
+          circuitName: v.circuitName,
+          city: v.city,
+          country: v.country,
+          countryCode: v.countryCode,
+          circuitLat: v.circuitLat,
+          circuitLng: v.circuitLng,
+          timezone: v.timezone,
+          flag: v.flag,
+          venueNote: `Held at ${v.circuitName.replace(/ International Circuit$/, '')}, ${v.country} in ${race.season} (moved from ${v.movedFrom})`,
+        }
+      : {}),
+  };
+}
+
+
+function mapRaceRow(r: typeof races.$inferSelect, hasThursdayFreeDay?: boolean): Race {
   return {
     id: r.id,
     slug: r.slug ?? '',
@@ -63,51 +124,23 @@ function mapWindow(w: typeof experience_windows.$inferSelect): ExperienceWindow 
   };
 }
 
-// "Active" = first race whose race_date is today or in the future.
-// Once race day passes, the homepage immediately switches to the next upcoming race.
-// Falls back to the most recent past race if all races are done.
+// "Active" = the first race on the 2026 calendar whose weekend hasn't finished
+// (by the calendar's dates, not the older dates in the database), among races
+// the site has content for. After race day it moves to the next race.
 export async function getActiveRace(): Promise<Race | null> {
-  const todayStr = new Date().toISOString().split('T')[0];
-  const fetch = unstable_cache(
-    async () => {
-      const db = await getDb();
-      const rows = await db
-        .select()
-        .from(races)
-        .where(sql`${races.race_date} >= CURDATE() AND ${races.available} = true`)
-        .orderBy(asc(races.race_date))
-        .limit(1);
-      if (rows[0]) return rows;
-
-      // All races are past — return the most recent available one as fallback
-      return db.select().from(races).where(eq(races.available, true)).orderBy(desc(races.race_date)).limit(1);
-    },
-    [`race:active:${todayStr}`],
-    { revalidate: CACHE_TTL, tags: ['races'] }
-  );
-  const rows = await fetch();
-  return rows[0] ? mapRace(rows[0]) : null;
+  const available = await getAvailableRaces();
+  const bySlug = new Map(available.map((r) => [r.slug, r]));
+  const cal = nextCalendarRace(new Date(), new Set(bySlug.keys()));
+  if (cal) return bySlug.get(cal.slug) ?? null;
+  return available[available.length - 1] ?? null;
 }
 
-// The race immediately after the active race, or null if no more races.
+// The race after the active race, or null if no more races.
 export async function getNextRace(): Promise<Race | null> {
-  const todayStr = new Date().toISOString().split('T')[0];
-  const fetch = unstable_cache(
-    async () => {
-      const db = await getDb();
-      return db
-        .select()
-        .from(races)
-        .where(sql`${races.race_date} >= CURDATE() AND ${races.available} = true`)
-        .orderBy(asc(races.race_date))
-        .limit(2);
-    },
-    [`race:next:${todayStr}`],
-    { revalidate: CACHE_TTL, tags: ['races'] }
-  );
-  const rows = await fetch();
-  // rows[0] = active race, rows[1] = next race
-  return rows[1] ? mapRace(rows[1]) : null;
+  const [active, available] = await Promise.all([getActiveRace(), getAvailableRaces()]);
+  if (!active) return null;
+  const i = available.findIndex((r) => r.slug === active.slug);
+  return i >= 0 ? available[i + 1] ?? null : null;
 }
 
 export const getAllRaces = unstable_cache(
@@ -118,9 +151,9 @@ export const getAllRaces = unstable_cache(
       .from(races)
       .leftJoin(race_content, eq(races.id, race_content.race_id))
       .orderBy(asc(races.race_date));
-    return rows.map((row) => mapRace(row.race, !!row.content?.has_thursday_free_day));
+    return sortByCalendar(rows.map((row) => mapRace(row.race, !!row.content?.has_thursday_free_day, !!row.content?.tips_content)));
   },
-  ['races:all'],
+  ['races:all:calendar-2026'],
   { revalidate: CACHE_TTL, tags: ['races'] }
 );
 
@@ -131,11 +164,13 @@ export const getAvailableRaces = unstable_cache(
       .select({ race: races, content: race_content })
       .from(races)
       .leftJoin(race_content, eq(races.id, race_content.race_id))
-      .where(eq(races.available, true))
+      // `available` is set from stored experiences (syncAvailableRaces). Live-feed
+      // races (Bahrain at Sepang) get theirs from providers, so they always count.
+      .where(or(eq(races.available, true), inArray(races.slug, LIVE_EXPERIENCE_SLUGS)))
       .orderBy(asc(races.race_date));
-    return rows.map((row) => mapRace(row.race, !!row.content?.has_thursday_free_day));
+    return sortByCalendar(rows.map((row) => mapRace(row.race, !!row.content?.has_thursday_free_day, !!row.content?.tips_content)));
   },
-  ['races:available'],
+  ['races:available:calendar-2026:live'],
   { revalidate: CACHE_TTL, tags: ['races'] }
 );
 
@@ -146,11 +181,12 @@ export const getRacesWithExperiences = unstable_cache(
       .select({ race: races, content: race_content })
       .from(races)
       .leftJoin(race_content, eq(races.id, race_content.race_id))
-      .where(sql`EXISTS (SELECT 1 FROM experiences WHERE race_id = ${races.id})`)
+      // Live-feed races have their experiences from the providers, not the table.
+      .where(or(sql`EXISTS (SELECT 1 FROM experiences WHERE race_id = ${races.id})`, inArray(races.slug, LIVE_EXPERIENCE_SLUGS)))
       .orderBy(asc(races.race_date));
-    return rows.map((row) => mapRace(row.race, !!row.content?.has_thursday_free_day));
+    return sortByCalendar(rows.map((row) => mapRace(row.race, !!row.content?.has_thursday_free_day, !!row.content?.tips_content)));
   },
-  ['races:with-experiences'],
+  ['races:with-experiences:calendar-2026:live'],
   { revalidate: CACHE_TTL, tags: ['races', 'experiences'] }
 );
 
@@ -169,7 +205,7 @@ export async function getRaceBySlug(slug: string): Promise<Race | null> {
     { revalidate: CACHE_TTL, tags: ['races', `race:${slug}`] }
   );
   const rows = await fetch();
-  return rows[0] ? mapRace(rows[0].race, !!rows[0].content?.has_thursday_free_day) : null;
+  return rows[0] ? mapRace(rows[0].race, !!rows[0].content?.has_thursday_free_day, !!rows[0].content?.tips_content) : null;
 }
 
 export async function getRaceById(id: number): Promise<Race | null> {
@@ -187,28 +223,45 @@ export async function getRaceById(id: number): Promise<Race | null> {
     { revalidate: CACHE_TTL, tags: ['races'] }
   );
   const rows = await fetch();
-  return rows[0] ? mapRace(rows[0].race, !!rows[0].content?.has_thursday_free_day) : null;
+  return rows[0] ? mapRace(rows[0].race, !!rows[0].content?.has_thursday_free_day, !!rows[0].content?.tips_content) : null;
 }
 
 export async function getUpcomingRace(): Promise<Race | null> {
-  const fetch = unstable_cache(
-    async () => {
-      const db = await getDb();
-      return db
-        .select()
-        .from(races)
-        .where(gte(races.race_date, new Date()))
-        .orderBy(asc(races.race_date))
-        .limit(1);
-    },
-    ['race:upcoming'],
-    { revalidate: CACHE_TTL, tags: ['races'] }
-  );
-  const rows = await fetch();
-  return rows[0] ? mapRace(rows[0]) : null;
+  const all = await getAllRaces();
+  const bySlug = new Map(all.map((r) => [r.slug, r]));
+  const cal = nextCalendarRace(new Date(), new Set(bySlug.keys()));
+  return cal ? bySlug.get(cal.slug) ?? null : null;
 }
 
+/**
+ * True when the race moved venue after its data was stored (Bahrain GP →
+ * Sepang): its sessions, gap windows and written content describe the old
+ * venue and are not shown until they are replaced.
+ */
+async function venueMoved(raceId: number): Promise<boolean> {
+  const race = await getRaceById(raceId);
+  return !!(race && calendarEntry(race.slug)?.venue);
+}
+
+/**
+ * Sessions for a race, most authoritative first:
+ *  1. a full timetable in code (src/data/timetables-2026.ts);
+ *  2. for races not yet finished, F1 session times from Jolpica, merged over
+ *     the stored sessions (stored support races and events are kept);
+ *  3. the stored sessions (none for a race whose venue moved).
+ */
 export async function getSessionsByRace(raceId: number): Promise<Session[]> {
+  const race = await getRaceById(raceId);
+  if (race && timetableFor(race.slug)) return timetableSessions(race.slug, raceId);
+  const moved = await venueMoved(raceId);
+  const stored = moved ? [] : await getStoredSessions(raceId);
+  if (race && !isRaceOver(race, new Date())) {
+    return mergeSessions(stored, await jolpicaSessions(race));
+  }
+  return stored;
+}
+
+async function getStoredSessions(raceId: number): Promise<Session[]> {
   const DAY_ORDER = { Thursday: 0, Friday: 1, Saturday: 2, Sunday: 3 };
 
   const fetch = unstable_cache(
@@ -234,6 +287,7 @@ export async function getSessionsByRace(raceId: number): Promise<Session[]> {
 }
 
 export async function getWindowsByRace(raceId: number): Promise<ExperienceWindow[]> {
+  if (await venueMoved(raceId)) return [];
   const fetch = unstable_cache(
     async () => {
       const db = await getDb();
@@ -285,6 +339,7 @@ export interface RaceContentRow {
 }
 
 export async function getRaceContent(raceSlug: string): Promise<RaceContentRow | null> {
+  if (calendarEntry(raceSlug)?.venue) return null; // written for the old venue
   const fetch = unstable_cache(
     async () => {
       const db = await getDb();
@@ -326,7 +381,9 @@ export async function getRaceContent(raceSlug: string): Promise<RaceContentRow |
     [`race-content:${raceSlug}`],
     { revalidate: CACHE_TTL, tags: ['races', `race:${raceSlug}`] }
   );
-  return fetch();
+  const row = await fetch();
+  // Known errors in the stored text (DRS is gone in 2026, wrong travel claims).
+  return row && correctContent(raceSlug, row);
 }
 
 /**
@@ -378,12 +435,12 @@ export async function syncAvailableRaces(): Promise<void> {
       .set({ available: true })
       .where(inArray(races.id, withExpIds));
 
-    // Mark races without experiences as unavailable
+    // Mark races without experiences as unavailable (live-feed races excepted)
     await db.update(races)
       .set({ available: false })
-      .where(notInArray(races.id, withExpIds));
+      .where(and(notInArray(races.id, withExpIds), notInArray(races.slug, LIVE_EXPERIENCE_SLUGS)));
   } else {
-    // If no races have experiences, mark all as unavailable
-    await db.update(races).set({ available: false });
+    // If no races have experiences, mark all as unavailable (live-feed races excepted)
+    await db.update(races).set({ available: false }).where(notInArray(races.slug, LIVE_EXPERIENCE_SLUGS));
   }
 }

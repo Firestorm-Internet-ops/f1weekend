@@ -25,7 +25,9 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  const raceSlug = extractRaceSlug(pathname);
+  // Unknown slugs (a 404 page) fall back to the current race, so nav links still work.
+  const urlSlug = extractRaceSlug(pathname);
+  const raceSlug = urlSlug && races.some((r) => r.slug === urlSlug) ? urlSlug : null;
   const displayRaceSlug = raceSlug ?? defaultRaceSlug;
   const displayRace = races.find(r => r.slug === displayRaceSlug) ?? races[0] ?? null;
 
@@ -67,6 +69,8 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
   const experiencesHref = `/races/${displayRaceSlug}/experiences`;
   const gettingThereHref = `/races/${displayRaceSlug}/getting-there`;
   const tipsHref = `/races/${displayRaceSlug}/tips`;
+  // Races without tips content have no tips page (404): don't link to it.
+  const showTips = displayRace?.hasTips !== false;
 
   return (
     <>
@@ -75,11 +79,11 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
           <div className="flex items-baseline gap-2">
             <Link
               href="/"
-              className="font-display font-black text-xl tracking-widest text-white uppercase"
+              className="font-display font-black text-xl tracking-widest text-[var(--text-primary)] uppercase"
             >
               F1WEEKEND.CO
             </Link>
-            <span className="hidden sm:inline text-sm text-[var(--text-secondary)] font-medium tracking-wide">
+            <span className="hidden xl:inline text-sm text-[var(--text-secondary)] font-medium tracking-wide whitespace-nowrap">
               · by{' '}
               <a
                 href="https://firestorm-internet.com/"
@@ -98,19 +102,19 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
               <div className="relative sm:static" ref={dropdownRef}>
                 <button
                   onClick={() => setRaceDropdownOpen((o) => !o)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-secondary)] text-sm font-medium text-white hover:border-[var(--border-medium)] transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-secondary)] text-sm font-medium text-[var(--text-primary)] hover:border-[var(--border-medium)] transition-colors"
                 >
                   <span>{displayRace.flag}</span>
                   <span className="text-[var(--accent-red)] font-bold">{displayRace.shortCode}</span>
                   <span className="hidden sm:inline text-[var(--text-secondary)]">·</span>
-                  <span className="hidden sm:inline">{displayRace.city}</span>
+                  <span className="hidden sm:inline whitespace-nowrap">{displayRace.city}</span>
                   <span className="text-[var(--text-secondary)] ml-0.5">▾</span>
                 </button>
 
                 {raceDropdownOpen && (() => {
                   const today = new Date().toISOString().slice(0, 10);
                   const upcoming = races.filter((r) => r.raceDate >= today && r.available);
-                  const mobileRaces = upcoming.slice(0, 2);
+                  const mobileRaces = upcoming.slice(0, 4);
 
                   const renderRaceItem = (race: Race) => {
                     const d = new Date(race.raceDate + 'T00:00:00Z');
@@ -154,7 +158,7 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
                       >
                         <span className="text-lg">{race.flag}</span>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-white leading-tight">{race.name}</p>
+                          <p className="text-sm font-medium text-[var(--text-primary)] leading-tight">{race.name}</p>
                           <p className="text-xs text-[var(--text-secondary)]">{race.city} · {datesStr}</p>
                         </div>
                         {race.slug === displayRaceSlug && (
@@ -171,7 +175,7 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
                       className="flex items-center gap-3 px-4 py-2.5 hover:bg-[var(--bg-secondary)] transition-colors"
                     >
                       <span className="text-lg">📅</span>
-                      <p className="text-sm font-medium text-[var(--text-secondary)] hover:text-white">
+                      <p className="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
                         View Full 2026 Calendar →
                       </p>
                     </Link>
@@ -180,7 +184,7 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
                   return (
                     <div className="absolute right-0 sm:right-auto sm:left-1/2 sm:-translate-x-1/2 top-full mt-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-primary)] shadow-xl z-50 overflow-hidden
                       w-64 sm:w-auto sm:min-w-[900px]">
-                      {/* Mobile: 2 upcoming races only */}
+                      {/* Mobile: next 4 races */}
                       <div className="sm:hidden">
                         {mobileRaces.map((race) => renderRaceItem(race))}
                         <div className="border-t border-[var(--border-subtle)]">{calendarLink}</div>
@@ -200,53 +204,53 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
             )}
 
             {/* Desktop-only nav links */}
-            <div className="hidden sm:flex items-center gap-6">
+            <div className="hidden lg:flex items-center gap-5">
               <Link
                 href={scheduleHref}
-                className={`text-sm font-medium transition-colors ${
+                className={`text-sm font-medium whitespace-nowrap transition-colors ${
                   isScheduleActive
                     ? 'text-[var(--accent-teal)]'
-                    : 'text-[var(--text-secondary)] hover:text-white'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                 }`}
               >
                 Schedule
               </Link>
               <Link
                 href={experiencesHref}
-                className={`text-sm font-medium transition-colors ${
+                className={`text-sm font-medium whitespace-nowrap transition-colors ${
                   isExperiencesActive
                     ? 'text-[var(--accent-teal)]'
-                    : 'text-[var(--text-secondary)] hover:text-white'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                 }`}
               >
                 Experiences
               </Link>
               <Link
                 href={gettingThereHref}
-                className={`text-sm font-medium transition-colors ${
+                className={`text-sm font-medium whitespace-nowrap transition-colors ${
                   isGettingThereActive
                     ? 'text-[var(--accent-teal)]'
-                    : 'text-[var(--text-secondary)] hover:text-white'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                 }`}
               >
                 Getting There
               </Link>
-              <Link
+              {showTips && <Link
                 href={tipsHref}
-                className={`text-sm font-medium transition-colors ${
+                className={`text-sm font-medium whitespace-nowrap transition-colors ${
                   isTipsActive
                     ? 'text-[var(--accent-teal)]'
-                    : 'text-[var(--text-secondary)] hover:text-white'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                 }`}
               >
                 Tips
-              </Link>
+              </Link>}
               <Link
                 href="/f1-2026"
-                className={`text-sm font-medium transition-colors ${
+                className={`text-sm font-medium whitespace-nowrap transition-colors ${
                   pathname === '/f1-2026'
                     ? 'text-[var(--accent-teal)]'
-                    : 'text-[var(--text-secondary)] hover:text-white'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                 }`}
               >
                 All Races
@@ -255,15 +259,15 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
 
             {/* Itinerary — desktop only (moved to hamburger on mobile) */}
             <Link
-              href="/itinerary"
-              className="hidden sm:flex text-sm font-medium px-4 py-1.5 bg-[var(--accent-red)] hover:bg-[var(--accent-red-hover)] text-white rounded-full transition-colors whitespace-nowrap"
+              href={`/itinerary?race=${displayRaceSlug}`}
+              className="hidden lg:flex text-sm font-medium px-4 py-1.5 bg-[var(--accent-red)] hover:bg-[var(--accent-red-hover)] text-white rounded-full transition-colors whitespace-nowrap"
             >
-              Build Itinerary
+              Plan my weekend
             </Link>
 
             {/* Hamburger — mobile only */}
             <button
-              className="sm:hidden text-[var(--text-secondary)] hover:text-white transition-colors text-lg w-8 h-8 flex items-center justify-center"
+              className="lg:hidden text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors text-lg w-8 h-8 flex items-center justify-center"
               onClick={() => setIsOpen(o => !o)}
               aria-label="Toggle menu"
             >
@@ -275,7 +279,7 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
 
       {/* Mobile dropdown */}
       {isOpen && (
-        <div className="sm:hidden fixed top-14 left-0 right-0 z-40 bg-[var(--bg-primary)] border-b border-[var(--border-subtle)]">
+        <div className="lg:hidden fixed top-14 left-0 right-0 z-40 bg-[var(--bg-primary)] shadow-lg border-b border-[var(--border-subtle)]">
           <div className="max-w-6xl mx-auto px-4 py-3 flex flex-col gap-1">
             <Link
               href={scheduleHref}
@@ -283,7 +287,7 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
               className={`text-sm font-medium py-2 transition-colors ${
                 isScheduleActive
                   ? 'text-[var(--accent-teal)]'
-                  : 'text-[var(--text-secondary)] hover:text-white'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}
             >
               Schedule
@@ -294,7 +298,7 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
               className={`text-sm font-medium py-2 transition-colors ${
                 isExperiencesActive
                   ? 'text-[var(--accent-teal)]'
-                  : 'text-[var(--text-secondary)] hover:text-white'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}
             >
               Experiences
@@ -305,36 +309,36 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
               className={`text-sm font-medium py-2 transition-colors ${
                 isGettingThereActive
                   ? 'text-[var(--accent-teal)]'
-                  : 'text-[var(--text-secondary)] hover:text-white'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}
             >
               Getting There
             </Link>
-            <Link
+            {showTips && <Link
               href={tipsHref}
               onClick={() => setIsOpen(false)}
               className={`text-sm font-medium py-2 transition-colors ${
                 isTipsActive
                   ? 'text-[var(--accent-teal)]'
-                  : 'text-[var(--text-secondary)] hover:text-white'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}
             >
               Tips
-            </Link>
+            </Link>}
             <Link
               href="/f1-2026"
               onClick={() => setIsOpen(false)}
-              className="text-sm font-medium py-2 text-[var(--text-secondary)] hover:text-white transition-colors"
+              className="text-sm font-medium py-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
             >
               📅 2026 Calendar
             </Link>
             <div className="pt-2 mt-1 border-t border-[var(--border-subtle)]">
               <Link
-                href="/itinerary"
+                href={`/itinerary?race=${displayRaceSlug}`}
                 onClick={() => setIsOpen(false)}
                 className="block text-sm font-medium py-2.5 px-4 bg-[var(--accent-red)] hover:bg-[var(--accent-red-hover)] text-white rounded-lg transition-colors text-center"
               >
-                Build Itinerary
+                Plan my weekend
               </Link>
             </div>
           </div>

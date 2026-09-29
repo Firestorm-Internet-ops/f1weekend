@@ -6,9 +6,9 @@ import { formatRaceDates } from '@/lib/utils';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'F1 2026 Season Travel Guide — All 24 Races, Cities & Dates | F1 Weekend',
+  title: { absolute: 'F1 2026 Season Travel Guide — All 23 Races, Cities & Dates | F1 Weekend' },
   description:
-    'Complete F1 2026 calendar with travel guides, city breakdowns, and race dates for all 24 grands prix. Plan your Formula 1 travel for Melbourne, Shanghai, Monaco, Silverstone and more.',
+    'Complete F1 2026 calendar with travel guides, city breakdowns, and race dates for all 23 grands prix. Plan your Formula 1 travel for Melbourne, Shanghai, Monaco, Silverstone and more.',
   alternates: { canonical: 'https://f1weekend.co/f1-2026' },
   keywords: [
     'F1 2026 calendar',
@@ -19,15 +19,15 @@ export const metadata: Metadata = {
     'F1 grand prix 2026',
   ],
   openGraph: {
-    title: 'F1 2026 Season Travel Guide — All 24 Races | F1 Weekend',
-    description: 'Complete F1 2026 calendar with travel guides for every race city. 24 races, 24 cities, 5 continents.',
+    title: 'F1 2026 Season Travel Guide — All 23 Races | F1 Weekend',
+    description: 'Complete F1 2026 calendar with travel guides for every race city. 23 races, 23 cities, 5 continents.',
     url: 'https://f1weekend.co/f1-2026',
     siteName: 'F1 Weekend',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'F1 2026 Season Travel Guide — All 24 Races | F1 Weekend',
+    title: 'F1 2026 Season Travel Guide — All 23 Races | F1 Weekend',
     description: 'Complete F1 2026 calendar with travel guides for every race city.',
   },
 };
@@ -35,31 +35,27 @@ export const metadata: Metadata = {
 const FAQ = [
   {
     q: 'When is the 2026 F1 season?',
-    a: 'The 2026 Formula 1 season runs from March 5 to December 6, spanning 24 grands prix across 24 cities on 5 continents. It starts in Melbourne, Australia and finishes at Yas Marina in Abu Dhabi.',
+    a: 'The 2026 Formula 1 season runs from March 6 to December 6, spanning 23 grands prix across 23 cities on 5 continents. It starts in Melbourne, Australia and finishes at Yas Marina in Abu Dhabi.',
   },
   {
     q: 'Which cities host F1 races in 2026?',
-    a: 'The 2026 F1 calendar includes Melbourne, Shanghai, Suzuka, Sakhir, Jeddah, Miami, Imola, Monaco, Barcelona, Montreal, Spielberg, Silverstone, Spa, Budapest, Zandvoort, Monza, Baku, Singapore, Austin, Mexico City, São Paulo, Las Vegas, Lusail, and Abu Dhabi.',
+    a: 'The 2026 calendar visits Melbourne, Shanghai, Suzuka, Miami, Montreal, Monaco, Barcelona, Spielberg, Silverstone, Spa, Budapest, Zandvoort, Monza, Madrid, Baku, Sepang (Kuala Lumpur — the Bahrain Grand Prix is held in Malaysia this year), Singapore, Austin, Mexico City, São Paulo, Las Vegas, Lusail and Abu Dhabi.',
   },
   {
     q: 'What is the best F1 race to travel to in 2026?',
-    a: 'Melbourne is widely regarded as one of the best F1 races for first-time F1 travellers — incredible atmosphere, world-class city to explore, and a street-style circuit at Albert Park. Monaco, Silverstone, and Spa are other legendary destinations worth considering.',
+    a: 'For the rest of the season: Singapore for a night race in the city centre, Austin and Mexico City for the atmosphere, São Paulo for passionate crowds, Las Vegas for the spectacle and Abu Dhabi for the season finale. Street circuits like Singapore and Las Vegas make it easy to explore between sessions.',
   },
   {
     q: 'How do I plan an F1 race trip?',
-    a: 'Book your race tickets and accommodation early — popular races like Melbourne and Monaco sell out months in advance. Plan activities for session gaps using guides like ours. Arrive a day before and stay a day after to enjoy the host city without race-day crowds.',
+    a: 'Book race tickets and a hotel first — they sell out early. Check the weekend schedule, then fill the gaps between sessions with things to do near the circuit. Arrive a day before and stay a day after to see the host city without race-day crowds.',
   },
   {
-    q: 'Is Melbourne a good destination for the 2026 Australian Grand Prix?',
-    a: 'Yes — Melbourne is one of the most liveable cities in the world with an exceptional food scene, vibrant culture, and easy access to the Albert Park Circuit. The city is compact and walkable, making it ideal for F1 travellers who want to explore between sessions.',
-  },
-  {
-    q: 'When should I book for the 2026 F1 races?',
-    a: 'For the Australian GP (Mar 5–8) you should book now — hotels and tickets sell out fast. For later races like Silverstone and Monaco, book 6–12 months in advance. Las Vegas, Miami, and Singapore require early booking due to limited accommodation options.',
+    q: 'When should I book for the remaining 2026 races?',
+    a: 'As soon as you can. Hotels near Singapore, Las Vegas and Mexico City fill up months ahead, and prices rise sharply in race week. Experiences near the circuit also sell out on race weekends, so book the ones you want before you travel.',
   },
 ];
 
-const CANCELLED_RACES = new Set(['bahrain-2026', 'saudi-2026']);
+const CANCELLED_RACES = new Set(['saudi-2026']);
 
 export default async function F12026Page() {
   const allRaces = await getAllRaces();
@@ -87,16 +83,16 @@ export default async function F12026Page() {
     '@type': 'EventSeries',
     name: '2026 Formula 1 World Championship',
     url: 'https://f1weekend.co/f1-2026',
-    description: 'The 2026 FIA Formula One World Championship — 24 grands prix across 24 cities.',
+    description: 'The 2026 FIA Formula One World Championship — 23 grands prix across 23 cities.',
     organizer: { '@type': 'Organization', name: 'Formula One Management', url: 'https://www.formula1.com' },
-    startDate: '2026-03-05',
+    startDate: '2026-03-06',
     endDate: '2026-12-06',
   };
 
   const itemListLd = {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
-    name: '2026 F1 Calendar — All 24 Grands Prix',
+    name: '2026 F1 Calendar — All 23 Grands Prix',
     url: 'https://f1weekend.co/f1-2026',
     numberOfItems: F1_2026.length,
     itemListElement: F1_2026.map((race, i) => ({
@@ -117,10 +113,10 @@ export default async function F12026Page() {
     })),
   };
 
-  // Next 2 upcoming guide races (race weekend not yet over)
+  // Next 3 upcoming guide races (race weekend not yet over)
   const guideRaces = F1_2026
     .filter((r) => r.isAvailable && r.raceEnd && new Date(r.raceEnd) >= today)
-    .slice(0, 2);
+    .slice(0, 3);
 
   return (
     <>
@@ -136,20 +132,20 @@ export default async function F12026Page() {
             <p className="text-xs font-medium uppercase-label text-[var(--accent-red)] mb-3 tracking-widest">
               2026 SEASON
             </p>
-            <h1 className="font-display font-black text-4xl sm:text-5xl text-white uppercase-heading leading-none mb-4">
+            <h1 className="font-display font-black text-4xl sm:text-5xl text-[var(--text-primary)] uppercase-heading leading-none mb-4">
               The 2026 F1 Season<br />
               <span className="text-[var(--accent-teal)]">Travel Guide</span>
             </h1>
             <p className="text-[var(--text-secondary)] text-lg max-w-xl">
-              24 races. 24 cities. One insane year. Your complete guide to following Formula 1 around the world.
+              23 races. 23 cities. One insane year. Your complete guide to following Formula 1 around the world.
             </p>
           </div>
 
           {/* Stat pills */}
           <div className="flex flex-wrap gap-3 mb-12">
             {[
-              { value: '24', label: 'Races' },
-              { value: '24', label: 'Host Cities' },
+              { value: '23', label: 'Races' },
+              { value: '23', label: 'Host Cities' },
               { value: '5', label: 'Continents' },
               { value: '10', label: 'Months' },
             ].map(({ value, label }) => (
@@ -157,7 +153,7 @@ export default async function F12026Page() {
                 key={label}
                 className="px-5 py-3 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-secondary)]"
               >
-                <span className="font-display font-black text-white text-lg">{value}</span>
+                <span className="font-display font-black text-[var(--text-primary)] text-lg">{value}</span>
                 <span className="text-[var(--text-secondary)] text-sm ml-2">{label}</span>
               </div>
             ))}
@@ -165,7 +161,7 @@ export default async function F12026Page() {
 
           {/* Full guides section */}
           <section className="mb-10">
-            <h2 className="font-display font-bold text-xl text-white uppercase-heading mb-5">
+            <h2 className="font-display font-bold text-xl text-[var(--text-primary)] uppercase-heading mb-5">
               Full Guides Available
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
@@ -183,7 +179,7 @@ export default async function F12026Page() {
                           Round {race.round}
                         </span>
                       </div>
-                      <h3 className="font-display font-bold text-white group-hover:text-[var(--accent-teal)] transition-colors">
+                      <h3 className="font-display font-bold text-[var(--text-primary)] group-hover:text-[var(--accent-teal)] transition-colors">
                         {race.name}
                       </h3>
                       <p className="text-sm text-[var(--text-secondary)] mt-0.5">
@@ -204,7 +200,7 @@ export default async function F12026Page() {
 
           {/* Full calendar grid */}
           <section className="mb-14">
-            <h2 className="font-display font-bold text-xl text-white uppercase-heading mb-5">
+            <h2 className="font-display font-bold text-xl text-[var(--text-primary)] uppercase-heading mb-5">
               Full 2026 Calendar
             </h2>
             <div className="rounded-xl border border-[var(--border-subtle)] overflow-hidden">
@@ -220,7 +216,7 @@ export default async function F12026Page() {
                   </span>
                   <span className="text-xl shrink-0">{race.flag}</span>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-white truncate">{race.name}</p>
+                    <p className="font-medium text-[var(--text-primary)] truncate">{race.name}</p>
                     <p className="text-xs text-[var(--text-secondary)] mono-data">{race.circuit} · {race.dates}</p>
                   </div>
                   {race.hasGuide && race.slug ? (
@@ -231,7 +227,7 @@ export default async function F12026Page() {
                       Guide →
                     </Link>
                   ) : race.isCancelled ? (
-                    <span className="shrink-0 text-xs font-medium px-3 py-1.5 rounded-full border border-dashed border-red-500/30 text-red-400/70 whitespace-nowrap cursor-default">
+                    <span className="shrink-0 text-xs font-medium px-3 py-1.5 rounded-full border border-dashed border-red-500/30 text-red-700/70 whitespace-nowrap cursor-default">
                       Called off
                     </span>
                   ) : (
@@ -246,7 +242,7 @@ export default async function F12026Page() {
 
           {/* FAQ */}
           <section className="mb-14">
-            <h2 className="font-display font-bold text-2xl text-white uppercase-heading mb-6">
+            <h2 className="font-display font-bold text-2xl text-[var(--text-primary)] uppercase-heading mb-6">
               F1 Travel FAQ
             </h2>
             <div className="space-y-4">
@@ -255,7 +251,7 @@ export default async function F12026Page() {
                   key={q}
                   className="group rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] overflow-hidden"
                 >
-                  <summary className="px-5 py-4 cursor-pointer font-medium text-white list-none flex items-center justify-between gap-3 hover:text-[var(--accent-teal)] transition-colors">
+                  <summary className="px-5 py-4 cursor-pointer font-medium text-[var(--text-primary)] list-none flex items-center justify-between gap-3 hover:text-[var(--accent-teal)] transition-colors">
                     <span>{q}</span>
                     <span className="text-[var(--text-secondary)] group-open:rotate-180 transition-transform shrink-0">▾</span>
                   </summary>
@@ -273,13 +269,13 @@ export default async function F12026Page() {
               Start Planning
             </p>
             <div className="flex flex-wrap gap-4">
-              {F1_2026.filter(r => r.isAvailable).slice(0, 3).map(race => (
+              {F1_2026.filter(r => r.isAvailable && r.raceEnd && new Date(r.raceEnd) >= today).slice(0, 3).map(race => (
                 <Link
                   key={race.slug}
                   href={`/itinerary?race=${race.slug}`}
                   className="px-6 py-3 rounded-xl bg-[var(--accent-red)] hover:bg-[var(--accent-red-hover)] text-white font-display font-bold transition-colors"
                 >
-                  {race.flag} {race.city} GP Guide
+                  {race.flag} Plan {race.city}
                 </Link>
               ))}
             </div>

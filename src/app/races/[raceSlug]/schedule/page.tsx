@@ -5,7 +5,7 @@ import ScheduleView from '@/components/schedule/ScheduleView';
 import Breadcrumb from '@/components/Breadcrumb';
 import RaceSwitcher from '@/components/race/RaceSwitcher';
 import { getRaceBySlug, getSessionsByRace, getRaceContent, getAvailableRaces, getWindowsByRace } from '@/services/race.service';
-import { getScheduleByRace } from '@/services/schedule.service';
+import { getScheduleByRace, scheduleFromSessions } from '@/services/schedule.service';
 import { getTimezoneAbbr } from '@/lib/utils';
 
 export const revalidate = 3600; // 1 hour
@@ -31,12 +31,27 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const canonical = `https://f1weekend.co/races/${raceSlug}/schedule`;
 
   return {
-    title,
+    title: { absolute: title },
     description,
     alternates: { canonical },
     openGraph: { title, description, url: canonical, type: 'website' },
     twitter: { card: 'summary_large_image', title, description },
   };
+}
+
+/** Intro built from the actual sessions (no "Sprint (if applicable)" boilerplate). */
+function scheduleIntro(race: { season: number; name: string; circuitName: string; city: string }, sessions: { name: string; dayOfWeek: string; startTime: string; sessionType: string }[]): string {
+  const at = (s?: { dayOfWeek: string; startTime: string }) => (s ? `${s.dayOfWeek} at ${s.startTime.slice(0, 5)}` : null);
+  const f1 = sessions.filter((s) => ['practice', 'qualifying', 'sprint', 'race'].includes(s.sessionType));
+  const quali = f1.find((s) => s.sessionType === 'qualifying' && !/sprint/i.test(s.name));
+  const sprint = f1.find((s) => s.sessionType === 'sprint');
+  const raceStart = f1.find((s) => s.sessionType === 'race');
+  const parts = [
+    `The ${race.season} ${race.name} runs at ${race.circuitName}, ${race.city}.`,
+    f1[0] ? `Track action starts ${at(f1[0])}` + (quali ? `, qualifying is ${at(quali)}` : '') + (sprint ? `, the Sprint is ${at(sprint)}` : '') + (raceStart ? ` and the race starts ${at(raceStart)} (local time).` : '.') : '',
+    `Find things to do in ${race.city} that fit around the sessions.`,
+  ];
+  return parts.filter(Boolean).join(' ');
 }
 
 export default async function SchedulePage({ params }: Props) {
@@ -48,11 +63,12 @@ export default async function SchedulePage({ params }: Props) {
   ]);
   if (!race) notFound();
 
-  const [schedule, sessions, windows] = await Promise.all([
-    getScheduleByRace(race.id, race.raceDate),
+  const [storedSchedule, sessions, windows] = await Promise.all([
+    getScheduleByRace(race.id, race.raceDate, race.slug),
     getSessionsByRace(race.id),
     getWindowsByRace(race.id),
   ]);
+  const schedule = scheduleFromSessions(storedSchedule, sessions);
 
   const hasThursdayFreeDay = raceContent?.hasThursdayFreeDay ?? false;
   const firstDayOffset = hasThursdayFreeDay ? -3 : -2;
@@ -66,6 +82,7 @@ export default async function SchedulePage({ params }: Props) {
       'Asia/Shanghai': '+08:00',
       'Australia/Melbourne': '+11:00',
       'Asia/Bahrain': '+03:00',
+      'Asia/Kuala_Lumpur': '+08:00',
       'Asia/Riyadh': '+03:00',
       'Asia/Tokyo': '+09:00',
     };
@@ -113,7 +130,7 @@ export default async function SchedulePage({ params }: Props) {
         <div className="mb-4">
           <RaceSwitcher currentRace={race} availableRaces={availableRaces} pageType="schedule" />
         </div>
-        <h1 className="font-display font-black text-4xl md:text-5xl text-white uppercase-heading mb-2">
+        <h1 className="font-display font-black text-4xl md:text-5xl text-[var(--text-primary)] uppercase-heading mb-2">
           Weekend Schedule
         </h1>
         <p className="text-[var(--text-secondary)] text-sm mb-8">
@@ -125,9 +142,7 @@ export default async function SchedulePage({ params }: Props) {
           </p>
         ) : (
           <p className="text-[var(--text-secondary)] text-base leading-relaxed max-w-2xl mb-8">
-            The {race.season} {race.name} runs at {race.circuitName}, {race.city}.
-            The weekend brings qualifying, the F1 Sprint (if applicable), and the main race on Sunday.
-            Explore curated experiences in {race.city} matched to your session gaps.
+            {scheduleIntro(race, sessions)}
           </p>
         )}
         <ScheduleView
@@ -139,7 +154,7 @@ export default async function SchedulePage({ params }: Props) {
         />
         {raceContent?.sessionGapCopy && raceContent.sessionGapCopy.length > 0 && (
           <section className="mt-12 border-t border-[var(--border-subtle)] pt-8">
-            <h2 className="font-display font-bold text-xl text-white uppercase-heading mb-4">
+            <h2 className="font-display font-bold text-xl text-[var(--text-primary)] uppercase-heading mb-4">
               Session Gap Planner
             </h2>
             <p className="text-[var(--text-secondary)] text-sm leading-relaxed mb-6">
@@ -152,12 +167,12 @@ export default async function SchedulePage({ params }: Props) {
                   <p className="text-xs font-medium uppercase-label text-[var(--accent-teal)] mb-2">
                     {windows.find(w => w.slug === gap.windowSlug)?.label ?? 'GAP'}
                   </p>
-                  <h3 className="font-display font-bold text-white text-lg mb-2">{gap.heading}</h3>
+                  <h3 className="font-display font-bold text-[var(--text-primary)] text-lg mb-2">{gap.heading}</h3>
                   <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-4">
                     {gap.copy}
                   </p>
                   <div className="flex flex-wrap gap-3">
-                    <Link href={`/races/${raceSlug}/experiences?window=${gap.windowSlug}`} className="text-xs font-medium text-[var(--accent-teal)] hover:text-white transition-colors">
+                    <Link href={`/races/${raceSlug}/experiences?window=${gap.windowSlug}`} className="text-xs font-medium text-[var(--accent-teal)] hover:text-[var(--text-primary)] transition-colors">
                       Browse experiences for this gap →
                     </Link>
                   </div>
@@ -166,7 +181,7 @@ export default async function SchedulePage({ params }: Props) {
             </div>
             <Link
               href={`/races/${raceSlug}/experiences`}
-              className="inline-block mt-6 text-sm font-medium text-[var(--accent-teal)] hover:text-white transition-colors"
+              className="inline-block mt-6 text-sm font-medium text-[var(--accent-teal)] hover:text-[var(--text-primary)] transition-colors"
             >
               Browse all {race.city} experiences →
             </Link>

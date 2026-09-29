@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy | F1 Weekend',
+  title: { absolute: 'Privacy Policy | F1 Weekend' },
   description: 'Privacy policy for the F1 Weekend app by Firestorm Internet.',
   alternates: { canonical: 'https://f1weekend.co/privacy' },
   robots: { index: false, follow: false },
@@ -35,6 +35,7 @@ const SECTIONS = [
     title: 'Third-Party Services',
     content: [
       'GetYourGuide — affiliate partner for bookable experiences. Clicking affiliate links may set cookies on GetYourGuide\'s domain. See getYourGuide.com for their privacy policy.',
+      'Viator and Tiqets — affiliate partners for bookable experiences on some pages. Clicking their links may set cookies on their domains. See viator.com and tiqets.com for their privacy policies.',
       'Qdrant — vector search service used to find relevant experiences. No personal data is stored in Qdrant.',
       'Vercel — hosting platform. Access logs may include IP addresses per Vercel\'s standard infrastructure logging. See vercel.com/legal/privacy-policy.',
     ],
@@ -66,7 +67,7 @@ export default function PrivacyPage() {
           <p className="text-xs font-medium uppercase-label text-[var(--accent-teal)] tracking-widest mb-3">
             LEGAL
           </p>
-          <h1 className="font-display font-black text-4xl sm:text-5xl text-white uppercase-heading leading-none mb-4">
+          <h1 className="font-display font-black text-4xl sm:text-5xl text-[var(--text-primary)] uppercase-heading leading-none mb-4">
             Privacy Policy
           </h1>
           <p className="text-[var(--text-secondary)] text-sm mb-6">Last updated: February 2026</p>
@@ -84,7 +85,7 @@ export default function PrivacyPage() {
               className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] p-5 sm:p-6 animate-[card-enter_250ms_cubic-bezier(0.16,1,0.3,1)_both]"
               style={{ animationDelay: `${i * 80}ms` }}
             >
-              <h2 className="font-display font-bold text-xl text-white uppercase-heading mb-4">
+              <h2 className="font-display font-bold text-xl text-[var(--text-primary)] uppercase-heading mb-4">
                 {i + 1}. {section.title.toUpperCase()}
               </h2>
               <ul className="space-y-3">
@@ -103,21 +104,21 @@ export default function PrivacyPage() {
             className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] p-5 sm:p-6 animate-[card-enter_250ms_cubic-bezier(0.16,1,0.3,1)_both]"
             style={{ animationDelay: `${SECTIONS.length * 80}ms` }}
           >
-            <h2 className="font-display font-bold text-xl text-white uppercase-heading mb-4">
+            <h2 className="font-display font-bold text-xl text-[var(--text-primary)] uppercase-heading mb-4">
               {SECTIONS.length + 1}. CONTACT
             </h2>
             <p className="text-[var(--text-secondary)] leading-relaxed">
               Privacy questions or data deletion requests:{' '}
               <a
                 href="mailto:help@firestorm-internet.com"
-                className="text-white hover:text-[var(--accent-teal)] transition-colors underline underline-offset-2"
+                className="text-[var(--text-primary)] hover:text-[var(--accent-teal)] transition-colors underline underline-offset-2"
               >
                 help@firestorm-internet.com
               </a>
               {' '}or visit our{' '}
               <Link
                 href="/contact"
-                className="text-white hover:text-[var(--accent-teal)] transition-colors underline underline-offset-2"
+                className="text-[var(--text-primary)] hover:text-[var(--accent-teal)] transition-colors underline underline-offset-2"
               >
                 Contact page
               </Link>.

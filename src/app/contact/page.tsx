@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Contact | F1 Weekend',
+  title: { absolute: 'Contact | F1 Weekend' },
   description: 'Get in touch with the F1 Weekend team at Firestorm Internet. Email, phone, and address for the Australian Grand Prix 2026 travel app.',
   alternates: { canonical: 'https://f1weekend.co/contact' },
   keywords: ['contact F1 Weekend', 'Firestorm Internet contact', 'F1 travel app support', 'Australian Grand Prix 2026 contact'],
@@ -56,7 +56,7 @@ export default function ContactPage() {
           <p className="text-xs font-medium uppercase-label text-[var(--accent-teal)] tracking-widest mb-3">
             GET IN TOUCH
           </p>
-          <h1 className="font-display font-black text-4xl sm:text-5xl text-white uppercase-heading leading-none mb-6">
+          <h1 className="font-display font-black text-4xl sm:text-5xl text-[var(--text-primary)] uppercase-heading leading-none mb-6">
             Contact Us
           </h1>
           <p className="text-[var(--text-secondary)] text-lg leading-relaxed">
@@ -67,7 +67,7 @@ export default function ContactPage() {
 
         {/* Section 2 — We're Here to Help */}
         <div className="mb-16">
-          <h2 className="font-display font-bold text-xl sm:text-2xl text-white uppercase-heading mb-4">
+          <h2 className="font-display font-bold text-xl sm:text-2xl text-[var(--text-primary)] uppercase-heading mb-4">
             We&apos;re Here to Help
           </h2>
           <div className="space-y-4 text-[var(--text-secondary)] text-base leading-relaxed mb-8">
@@ -81,7 +81,7 @@ export default function ContactPage() {
           </div>
           <a
             href="mailto:help@firestorm-internet.com"
-            className="inline-flex items-center gap-3 px-6 py-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-white hover:border-[var(--border-medium)] transition-colors text-lg font-medium"
+            className="inline-flex items-center gap-3 px-6 py-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-medium)] transition-colors text-lg font-medium"
           >
             <span className="text-[var(--accent-teal)]">✉</span>
             help@firestorm-internet.com
@@ -90,7 +90,7 @@ export default function ContactPage() {
 
         {/* Section 3 — Contact Information 2×2 grid */}
         <div>
-          <h2 className="font-display font-bold text-xl sm:text-2xl text-white uppercase-heading mb-6">
+          <h2 className="font-display font-bold text-xl sm:text-2xl text-[var(--text-primary)] uppercase-heading mb-6">
             Contact Information
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -136,7 +136,7 @@ export default function ContactPage() {
                     {item.href ? (
                       <a
                         href={item.href}
-                        className="text-[var(--text-secondary)] hover:text-white transition-colors leading-relaxed"
+                        className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors leading-relaxed"
                       >
                         {item.content}
                       </a>

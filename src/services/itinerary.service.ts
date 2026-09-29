@@ -6,8 +6,12 @@ import { generateId } from '@/lib/utils';
 import { getRaceBySlug, getSessionsByRace, getWindowsByRace } from '@/services/race.service';
 import { getExperiencesByWindow } from '@/services/experience.service';
 import type { ExperienceWindow } from '@/types/race';
+import { hasLiveExperiences } from '@/data/calendar-2026';
+import { getNearbyFeed } from '@/services/nearby-feed.service';
+import { gapLabel, newPickState, pickForGap, type GapKind } from '@/lib/itinerary-feed';
 
-const DAY_ORDER = ['Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
+// Monday/Tuesday were missing: departing on them produced an empty itinerary.
+const DAY_ORDER = ['Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday', 'Monday', 'Tuesday'] as const;
 const SESSION_DAYS = ['Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
 const DAY_START = '08:00';
 const DAY_END = '22:00';
@@ -15,8 +19,8 @@ const DAY_END = '22:00';
 // Compute race day dates from the race's race_date (Sunday = race day).
 // Thursday = -3 days, Friday = -2, Saturday = -1, Sunday = 0.
 function computeRaceDates(raceDateStr: string): Record<string, string> {
-    const DAYS = ['Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
-    const OFFSETS = [-3, -2, -1, 0];
+    const DAYS = ['Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday', 'Monday', 'Tuesday'] as const;
+    const OFFSETS = [-4, -3, -2, -1, 0, 1, 2];
     const result: Record<string, string> = {};
     for (let i = 0; i < DAYS.length; i++) {
         const d = new Date(raceDateStr + 'T00:00:00Z');
@@ -64,7 +68,11 @@ function findBestWindow(
     return best;
 }
 
-export async function buildManualItinerary(input: ManualItineraryInput): Promise<Itinerary> {
+/**
+ * Builds the itinerary and saves it. If saving fails the plan is still
+ * returned (saved: false) so the visitor sees it instead of an error.
+ */
+export async function buildManualItinerary(input: ManualItineraryInput): Promise<{ itinerary: Itinerary; saved: boolean }> {
     const race = await getRaceBySlug(input.raceSlug);
     if (!race) throw new Error(`Race not found: ${input.raceSlug}`);
 
@@ -79,7 +87,12 @@ export async function buildManualItinerary(input: ManualItineraryInput): Promise
     const arrivalIdx  = DAY_ORDER.indexOf(input.arrivalDay  as typeof DAY_ORDER[number]);
     const departureIdx = DAY_ORDER.indexOf(input.departureDay as typeof DAY_ORDER[number]);
     const presentDays = DAY_ORDER.slice(arrivalIdx, departureIdx + 1);
-    const activeDays  = presentDays.filter(d => (SESSION_DAYS as readonly string[]).includes(d));
+    // Live-feed races: every day you're there gets suggestions (free days get
+    // day trips). Database races: only session days have gap windows.
+    const live = hasLiveExperiences(race.slug);
+    const activeDays  = live ? presentDays : presentDays.filter(d => (SESSION_DAYS as readonly string[]).includes(d));
+    const feedCards = live ? (await getNearbyFeed(race)).cards : [];
+    const picks = newPickState();
 
     const days = [];
 
@@ -106,7 +119,26 @@ export async function buildManualItinerary(input: ManualItineraryInput): Promise
 
         // Build gap slots
         const gapSlots: GapSlot[] = [];
-        for (const gap of gapBlocks) {
+        if (live) {
+            gapBlocks.forEach((gap, i) => {
+                const kind: GapKind = daySessions.length === 0
+                    ? 'free-day'
+                    : i === 0 && gap.end === daySessions[0].startTime && gap.start === DAY_START
+                        ? 'before-sessions'
+                        : gap.end === DAY_END ? 'after-sessions' : 'between-sessions';
+                const feedSuggestions = pickForGap(feedCards, { start: gap.start, end: gap.end, kind }, picks);
+                if (feedSuggestions.length === 0) return;
+                gapSlots.push({
+                    type: 'gap',
+                    startTime: gap.start,
+                    endTime: gap.end,
+                    windowLabel: gapLabel(kind, gap.start, gap.end),
+                    suggestionIds: [],
+                    feedSuggestions,
+                });
+            });
+        }
+        for (const gap of live ? [] : gapBlocks) {
             const window = findBestWindow(gap.start, gap.end, day, windows);
             if (!window) continue;
 
@@ -146,22 +178,31 @@ export async function buildManualItinerary(input: ManualItineraryInput): Promise
 
     const id = generateId();
     const title = `${race.city} ${race.season} — ${input.arrivalDay} to ${input.departureDay}`;
-    const itinerary: Itinerary = { id, title, days, raceId: race.id };
+    const itinerary: Itinerary = {
+        id, title, days, raceId: race.id, raceSlug: race.slug,
+        input: { raceSlug: race.slug, arrivalDay: input.arrivalDay, departureDay: input.departureDay, sessionIds: input.sessionIds },
+    };
 
-    const db = await getDb();
-    await db.insert(itineraries).values({
-        id,
-        race_id: race.id,
-        arrival_day: input.arrivalDay,
-        departure_day: input.departureDay,
-        interests: null,
-        group_size: 1,
-        itinerary_json: itinerary,
-        prompt_hash: null,
-        generation_model: 'manual',
-    });
+    try {
+        const db = await getDb();
+        await db.insert(itineraries).values({
+            id,
+            race_id: race.id,
+            // The column predates Saturday arrivals; the choice itself is kept in itinerary_json.input.
+            arrival_day: input.arrivalDay === 'Saturday' ? null : input.arrivalDay,
+            departure_day: input.departureDay,
+            interests: null,
+            group_size: 1,
+            itinerary_json: itinerary,
+            prompt_hash: null,
+            generation_model: 'manual',
+        });
+    } catch (err) {
+        console.error('[itinerary] save failed, returning unsaved plan:', (err as Error).message.slice(0, 200));
+        return { itinerary, saved: false };
+    }
 
-    return itinerary;
+    return { itinerary, saved: true };
 }
 
 export async function getItinerary(id: string): Promise<Itinerary | null> {
@@ -180,7 +221,9 @@ export async function getItinerary(id: string): Promise<Itinerary | null> {
         .where(eq(itineraries.id, id))
         .catch(() => {});
 
-    const itinerary = result[0].itinerary_json as Itinerary;
+    // JSON columns come back as objects from MySQL/TiDB but as strings from MariaDB.
+    const raw = result[0].itinerary_json;
+    const itinerary = (typeof raw === 'string' ? JSON.parse(raw) : raw) as Itinerary;
     if (result[0].race_id) itinerary.raceId = result[0].race_id;
     return itinerary;
 }

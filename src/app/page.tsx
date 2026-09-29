@@ -11,15 +11,39 @@ import { formatRaceDates } from '@/lib/utils';
 import BookButton from '@/components/experiences/BookButton';
 import type { Experience } from '@/types/experience';
 import HomepageExploreSection, { type ExploreDayData } from '@/components/homepage/HomepageExploreSection';
+import NearbyFeed, { FeedPicks } from '@/components/experiences/NearbyFeed';
+import WeekendGlance from '@/components/race/WeekendGlance';
+import RaceFaq from '@/components/race/RaceFaq';
+import { codeFaqs } from '@/data/faqs-2026';
+import RaceStrip from '@/components/race/RaceStrip';
+import TrackOutline from '@/components/race/TrackOutline';
+import { getTrackSvg } from '@/services/track.service';
+import { getWeekendFeed } from '@/services/nearby-feed.service';
+import { calendarEntry, hasLiveExperiences } from '@/data/calendar-2026';
+import fs from 'node:fs';
+import path from 'node:path';
+
+/** A /public image path if the file is actually there (added by hand); https URLs are used as they are. */
+function existingPublicFile(src: string | undefined): string | undefined {
+  if (!src) return undefined;
+  if (/^https:\/\//.test(src)) return src;
+  try {
+    return fs.existsSync(path.join(process.cwd(), 'public', src)) ? src : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 export const dynamic = 'force-dynamic';
 
 export async function generateMetadata(): Promise<Metadata> {
   const activeRaceSlug = await getActiveRaceSlug();
-  const [race, raceContent] = await Promise.all([
+  const [race, storedContent] = await Promise.all([
     getRaceBySlug(activeRaceSlug),
     getRaceContent(activeRaceSlug),
   ]);
+  // Written for the old venue when the race has moved (Bahrain GP → Sepang).
+  const raceContent = calendarEntry(activeRaceSlug)?.venue ? null : storedContent;
 
   if (!race) {
     return {
@@ -28,11 +52,15 @@ export async function generateMetadata(): Promise<Metadata> {
     };
   }
 
-  const title = raceContent?.pageTitle ?? `${race.city} F1 Weekend Guide — ${race.name} ${race.season} | F1 Weekend`;
+  const venue = race.venueNote ? ` at ${race.circuitName.replace(/ International Circuit$/, '')}, ${race.country}` : '';
+  // "Singapore Grand Prix 2026: F1 Weekend Guide" — no second "Singapore" when the name already has the city.
+  const cityPart = race.name.includes(race.city) ? '' : `${race.city} `;
+  const title = raceContent?.pageTitle ?? `${race.name} ${race.season}${venue}: ${cityPart}F1 Weekend Guide | F1 Weekend`;
+  // Absolute: the layout template would append "| F1 Weekend" a second time.
   const description = raceContent?.pageDescription ?? `Plan your perfect ${race.name} weekend in ${race.city}. Curated experiences matched to session gaps, full schedule, and transport guide.`;
 
   return {
-    title,
+    title: { absolute: title },
     description,
     alternates: { canonical: 'https://f1weekend.co' },
     keywords: [
@@ -110,12 +138,12 @@ function FeaturedCard({ exp, badge, activeRaceSlug }: { exp: Experience, badge?:
         </span>
       )}
       <span className="text-3xl mb-3">{exp.imageEmoji}</span>
-      <h3 className="font-display font-bold text-white group-hover:text-[var(--accent-teal)] transition-colors mb-2 line-clamp-2 min-h-[2.5rem]">
+      <h3 className="font-display font-bold text-[var(--text-primary)] group-hover:text-[var(--accent-teal)] transition-colors mb-2 line-clamp-2 min-h-[2.5rem]">
         {exp.title}
       </h3>
       <div className="flex items-center gap-2 mb-2">
-        <span className="text-yellow-400 text-xs">★</span>
-        <span className="text-xs font-medium text-white">{exp.rating.toFixed(1)}</span>
+        <span className="text-amber-500 text-xs">★</span>
+        <span className="text-xs font-medium text-[var(--text-primary)]">{exp.rating.toFixed(1)}</span>
         <span className="text-[var(--text-secondary)] text-xs">({exp.reviewCount.toLocaleString()})</span>
       </div>
       <div className="mt-auto pt-3 space-y-1">
@@ -132,11 +160,20 @@ function FeaturedCard({ exp, badge, activeRaceSlug }: { exp: Experience, badge?:
 
 export default async function HomePage() {
   const activeRaceSlug = await getActiveRaceSlug();
-  const [raceContent, race, availableRaces] = await Promise.all([
+  const [storedContent, race, availableRaces] = await Promise.all([
     getRaceContent(activeRaceSlug),
     getRaceBySlug(activeRaceSlug),
     getAvailableRaces(),
   ]);
+  // When a race has moved (Bahrain GP → Sepang), its stored copy, circuit
+  // image, sessions and gap windows describe the old venue: don't show them.
+  const venueMoved = !!calendarEntry(activeRaceSlug)?.venue;
+  const raceContent = venueMoved ? null : storedContent;
+  const live = hasLiveExperiences(activeRaceSlug);
+  // Track image: stored for the race, or the new venue's (Sepang) once added to /public/tracks.
+  const trackImage = raceContent?.circuitMapSrc ?? existingPublicFile(calendarEntry(activeRaceSlug)?.venue?.trackImage);
+  // No image file: draw the layout from OpenStreetMap (cached 30 days).
+  const trackSvg = !trackImage && race ? await getTrackSvg(race) : null;
 
   if (!race) {
     return (
@@ -146,12 +183,13 @@ export default async function HomePage() {
     );
   }
 
-  const [sessions, windows, featuredExps, popularExps, topRatedExps] = await Promise.all([
-    getSessionsByRace(race.id),
-    getWindowsByRace(race.id),
-    getFeaturedExperiences(race.id),
-    getMostPopularExperiences(race.id, 5), // Fetch more to allow for dedup
-    getTopRatedExperiences(race.id, 5),    // Fetch more to allow for dedup
+  const [sessions, windows, featuredExps, popularExps, topRatedExps, feed] = await Promise.all([
+    getSessionsByRace(race.id), // timetable in code for moved races
+    venueMoved ? Promise.resolve([]) : getWindowsByRace(race.id),
+    live ? Promise.resolve([]) : getFeaturedExperiences(race.id),
+    live ? Promise.resolve([]) : getMostPopularExperiences(race.id, 5), // Fetch more to allow for dedup
+    live ? Promise.resolve([]) : getTopRatedExperiences(race.id, 5),    // Fetch more to allow for dedup
+    live ? getWeekendFeed(race) : Promise.resolve(null),
   ]);
 
   // Deduplication logic
@@ -225,6 +263,17 @@ export default async function HomePage() {
 
   const heroDateRange = formatRaceDates(race.raceDate, sessions.some(s => s.dayOfWeek === 'Thursday'));
   const expBasePath = `/races/${activeRaceSlug}/experiences`;
+  // "02 – 04 OCT": first to last day of the weekend (calendar dates when known).
+  const stripDates = (() => {
+    const cal = calendarEntry(activeRaceSlug);
+    const end = new Date(`${race.raceDate}T00:00:00Z`);
+    const start = cal ? new Date(`${cal.startDate}T00:00:00Z`) : new Date(end.getTime() - 2 * 86_400_000);
+    const dd = (d: Date) => String(d.getUTCDate()).padStart(2, '0');
+    const mon = (d: Date) => d.toLocaleDateString('en-GB', { month: 'short', timeZone: 'UTC' }).toUpperCase();
+    return start.getUTCMonth() === end.getUTCMonth()
+      ? `${dd(start)} – ${dd(end)} ${mon(end)}`
+      : `${dd(start)} ${mon(start)} – ${dd(end)} ${mon(end)}`;
+  })();
 
   // Timezone label for explore section (e.g. "GMT+11")
   const tzLabel = 'GMT' + tzOffset.replace(/:00$/, '');
@@ -255,7 +304,10 @@ export default async function HomePage() {
       };
     });
 
-  const SEASON_PREVIEW = availableRaces.slice(0, 5).map((r) => ({
+  // Season strip starts at the race we lead with: finished races are history.
+  const fromIdx = Math.max(0, availableRaces.findIndex((r) => r.slug === activeRaceSlug));
+  const racesLeft = availableRaces.length - fromIdx;
+  const SEASON_PREVIEW = availableRaces.slice(fromIdx, fromIdx + 6).map((r) => ({
     round: r.round,
     flag: r.flag,
     short: r.shortCode,
@@ -264,7 +316,8 @@ export default async function HomePage() {
     active: r.slug === activeRaceSlug
   }));
 
-  const HOME_FAQ = raceContent?.faqItems ?? [];
+  // Stored FAQs, or the ones written in code for a moved venue (Sepang).
+  const HOME_FAQ = raceContent?.faqItems ?? codeFaqs(race.slug) ?? [];
 
   // Structured Data
   const websiteLd = {
@@ -299,7 +352,7 @@ export default async function HomePage() {
     <div className="min-h-screen">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(allSchemas) }} />
       {/* ── Hero ── */}
-      <section className="relative overflow-hidden pt-20 pb-12 px-4">
+      <section className="relative overflow-hidden pt-20 pb-4 px-4">
         <div className="absolute inset-0 carbon-texture" />
         <div
           className="absolute inset-0"
@@ -310,19 +363,29 @@ export default async function HomePage() {
         <div className="absolute bottom-0 left-0 right-0 h-24 hero-gradient" />
 
         <div className="relative max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center min-h-[420px]">
-            <div className="flex flex-col justify-center py-8">
+          <RaceStrip
+            round={race.round}
+            dateLabel={stripDates}
+            flag={race.flag}
+            raceName={race.name}
+            note={race.venueNote}
+            renderedAt={new Date().toISOString()}
+            href={`/races/${activeRaceSlug}/schedule`}
+            timezone={race.timezone}
+          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 items-center md:min-h-[420px]">
+            <div className="flex flex-col justify-center pt-8 pb-2 md:py-8">
               <div className="flex flex-col gap-1.5 mb-5">
                 <span className="px-2 py-0.5 rounded-full bg-[var(--accent-red)] text-white text-[10px] font-bold tracking-wider w-fit">
                   NEXT RACE
                 </span>
-                <p className="text-xs font-medium uppercase-label text-[var(--accent-red)] tracking-widest leading-snug">
-                  🏎 {race.name} · {race.city} · {heroDateRange}
-                </p>
               </div>
 
-              <h1 className="font-display font-black text-5xl md:text-6xl text-white uppercase-heading leading-tight mb-4">
-                {raceContent?.homepageCopy?.heroHeading ? (
+              <h1 className="font-display font-black text-5xl md:text-6xl text-[var(--text-primary)] uppercase-heading leading-tight mb-4">
+                {live ? (
+                  // Say what the site does, not a slogan.
+                  <>What to do in {race.city}<br /><span className="text-[var(--accent-red)]">between F1 sessions.</span></>
+                ) : raceContent?.homepageCopy?.heroHeading ? (
                   raceContent.homepageCopy.heroHeading
                 ) : (
                   <>{race.city} has<br /><span className="text-[var(--accent-red)]">more to offer.</span></>
@@ -330,21 +393,24 @@ export default async function HomePage() {
               </h1>
 
               <p className="text-[var(--text-secondary)] text-base md:text-lg max-w-sm">
-                {raceContent?.homepageCopy?.heroSubtitle ?? `Discover the best of ${race.city} — curated experiences for every session gap of the race weekend.`}
+                {live
+                  ? `Tours, food and tickets around ${race.circuitName}, each one checked against the race-weekend timetable and the trip back to the circuit.`
+                  : raceContent?.homepageCopy?.heroSubtitle ?? `Discover the best of ${race.city} — curated experiences for every session gap of the race weekend.`}
               </p>
 
               <div className="flex flex-wrap gap-3 mb-8 mt-6">
+                {/* The planner is the one thing built around the session times: lead with it. */}
                 <Link
-                  href={expBasePath}
-                  className="px-5 py-2.5 bg-[var(--accent-teal)] hover:bg-[var(--accent-teal-hover)] text-[var(--bg-primary)] font-semibold text-sm rounded-full transition-colors whitespace-nowrap"
+                  href={`/itinerary?race=${activeRaceSlug}`}
+                  className="px-5 py-2.5 bg-[var(--accent-red)] hover:bg-[var(--accent-red-hover)] text-white font-semibold text-sm rounded-full transition-colors whitespace-nowrap"
                 >
-                  Explore {race.city}
+                  Plan my race weekend →
                 </Link>
                 <Link
-                  href="/itinerary"
-                  className="px-5 py-2.5 border border-white/20 hover:border-white/40 text-white hover:bg-white/5 font-semibold text-sm rounded-full transition-colors whitespace-nowrap"
+                  href={expBasePath}
+                  className="px-5 py-2.5 border border-[var(--border-medium)] hover:border-[var(--text-tertiary)] text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] font-semibold text-sm rounded-full transition-colors whitespace-nowrap"
                 >
-                  Build Itinerary
+                  Explore {race.city}
                 </Link>
               </div>
 
@@ -356,33 +422,57 @@ export default async function HomePage() {
               </div>
             </div>
 
-            <div className="hidden md:flex items-center justify-center relative">
-              <CircuitMap
-                src={raceContent?.circuitMapSrc ?? undefined}
-                alt={`${race.circuitName} — Circuit Map`}
-                className="w-full max-w-2xl opacity-90"
+            <div className="flex flex-col gap-4">
+              {trackImage ? (
+                <CircuitMap
+                  src={trackImage}
+                  alt={`${race.circuitName} — Circuit Map`}
+                  width={1252}
+                  height={704}
+                  className="hidden md:block w-full"
+                />
+              ) : trackSvg ? (
+                <TrackOutline svg={trackSvg} className="hidden md:block w-full max-w-xl mx-auto" />
+              ) : null}
+              <WeekendGlance
+                sessions={sessions.filter((s) => ['practice', 'qualifying', 'sprint', 'race'].includes(s.sessionType))}
+                raceDate={race.raceDate}
+                circuitName={race.circuitName}
+                tzLabel={tzLabel}
+                timezone={race.timezone}
+                scheduleHref={`/races/${activeRaceSlug}/schedule`}
               />
             </div>
           </div>
         </div>
       </section>
 
+      {/* ── Picks: the first bookable things, right under the hero (first screen on phones) ── */}
+      {feed && feed.picks.length > 0 && (
+        <div className="max-w-6xl mx-auto px-4 pt-8">
+          <FeedPicks picks={feed.picks} raceSlug={activeRaceSlug} cities={[race.city]} />
+        </div>
+      )}
+
       {/* ── SEO Intro Section ── */}
       <section className="max-w-6xl mx-auto px-4 py-10 border-b border-[var(--border-subtle)]">
-        <div className="text-[var(--text-secondary)] text-base leading-relaxed max-w-4xl prose prose-invert">
+        <div className="text-[var(--text-secondary)] text-base leading-relaxed max-w-4xl prose">
           {raceContent?.homepageIntro ? (
             <div className="space-y-4">
-              <h2 className="font-display font-black text-2xl text-white uppercase-heading">
+              <h2 className="font-display font-black text-2xl text-[var(--text-primary)] uppercase-heading">
                 {raceContent.homepageIntro.split('\n')[0]}
               </h2>
               <p>{raceContent.homepageIntro.split('\n').slice(1).join('\n')}</p>
             </div>
           ) : (
             <>
-              <h2 className="font-display font-black text-xl text-white uppercase-heading mb-4">
+              <h2 className="font-display font-black text-xl text-[var(--text-primary)] uppercase-heading mb-4">
                 Plan Your {race.city} F1 Weekend Around the Sessions
               </h2>
-              <p>{raceContent?.howItWorksText}</p>
+              <p>
+                {raceContent?.howItWorksText ??
+                  `The ${race.name} runs ${heroDateRange} at ${race.circuitName}. Below is everything you can book nearby, sorted by how long it takes to get there on a race weekend — near the circuit first, then ${race.city} and a few day trips.`}
+              </p>
             </>
           )}
         </div>
@@ -392,18 +482,35 @@ export default async function HomePage() {
       <section className="max-w-6xl mx-auto px-4 py-10">
         <div className="flex items-start justify-between mb-5">
           <div>
-            <h2 className="font-display font-black text-xl text-white uppercase-heading">
+            <h2 className="font-display font-black text-xl text-[var(--text-primary)] uppercase-heading">
               {raceContent?.homepageCopy?.featuredHeading ?? `Best Things to Do in ${race.city} During the F1 Race`}
             </h2>
             <p className="text-sm text-[var(--text-secondary)] mt-1.5">
-              {raceContent?.homepageCopy?.featuredDescription ?? `Curated for the ${race.city} Grand Prix weekend — activities matched to every session gap.`}
+              {raceContent?.homepageCopy?.featuredDescription ?? (live
+                ? `More from GetYourGuide, Viator and Tiqets around ${race.circuitName}; each card says which gap in the schedule it fits. The map is on the experiences page.`
+                : `Curated for the ${race.city} Grand Prix weekend — activities matched to every session gap.`)}
             </p>
           </div>
-          <Link href={expBasePath} className="text-sm font-medium text-[var(--accent-teal)] hover:text-white transition-colors shrink-0 mt-1">
+          <Link href={expBasePath} className="text-sm font-medium text-[var(--accent-teal)] hover:text-[var(--text-primary)] transition-colors shrink-0 mt-1">
             View all →
           </Link>
         </div>
 
+        {feed ? (
+          <NearbyFeed
+            compact
+            pageSize={6}
+            cards={feed.cards}
+            excludeKeys={feed.picks.map((p) => p.key)}
+            showMap={false}
+            raceSlug={activeRaceSlug}
+            circuit={{ lat: race.circuitLat, lng: race.circuitLng, name: race.circuitName }}
+            moreHref={expBasePath}
+            mapsApiKey={process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ''}
+            cities={[race.city]}
+            lazyMap
+          />
+        ) : (
         <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide lg:grid lg:grid-cols-5 lg:overflow-visible">
           {dedupedPopular.map((exp) => (
             <FeaturedCard key={`pop-${exp.id}`} exp={exp} badge="Most Popular" activeRaceSlug={activeRaceSlug} />
@@ -415,15 +522,16 @@ export default async function HomePage() {
             <FeaturedCard key={`top-${exp.id}`} exp={exp} badge="Top Rated" activeRaceSlug={activeRaceSlug} />
           ))}
         </div>
+        )}
       </section>
 
       {/* ── Season Preview Strip ── */}
       <section className="max-w-6xl mx-auto px-4 pb-10">
         <div className="flex items-center justify-between mb-3">
           <p className="text-xs font-medium uppercase-label text-[var(--text-secondary)] tracking-widest">
-            {new Date().getFullYear()} SEASON · {availableRaces.length} RACES
+            {race.season} SEASON · {racesLeft} {racesLeft === 1 ? 'RACE' : 'RACES'} TO GO
           </p>
-          <Link href="/f1-2026" className="text-xs font-medium text-[var(--accent-teal)] hover:text-white transition-colors">
+          <Link href="/f1-2026" className="text-xs font-medium text-[var(--accent-teal)] hover:text-[var(--text-primary)] transition-colors">
             Full calendar →
           </Link>
         </div>
@@ -435,7 +543,7 @@ export default async function HomePage() {
             return (
               <Link key={r.slug} href={`/races/${r.slug}`} className={tileClass}>
                 <span className="text-lg leading-none">{r.flag}</span>
-                <span className={`text-[10px] font-bold uppercase-label tracking-wider ${r.active ? 'text-white' : 'text-[var(--text-secondary)]'}`}>
+                <span className={`text-[10px] font-bold uppercase-label tracking-wider ${r.active ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}>
                   {r.short}
                 </span>
                 {r.active ? (
@@ -446,44 +554,32 @@ export default async function HomePage() {
               </Link>
             );
           })}
-          <Link
-            href="/f1-2026"
-            className="shrink-0 flex flex-col items-center justify-center gap-1 px-3 py-2.5 rounded-lg border border-dashed border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-white hover:border-[var(--border-medium)] transition-colors min-w-[56px]"
-          >
-            <span className="text-base font-bold">+{availableRaces.length - 5}</span>
-            <span className="text-[10px] uppercase-label tracking-wider">more</span>
-          </Link>
+          {racesLeft > SEASON_PREVIEW.length && (
+            <Link
+              href="/f1-2026"
+              className="shrink-0 flex flex-col items-center justify-center gap-1 px-3 py-2.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-secondary)] text-[var(--text-primary)] hover:border-[var(--border-medium)] transition-colors min-w-[64px]"
+            >
+              <span className="text-sm font-bold">+{racesLeft - SEASON_PREVIEW.length}</span>
+              <span className="text-[10px] uppercase-label tracking-wider text-[var(--text-secondary)]">see all</span>
+            </Link>
+          )}
         </div>
       </section>
 
       {/* ── Explore City (Session-based) ── */}
-      <HomepageExploreSection
-        city={race.city}
-        days={exploreDays}
-        expBasePath={expBasePath}
-        tzLabel={tzLabel}
-        scheduleHref={`/races/${activeRaceSlug}/schedule`}
-      />
+      {/* Live races already show the weekend in the hero card: don't repeat it. */}
+      {!live && exploreDays.length > 0 && (
+        <HomepageExploreSection
+          city={race.city}
+          days={exploreDays}
+          expBasePath={expBasePath}
+          tzLabel={tzLabel}
+          scheduleHref={`/races/${activeRaceSlug}/schedule`}
+        />
+      )}
 
       {/* ── FAQ ── */}
-      <section className="max-w-3xl mx-auto px-4 pb-24">
-        <h2 className="font-display font-black text-2xl text-white uppercase-heading mb-8">
-          Frequently Asked Questions
-        </h2>
-        <div className="space-y-4">
-          {HOME_FAQ.map(({ q, a }) => (
-            <details key={q} className="group rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] overflow-hidden">
-              <summary className="px-6 py-4 cursor-pointer font-bold text-white list-none flex items-center justify-between gap-4 hover:bg-[var(--bg-surface)] transition-colors">
-                <span>{q}</span>
-                <span className="text-[var(--text-secondary)] group-open:rotate-180 transition-transform">▾</span>
-              </summary>
-              <div className="px-6 pb-5 pt-2 text-[var(--text-secondary)] text-sm leading-relaxed border-t border-[var(--border-subtle)]">
-                {a}
-              </div>
-            </details>
-          ))}
-        </div>
-      </section>
+      <RaceFaq items={HOME_FAQ} className="max-w-3xl mx-auto px-4 pb-24" />
     </div>
   );
 }

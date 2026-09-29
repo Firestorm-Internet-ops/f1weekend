@@ -6,39 +6,36 @@ import type { Experience } from '@/types/experience';
 import { ALBERT_PARK_CIRCUIT } from '@/data/circuit-path';
 import { CATEGORY_COLORS } from '@/lib/constants/categories';
 import BookButton from '@/components/experiences/BookButton';
+import {
+  classifyExperience,
+  nearbyLabel,
+  raceKey,
+  RACE_BASES,
+  type LatLng,
+  type NearbyInfo,
+  type NearbyTier,
+} from '@/lib/nearby';
+import { TIER_STYLE } from '@/lib/constants/nearby-styles';
+import { LIGHT_MAP_STYLE } from '@/lib/map-style';
 
-const CIRCUIT = { lat: -37.8497, lng: 144.968 };
+// Used only when a race has no circuit coordinates (original Melbourne default)
+const FALLBACK_CENTER = { lat: -37.8497, lng: 144.968 };
 
-// Google Maps dark style matching app's #15151E background
-const DARK_MAP_STYLE: google.maps.MapTypeStyle[] = [
-  { elementType: 'geometry', stylers: [{ color: '#1a1a26' }] },
-  { elementType: 'labels.text.stroke', stylers: [{ color: '#15151e' }] },
-  { elementType: 'labels.text.fill', stylers: [{ color: '#9a9aaf' }] },
-  { featureType: 'administrative.locality', elementType: 'labels.text.fill', stylers: [{ color: '#c8c8d8' }] },
-  { featureType: 'poi', elementType: 'labels.text.fill', stylers: [{ color: '#9a9aaf' }] },
-  { featureType: 'poi.park', elementType: 'geometry', stylers: [{ color: '#1f2a1f' }] },
-  { featureType: 'poi.park', elementType: 'labels.text.fill', stylers: [{ color: '#4a7a4a' }] },
-  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#2c2c3e' }] },
-  { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#1a1a26' }] },
-  { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#7878a0' }] },
-  { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#3a3a52' }] },
-  { featureType: 'road.highway', elementType: 'geometry.stroke', stylers: [{ color: '#1a1a26' }] },
-  { featureType: 'road.highway', elementType: 'labels.text.fill', stylers: [{ color: '#a0a0c0' }] },
-  { featureType: 'transit', elementType: 'geometry', stylers: [{ color: '#2a2a3e' }] },
-  { featureType: 'transit.station', elementType: 'labels.text.fill', stylers: [{ color: '#9a9aaf' }] },
-  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0d1b2a' }] },
-  { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#4a6a8a' }] },
-  { featureType: 'water', elementType: 'labels.text.stroke', stylers: [{ color: '#0d1b2a' }] },
-];
+const isValidPoint = (p?: Partial<LatLng> | null): p is LatLng =>
+  !!p && Number.isFinite(p.lat) && Number.isFinite(p.lng) && !(p.lat === 0 && p.lng === 0);
 
 interface Props {
   experiences: Experience[];
   height?: string;
   raceSlug?: string;
+  /** The race's circuit; the map centres here and measures distances from it. */
+  circuit?: { lat: number; lng: number; name: string };
+  /** Browser Maps key, passed from the server (GOOGLE_MAPS_API_KEY). */
+  apiKey?: string;
 }
 
-export default function ExperienceMap({ experiences, height = '500px', raceSlug }: Props) {
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
+export default function ExperienceMap({ experiences, height = '500px', raceSlug = '', circuit, apiKey: apiKeyProp }: Props) {
+  const apiKey = apiKeyProp || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '';
   const { isLoaded, loadError } = useJsApiLoader({
     id: 'google-map',
     googleMapsApiKey: apiKey,
@@ -50,25 +47,56 @@ export default function ExperienceMap({ experiences, height = '500px', raceSlug 
   const onLoad = useCallback((m: google.maps.Map) => setMap(m), []);
   const onUnmount = useCallback(() => setMap(null), []);
 
-  // Fit bounds to nearby pins only (exclude day trips > 15 km)
+  const circuitPoint = isValidPoint(circuit) ? { lat: circuit.lat, lng: circuit.lng } : null;
+  const bases = useMemo(() => RACE_BASES[raceKey(raceSlug)] ?? [], [raceSlug]);
+  const isMelbourne = raceKey(raceSlug) === 'melbourne';
+
+  // Distance group for every experience, using the same rules as the audit
+  const nearbyById = useMemo(() => {
+    const out = new Map<number, NearbyInfo>();
+    for (const e of experiences) {
+      out.set(e.id, classifyExperience({ lat: e.lat ?? undefined, lng: e.lng ?? undefined }, raceSlug, circuitPoint));
+    }
+    return out;
+    // circuitPoint is derived from `circuit`
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [experiences, raceSlug, circuit?.lat, circuit?.lng]);
+
+  const tierCounts = useMemo(() => {
+    const counts: Record<NearbyTier, number> = { near: 0, city: 0, daytrip: 0, 'too-far': 0, unknown: 0 };
+    nearbyById.forEach((n) => counts[n.tier]++);
+    return counts;
+  }, [nearbyById]);
+
+  // Stable object: a new one each render would re-centre the map and undo fitBounds.
+  const center = useMemo(
+    () => circuitPoint ?? bases[0] ?? FALLBACK_CENTER,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [circuit?.lat, circuit?.lng, bases]
+  );
+
+  // Fit the view to the circuit, where fans stay, and the near / city pins
   useEffect(() => {
     if (!map || !isLoaded) return;
 
-    const nearbyPins = experiences.filter(
-      (e) => e.lat != null && e.lng != null && (e.distanceKm ?? Infinity) <= 15
-    );
+    const closePins = experiences.filter((e) => {
+      const tier = nearbyById.get(e.id)?.tier;
+      return isValidPoint({ lat: e.lat ?? undefined, lng: e.lng ?? undefined }) && (tier === 'near' || tier === 'city');
+    });
+    const anchors = [...(circuitPoint ? [circuitPoint] : []), ...bases];
 
-    if (nearbyPins.length === 0) {
-      map.panTo(CIRCUIT);
-      map.setZoom(14);
+    if (closePins.length === 0 && anchors.length <= 1) {
+      map.panTo(center);
+      map.setZoom(13);
       return;
     }
 
     const bounds = new window.google.maps.LatLngBounds();
-    bounds.extend(CIRCUIT);
-    nearbyPins.forEach((e) => bounds.extend({ lat: e.lat!, lng: e.lng! }));
+    anchors.forEach((a) => bounds.extend({ lat: a.lat, lng: a.lng }));
+    closePins.forEach((e) => bounds.extend({ lat: e.lat!, lng: e.lng! }));
     map.fitBounds(bounds, 60);
-  }, [map, isLoaded, experiences]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, isLoaded, experiences, nearbyById]);
 
   const neighborhoodGroups = useMemo(() => {
     const groups: Record<string, { count: number; lat: number; lng: number }> = {};
@@ -103,10 +131,10 @@ export default function ExperienceMap({ experiences, height = '500px', raceSlug 
     <div className="relative w-full rounded-2xl overflow-hidden border border-[var(--border-subtle)]" style={{ height }}>
       <GoogleMap
         mapContainerClassName="w-full h-full"
-        center={CIRCUIT}
-        zoom={14}
+        center={center}
+        zoom={13}
         options={{
-          styles: DARK_MAP_STYLE,
+          styles: LIGHT_MAP_STYLE,
           disableDefaultUI: false,
           zoomControl: true,
           mapTypeControl: false,
@@ -117,8 +145,20 @@ export default function ExperienceMap({ experiences, height = '500px', raceSlug 
         onLoad={onLoad}
         onUnmount={onUnmount}
       >
-        {/* Circuit track — outer glow */}
-        <Polyline
+        {/* Where fans stay (out-of-town circuits) */}
+        {bases.map((b) => (
+          <Marker
+            key={`base-${b.name}`}
+            position={{ lat: b.lat, lng: b.lng }}
+            title={`Where fans stay: ${b.name}`}
+            label={{ text: '🏨', fontSize: '16px' }}
+            icon={{ path: window.google.maps.SymbolPath.CIRCLE, scale: 0 }}
+            zIndex={55}
+          />
+        ))}
+
+        {/* Circuit track (outline data exists for Albert Park only) — outer glow */}
+        {isMelbourne && <Polyline
           path={ALBERT_PARK_CIRCUIT}
           options={{
             strokeColor: '#E10600',
@@ -126,10 +166,10 @@ export default function ExperienceMap({ experiences, height = '500px', raceSlug 
             strokeWeight: 14,
             zIndex: 40,
           }}
-        />
+        />}
 
         {/* Circuit track — solid inner line */}
-        <Polyline
+        {isMelbourne && <Polyline
           path={ALBERT_PARK_CIRCUIT}
           options={{
             strokeColor: '#E10600',
@@ -137,12 +177,12 @@ export default function ExperienceMap({ experiences, height = '500px', raceSlug 
             strokeWeight: 4,
             zIndex: 50,
           }}
-        />
+        />}
 
-        {/* Circuit label — 🏁 emoji at S/F line */}
-        <Marker
-          position={{ lat: -37.8450, lng: 144.9695 }}
-          title="Albert Park Circuit"
+        {/* Circuit label — 🏁 at the race's circuit */}
+        {circuitPoint && <Marker
+          position={circuitPoint}
+          title={circuit?.name ?? 'Circuit'}
           label={{
             text: '🏁',
             fontSize: '16px',
@@ -152,12 +192,13 @@ export default function ExperienceMap({ experiences, height = '500px', raceSlug 
             scale: 0,
           }}
           zIndex={60}
-        />
+        />}
 
-        {/* Experience pins */}
+        {/* Experience pins, coloured by distance group */}
         {experiences.map((exp) => {
           if (!exp.lat || !exp.lng) return null;
-          const color = CATEGORY_COLORS[exp.category] ?? '#6E6E82';
+          const style = TIER_STYLE[nearbyById.get(exp.id)?.tier ?? 'unknown'];
+          const color = style.color;
           return (
             <Marker
               key={exp.id}
@@ -166,7 +207,7 @@ export default function ExperienceMap({ experiences, height = '500px', raceSlug 
               icon={{
                 path: 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z',
                 fillColor: color,
-                fillOpacity: 0.9,
+                fillOpacity: style.opacity,
                 strokeColor: '#ffffff',
                 strokeWeight: 1,
                 scale: 1.5,
@@ -187,13 +228,13 @@ export default function ExperienceMap({ experiences, height = '500px', raceSlug 
           >
             <div
               style={{
-                background: '#1e1e2e',
-                border: '1px solid #3a3a52',
+                background: '#FFFFFF',
+                border: '1px solid #E3E1DB',
                 borderRadius: '10px',
                 overflow: 'hidden',
                 minWidth: '220px',
                 maxWidth: '260px',
-                color: '#e0e0f0',
+                color: '#15151E',
                 fontFamily: 'Inter, sans-serif',
               }}
             >
@@ -208,7 +249,7 @@ export default function ExperienceMap({ experiences, height = '500px', raceSlug 
               ) : (
                 <div style={{
                   height: '100px',
-                  background: `linear-gradient(135deg, ${CATEGORY_COLORS[activeExp.category] ?? '#6E6E82'}30 0%, #1e1e2e 100%)`,
+                  background: `linear-gradient(135deg, ${CATEGORY_COLORS[activeExp.category] ?? '#6E6E82'}30 0%, #FFFFFF 100%)`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -219,10 +260,20 @@ export default function ExperienceMap({ experiences, height = '500px', raceSlug 
               )}
               {/* Content */}
               <div style={{ padding: '10px 12px' }}>
-                <div style={{ fontWeight: 600, fontSize: '13px', lineHeight: '1.3', marginBottom: '6px', color: '#ffffff' }}>
+                <div style={{ fontWeight: 600, fontSize: '13px', lineHeight: '1.3', marginBottom: '6px', color: '#15151E' }}>
                   {activeExp.title}
                 </div>
-                <div style={{ display: 'flex', gap: '8px', fontSize: '12px', color: '#9a9aaf', marginBottom: '8px' }}>
+                {(() => {
+                  const info = nearbyById.get(activeExp.id);
+                  const text = info ? nearbyLabel(info) : null;
+                  if (!info || !text) return null;
+                  return (
+                    <div style={{ fontSize: '12px', fontWeight: 600, color: TIER_STYLE[info.tier].color, marginBottom: '4px' }}>
+                      {text}{info.tier === 'too-far' ? ' · too far' : ''}
+                    </div>
+                  );
+                })()}
+                <div style={{ display: 'flex', gap: '8px', fontSize: '12px', color: '#62626F', marginBottom: '8px' }}>
                   <span>{activeExp.priceLabel}</span>
                   <span>·</span>
                   <span>{activeExp.durationLabel}</span>
@@ -230,7 +281,7 @@ export default function ExperienceMap({ experiences, height = '500px', raceSlug 
                 <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
                   <a
                     href={raceSlug ? `/races/${raceSlug}/experiences/${activeExp.slug}` : `/experiences/${activeExp.slug}`}
-                    style={{ fontSize: '12px', color: '#00D2BE', textDecoration: 'none', fontWeight: 500 }}
+                    style={{ fontSize: '12px', color: '#C40500', textDecoration: 'none', fontWeight: 500 }}
                   >
                     View →
                   </a>
@@ -239,7 +290,7 @@ export default function ExperienceMap({ experiences, height = '500px', raceSlug 
                     href={`https://maps.google.com/?q=${activeExp.lat},${activeExp.lng}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    style={{ fontSize: '12px', color: '#9a9aaf', textDecoration: 'none' }}
+                    style={{ fontSize: '12px', color: '#62626F', textDecoration: 'none' }}
                   >
                     Directions
                   </a>
@@ -267,14 +318,14 @@ export default function ExperienceMap({ experiences, height = '500px', raceSlug 
               onClick={() => { map?.panTo({ lat, lng }); map?.setZoom(15); }}
               className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap cursor-pointer"
               style={{
-                background: 'rgba(21,21,30,0.85)',
-                border: '1px solid rgba(255,255,255,0.15)',
-                color: '#e0e0f0',
+                background: 'rgba(255,255,255,0.96)',
+                border: '1px solid rgba(21,21,30,0.12)',
+                color: '#15151E',
               }}
-              onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.4)')}
-              onMouseLeave={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)')}
+              onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(21,21,30,0.3)')}
+              onMouseLeave={e => (e.currentTarget.style.borderColor = 'rgba(21,21,30,0.12)')}
             >
-              <span style={{ color: '#9a9aaf' }}>←</span>
+              <span style={{ color: '#62626F' }}>←</span>
               {neighborhood}
               <span
                 className="inline-flex items-center justify-center rounded-full text-[10px] font-semibold"
@@ -287,16 +338,26 @@ export default function ExperienceMap({ experiences, height = '500px', raceSlug 
         </div>
       )}
 
-      {/* Circuit legend */}
+      {/* Legend: circuit + distance groups */}
       <div
-        className="absolute bottom-4 left-4 flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium pointer-events-none"
-        style={{ background: 'rgba(21,21,30,0.85)', border: '1px solid rgba(255,255,255,0.15)', color: '#e0e0f0' }}
+        className="absolute bottom-4 left-4 flex flex-col gap-1 px-3 py-2 rounded-xl text-xs font-medium pointer-events-none"
+        style={{ background: 'rgba(255,255,255,0.96)', border: '1px solid rgba(21,21,30,0.12)', color: '#15151E', zIndex: 10 }}
       >
-        <span
-          className="inline-block rounded-full"
-          style={{ width: 12, height: 12, background: '#E10600', border: '2px solid #fff', flexShrink: 0 }}
-        />
-        Albert Park Circuit
+        <div className="flex items-center gap-2">
+          <span>🏁</span>
+          {circuit?.name || 'Circuit'}
+        </div>
+        {(['near', 'city', 'daytrip', 'too-far'] as NearbyTier[])
+          .filter((t) => tierCounts[t] > 0)
+          .map((t) => (
+            <div key={t} className="flex items-center gap-2">
+              <span className="inline-block rounded-full" style={{ width: 10, height: 10, background: TIER_STYLE[t].color, opacity: TIER_STYLE[t].opacity, flexShrink: 0 }} />
+              {TIER_STYLE[t].label} · {tierCounts[t]}
+            </div>
+          ))}
+        {bases.length > 0 && (
+          <div className="flex items-center gap-2"><span>🏨</span>Where fans stay</div>
+        )}
       </div>
     </div>
   );

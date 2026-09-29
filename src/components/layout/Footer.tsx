@@ -6,24 +6,27 @@ export default function Footer() {
       <div className="max-w-6xl mx-auto px-4 space-y-6">
         {/* Row 1: Brand + Firestorm */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <span className="font-display font-black tracking-widest uppercase text-white/70 text-xl">
+          <span className="font-display font-black tracking-widest uppercase text-[var(--text-primary)]/70 text-xl">
             F1WEEKEND.CO
           </span>
           <a
             href="https://firestorm-internet.com/"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-base text-[var(--text-secondary)] hover:text-white transition-colors"
+            className="inline-flex items-center min-h-11 text-base text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
           >
             A Firestorm Internet product →
           </a>
         </div>
 
         {/* Row 2: Footer nav */}
-        <nav className="flex flex-wrap gap-x-6 gap-y-2 text-base text-[var(--text-secondary)]">
-          <Link href="/about" className="hover:text-white transition-colors">About</Link>
-          <Link href="/contact" className="hover:text-white transition-colors">Contact</Link>
-          <Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
+        {/* min-h-11 = 44 px tap targets on phones */}
+        <nav className="flex flex-wrap gap-x-6 text-base text-[var(--text-secondary)]">
+          <Link href="/f1-2026" className="inline-flex items-center min-h-11 hover:text-[var(--text-primary)] transition-colors">2026 Calendar</Link>
+          <Link href="/itinerary" className="inline-flex items-center min-h-11 hover:text-[var(--text-primary)] transition-colors">Build Itinerary</Link>
+          <Link href="/about" className="inline-flex items-center min-h-11 hover:text-[var(--text-primary)] transition-colors">About</Link>
+          <Link href="/contact" className="inline-flex items-center min-h-11 hover:text-[var(--text-primary)] transition-colors">Contact</Link>
+          <Link href="/privacy" className="inline-flex items-center min-h-11 hover:text-[var(--text-primary)] transition-colors">Privacy Policy</Link>
         </nav>
 
         {/* Row 3: Legal */}

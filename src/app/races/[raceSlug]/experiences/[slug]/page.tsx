@@ -1,4 +1,5 @@
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
+import { hasMovedVenue } from '@/data/calendar-2026';
 import type { Metadata } from 'next';
 import { marked } from 'marked';
 import { getExperienceBySlug, getExperiencesByRace, getSuggestedExperiences } from '@/services/experience.service';
@@ -11,6 +12,10 @@ import ExperienceSuggestions from '@/components/experiences/ExperienceSuggestion
 import OptionsPanel from '@/components/experiences/OptionsPanel';
 import ReviewQuotes from '@/components/experiences/ReviewQuotes';
 import StickyBookingBar from '@/components/experiences/StickyBookingBar';
+import OfferComparison from '@/components/experiences/OfferComparison';
+import { getOffersForExperience } from '@/services/offer.service';
+import { providerName } from '@/lib/providers/meta';
+import type { Offer } from '@/lib/providers';
 import type { Experience } from '@/types/experience';
 import { CATEGORY_COLORS, CATEGORY_LABELS } from '@/lib/constants/categories';
 import { formatPrice } from '@/lib/utils';
@@ -26,7 +31,7 @@ export async function generateStaticParams() {
   try {
     const availableRaces = await getAvailableRaces();
     const results = await Promise.all(
-      availableRaces.map(async (race) => {
+      availableRaces.filter((race) => !hasMovedVenue(race.slug)).map(async (race) => {
         const raceSlug = race.slug;
         const exps = await getExperiencesByRace(race.id);
         return exps.map((e) => ({ raceSlug, slug: e.slug }));
@@ -65,7 +70,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       ...(exp.seoKeywords ?? []),
     ],
     alternates: { canonical },
-    robots: { index: true, follow: true },
+    // Text is the provider's own copy (duplicated on GetYourGuide and resellers):
+    // keep it out of the index until a page has original, race-specific content.
+    robots: { index: false, follow: true },
     openGraph: {
       title,
       description,
@@ -88,7 +95,18 @@ function toISO8601Duration(hours: number): string {
   return `PT${h}H${m}M`;
 }
 
-function buildJsonLd(exp: Experience, raceSlug: string, race: { city: string; country: string; countryCode: string } | null) {
+function offerLd(o: Offer) {
+  return {
+    '@type': 'Offer',
+    price: o.priceAmount?.toFixed(2),
+    priceCurrency: o.priceCurrency,
+    availability: 'https://schema.org/InStock',
+    url: o.url,
+    seller: { '@type': 'Organization', name: providerName(o.provider) },
+  };
+}
+
+function buildJsonLd(exp: Experience, raceSlug: string, race: { city: string; country: string; countryCode: string } | null, offers: Offer[]) {
   const url = `https://f1weekend.co/races/${raceSlug}/experiences/${exp.slug}`;
   const city = race?.city ?? 'Melbourne';
   const countryCode = race?.countryCode ?? 'AU';
@@ -107,14 +125,16 @@ function buildJsonLd(exp: Experience, raceSlug: string, race: { city: string; co
       name: city,
       addressCountry: countryCode,
     },
-    offers: {
-      '@type': 'Offer',
-      price: exp.priceAmount.toFixed(2),
-      priceCurrency: exp.priceCurrency,
-      availability: 'https://schema.org/InStock',
-      url: exp.affiliateUrl,
-      seller: { '@type': 'Organization', name: 'GetYourGuide' },
-    },
+    offers: offers.length > 1
+      ? offers.filter((o) => o.priceAmount !== null).map(offerLd)
+      : {
+          '@type': 'Offer',
+          price: exp.priceAmount.toFixed(2),
+          priceCurrency: exp.priceCurrency,
+          availability: 'https://schema.org/InStock',
+          url: exp.affiliateUrl,
+          seller: { '@type': 'Organization', name: providerName(exp.affiliatePartner) },
+        },
   };
   // Add geo coordinates only if lat is available (omit key entirely if not)
   if (exp.lat != null && exp.lng != null) {
@@ -194,6 +214,10 @@ function stripArticleFrontMatter(md: string): string {
 
 export default async function ExperienceDetailPage({ params }: Props) {
   const { raceSlug, slug } = await params;
+  // Race moved venue (Bahrain GP → Sepang): stored experiences are for the old
+  // venue; send visitors to the live list. Other live-feed races keep their
+  // written experience pages (guide articles).
+  if (hasMovedVenue(raceSlug)) permanentRedirect(`/races/${raceSlug}/experiences`);
   const exp = await getExperienceBySlug(slug);
   if (!exp) notFound();
 
@@ -203,10 +227,15 @@ export default async function ExperienceDetailPage({ params }: Props) {
   const guideHtml = exp.guideArticle ? await marked(stripArticleFrontMatter(exp.guideArticle)) : null;
 
   // Fetch suggested experiences in parallel with guide rendering
-  const suggested = race ? await getSuggestedExperiences(race.id, slug, 4) : [];
+  const [suggested, offers] = await Promise.all([
+    race ? getSuggestedExperiences(race.id, slug, 4) : Promise.resolve([]),
+    getOffersForExperience(exp),
+  ]);
+  const partnerName = providerName(exp.affiliatePartner);
 
   // Build TOC from visible sections
   const tocSections: TOCSection[] = [
+    ...(offers.length > 1 ? [{ id: 'compare', label: 'Compare Prices' }] : []),
     ...((exp.description || exp.abstract) ? [{ id: 'about', label: 'About' }] : []),
     ...(exp.highlights?.length ? [{ id: 'highlights', label: 'Highlights' }] : []),
     ...((exp.includes?.length || exp.excludes?.length) ? [{ id: 'includes', label: "What's Included" }] : []),
@@ -240,7 +269,7 @@ export default async function ExperienceDetailPage({ params }: Props) {
   const f1ContextText = resolveF1Context(exp);
 
   // Consolidate all page schemas into single JSON-LD script tag
-  const allSchemas = [buildJsonLd(exp, raceSlug, race), breadcrumbLd, ...(faqLd ? [faqLd] : [])];
+  const allSchemas = [buildJsonLd(exp, raceSlug, race, offers), breadcrumbLd, ...(faqLd ? [faqLd] : [])];
 
   return (
     <>
@@ -284,38 +313,38 @@ export default async function ExperienceDetailPage({ params }: Props) {
                   </span>
                 )}
                 {exp.bestseller && (
-                  <span className="text-xs font-bold px-3 py-1 rounded-full bg-amber-500/20 text-amber-400 uppercase-badge">
+                  <span className="text-xs font-bold px-3 py-1 rounded-full bg-amber-100 text-amber-700 uppercase-badge">
                     🏆 Bestseller
                   </span>
                 )}
                 {exp.skipTheLine && (
-                  <span className="text-xs font-medium px-3 py-1 rounded-full bg-teal-500/20 text-teal-400 uppercase-badge">
+                  <span className="text-xs font-medium px-3 py-1 rounded-full bg-teal-100 text-teal-700 uppercase-badge">
                     ⚡ Skip the Line
                   </span>
                 )}
                 {exp.instantConfirmation && (
-                  <span className="text-xs font-medium px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 uppercase-badge">
+                  <span className="text-xs font-medium px-3 py-1 rounded-full bg-blue-100 text-blue-700 uppercase-badge">
                     ✓ Instant Confirmation
                   </span>
                 )}
                 {exp.hasPickUp && (
-                  <span className="text-xs font-medium px-3 py-1 rounded-full bg-purple-500/20 text-purple-400 uppercase-badge">
+                  <span className="text-xs font-medium px-3 py-1 rounded-full bg-purple-100 text-purple-700 uppercase-badge">
                     🚌 Hotel Pickup Available
                   </span>
                 )}
                 {exp.mobileVoucher && (
-                  <span className="text-xs font-medium px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-400 uppercase-badge">
+                  <span className="text-xs font-medium px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-700 uppercase-badge">
                     📱 Mobile Voucher
                   </span>
                 )}
               </div>
 
-              <h1 className="font-display font-black text-3xl sm:text-4xl text-white leading-tight mb-3">
+              <h1 className="font-display font-black text-3xl sm:text-4xl text-[var(--text-primary)] leading-tight mb-3">
                 {exp.title}
               </h1>
 
               <div className="flex items-center gap-5 text-sm text-[var(--text-secondary)] mb-6 flex-wrap">
-                <span className="mono-data">⏱ {exp.durationLabel}</span>
+                {exp.durationLabel && <span className="mono-data">⏱ {exp.durationLabel}</span>}
                 <span className="mono-data">
                   ★ {exp.rating.toFixed(1)}{' '}
                   <span className="text-[var(--text-secondary)]">({exp.reviewCount.toLocaleString()} reviews)</span>
@@ -337,19 +366,19 @@ export default async function ExperienceDetailPage({ params }: Props) {
                       </span>
                     )}
                   </div>
-                  <p className="text-white leading-relaxed text-sm">{f1ContextText}</p>
+                  <p className="text-[var(--text-primary)] leading-relaxed text-sm">{f1ContextText}</p>
                 </div>
               )}
 
               <div id="top-book-cta" className="p-5 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] mb-4">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-display font-bold text-white">{exp.priceLabel}</span>
+                    <span className="text-3xl font-display font-bold text-[var(--text-primary)]">{exp.priceLabel}</span>
                     <span className="text-sm text-[var(--text-secondary)]">per person</span>
                   </div>
                   {exp.originalPrice && exp.discountPct && (
                     <div className="flex flex-col items-end gap-0.5">
-                      <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-green-500/15 text-green-400">
+                      <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700">
                         Save {exp.discountPct}%
                       </span>
                       <span className="text-xs text-[var(--text-secondary)] line-through">
@@ -377,6 +406,8 @@ export default async function ExperienceDetailPage({ params }: Props) {
                 />
               </div>
 
+              <OfferComparison experience={exp} offers={offers} />
+
               {exp.optionsSnapshot && exp.optionsSnapshot.length > 1 && (
                 <OptionsPanel experience={exp} options={exp.optionsSnapshot} />
               )}
@@ -385,7 +416,7 @@ export default async function ExperienceDetailPage({ params }: Props) {
 
               {(exp.description || exp.abstract) && (
                 <section id="about" className="mb-8">
-                  <h2 className="font-display font-bold text-white text-xl mb-3">About this experience</h2>
+                  <h2 className="font-display font-bold text-[var(--text-primary)] text-xl mb-3">About this experience</h2>
                   {exp.abstract && (
                     <p className="text-[var(--text-secondary)] leading-relaxed font-medium mb-3">{exp.abstract}</p>
                   )}
@@ -399,7 +430,7 @@ export default async function ExperienceDetailPage({ params }: Props) {
 
               {exp.highlights && exp.highlights.length > 0 && (
                 <section id="highlights" className="mb-8">
-                  <h2 className="font-display font-bold text-white text-xl mb-3">Highlights</h2>
+                  <h2 className="font-display font-bold text-[var(--text-primary)] text-xl mb-3">Highlights</h2>
                   <ul className="space-y-2">
                     {exp.highlights.map((h, i) => (
                       <li key={i} className="flex items-start gap-3 text-[var(--text-secondary)]">
@@ -415,11 +446,11 @@ export default async function ExperienceDetailPage({ params }: Props) {
                 <section id="includes" className="mb-8 grid sm:grid-cols-2 gap-6">
                   {exp.includes && exp.includes.length > 0 && (
                     <div>
-                      <h3 className="font-medium text-white mb-3">What&apos;s included</h3>
+                      <h3 className="font-medium text-[var(--text-primary)] mb-3">What&apos;s included</h3>
                       <ul className="space-y-1.5">
                         {exp.includes.map((item, i) => (
                           <li key={i} className="flex items-start gap-2 text-sm text-[var(--text-secondary)]">
-                            <span className="text-green-400 mt-0.5 flex-shrink-0">✓</span>
+                            <span className="text-green-700 mt-0.5 flex-shrink-0">✓</span>
                             <span>{item}</span>
                           </li>
                         ))}
@@ -428,11 +459,11 @@ export default async function ExperienceDetailPage({ params }: Props) {
                   )}
                   {exp.excludes && exp.excludes.length > 0 && (
                     <div>
-                      <h3 className="font-medium text-white mb-3">Not included</h3>
+                      <h3 className="font-medium text-[var(--text-primary)] mb-3">Not included</h3>
                       <ul className="space-y-1.5">
                         {exp.excludes.map((item, i) => (
                           <li key={i} className="flex items-start gap-2 text-sm text-[var(--text-secondary)]">
-                            <span className="text-red-400 mt-0.5 flex-shrink-0">✕</span>
+                            <span className="text-red-700 mt-0.5 flex-shrink-0">✕</span>
                             <span>{item}</span>
                           </li>
                         ))}
@@ -444,7 +475,7 @@ export default async function ExperienceDetailPage({ params }: Props) {
 
               {exp.importantInfo && (
                 <section id="good-to-know" className="mb-8 p-5 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
-                  <h2 className="font-display font-bold text-white text-lg mb-3">Good to know</h2>
+                  <h2 className="font-display font-bold text-[var(--text-primary)] text-lg mb-3">Good to know</h2>
                   <p className="text-[var(--text-secondary)] leading-relaxed text-sm whitespace-pre-line">
                     {exp.importantInfo}
                   </p>
@@ -453,7 +484,7 @@ export default async function ExperienceDetailPage({ params }: Props) {
 
               {exp.meetingPoint && (
                 <section id="getting-there" className="mb-8 p-5 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
-                  <h2 className="font-display font-bold text-white text-lg mb-3">Getting there</h2>
+                  <h2 className="font-display font-bold text-[var(--text-primary)] text-lg mb-3">Getting there</h2>
                   <p className="text-[var(--text-secondary)] leading-relaxed text-sm mb-3">{exp.meetingPoint}</p>
                   <a
                     href={
@@ -472,16 +503,16 @@ export default async function ExperienceDetailPage({ params }: Props) {
 
               {exp.reviewsSnapshot && exp.reviewsSnapshot.length > 0 && (
                 <section id="reviews" className="mb-8">
-                  <h2 className="font-display font-bold text-white text-xl mb-3">Reviews</h2>
+                  <h2 className="font-display font-bold text-[var(--text-primary)] text-xl mb-3">Reviews</h2>
                   <ReviewQuotes reviews={exp.reviewsSnapshot} />
                   <div className="flex items-center gap-3 mb-4">
                     <p className="text-sm text-[var(--text-secondary)]">
-                      {exp.reviewCount.toLocaleString()} reviews on GetYourGuide
+                      {exp.reviewCount.toLocaleString()} reviews on {partnerName}
                     </p>
                     <BookButton
                       experience={exp}
                       source="guide"
-                      label="Read all reviews on GetYourGuide →"
+                      label={`Read all reviews on ${partnerName} →`}
                       className="text-sm text-[var(--accent-teal)] hover:underline bg-transparent p-0 font-normal"
                     />
                   </div>
@@ -490,13 +521,13 @@ export default async function ExperienceDetailPage({ params }: Props) {
                       <div key={i} className="p-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-1">
-                            <span className="font-medium text-white text-sm">{review.author}</span>
+                            <span className="font-medium text-[var(--text-primary)] text-sm">{review.author}</span>
                             {review.country && (
                               <span className="text-sm text-[var(--text-secondary)] ml-1">· {review.country}</span>
                             )}
                           </div>
                           <div className="flex items-center gap-1">
-                            <span className="text-yellow-400 text-sm">{'★'.repeat(review.rating)}</span>
+                            <span className="text-amber-500 text-sm">{'★'.repeat(review.rating)}</span>
                             {review.date && (
                               <span className="text-sm text-[var(--text-secondary)] ml-2">
                                 {new Date(review.date).toLocaleDateString('en-AU', { month: 'short', year: 'numeric' })}
@@ -513,7 +544,7 @@ export default async function ExperienceDetailPage({ params }: Props) {
 
               {guideHtml && (
                 <section id="expert-guide" aria-label="Expert Guide" className="mb-8">
-                  <h2 className="font-display font-bold text-white text-xl mb-4">Expert Guide</h2>
+                  <h2 className="font-display font-bold text-[var(--text-primary)] text-xl mb-4">Expert Guide</h2>
                   <div className="guide-facts-bar">
                     <span className="guide-fact">{exp.durationLabel}</span>
                     <span className="guide-fact">{exp.priceLabel}</span>
@@ -531,9 +562,10 @@ export default async function ExperienceDetailPage({ params }: Props) {
 
               <div className="flex flex-col sm:flex-row gap-3 items-center justify-between pt-4 border-t border-[var(--border-subtle)]">
                 <div className="text-sm text-[var(--text-secondary)]">
-                  Booked via GetYourGuide · Cancellation policies apply
+                  {offers.length > 1 ? `Compare ${offers.length} booking sites above` : `Booked via ${partnerName}`} · Cancellation policies apply
                 </div>
-                <BookButton experience={exp} source="guide" />
+                {/* A second Book button only helps on long pages (with a guide article). */}
+                {guideHtml && <BookButton experience={exp} source="guide" />}
               </div>
             </div>
 

@@ -16,6 +16,10 @@ export interface Race {
     shortCode?: string
     available?: boolean
     hasThursdayFreeDay?: boolean
+    /** Whether /races/[slug]/tips has content (false → the page 404s, so don't link to it). */
+    hasTips?: boolean
+    /** Set when the race moved venue this season, e.g. "At Sepang, Malaysia in 2026 (moved from Sakhir, Bahrain)". */
+    venueNote?: string
 }
 
 export interface Session {

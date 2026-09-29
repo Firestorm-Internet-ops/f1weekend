@@ -4,6 +4,8 @@ import Link from 'next/link';
 import CircuitMap from '@/components/race/CircuitMap';
 import RaceSwitcher from '@/components/race/RaceSwitcher';
 import Breadcrumb from '@/components/Breadcrumb';
+import { venueGuide } from '@/data/venue-guides-2026';
+import { timetableFor } from '@/data/timetables-2026';
 import { getRaceBySlug, getSessionsByRace, getAvailableRaces, getRaceContent } from '@/services/race.service';
 import { getTimezoneAbbr } from '@/lib/utils';
 
@@ -23,7 +25,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const canonical = `https://f1weekend.co/races/${raceSlug}/getting-there`;
 
   return {
-    title,
+    title: { absolute: title },
     description,
     alternates: { canonical },
     openGraph: { title, description, url: canonical, type: 'website' },
@@ -45,7 +47,9 @@ export default async function GettingTherePage({ params }: Props) {
   ]);
   if (!race) notFound();
 
-  const transport = raceContent?.transportGuide?.options ?? [];
+  // Venues without a stored guide for this year's circuit (Bahrain GP → Sepang) use the one in code.
+  const guide = venueGuide(raceSlug);
+  const transport = raceContent?.transportGuide?.options ?? guide?.options ?? [];
   const mapsUrl = raceContent?.transportGuide?.mapsUrl ?? `https://www.google.com/maps/dir/?api=1&destination=${race.circuitLat},${race.circuitLng}&travelmode=transit`;
   const tzLabel = getTimezoneAbbr(race.timezone, new Date(race.raceDate));
 
@@ -61,14 +65,37 @@ export default async function GettingTherePage({ params }: Props) {
     })),
   } : null;
 
+  // First track action each day: the full timetable (support races included)
+  // when we have one, otherwise the stored sessions.
   const allSessions = await getSessionsByRace(race.id);
+  const timetable = timetableFor(raceSlug);
+  // Timetable names already carry the series ("Formula Trophy Malaysia · Race 2"): never prefix it twice.
+  const label = (series: string, name: string) =>
+    series === 'Formula 1' || name.startsWith(series) ? name : `${series} · ${name}`;
+  const firstOfDay = (day: string) =>
+    timetable
+      ? timetable.filter((e) => e.day === day).map((e) => ({ name: label(e.series, e.name), startTime: e.start }))
+          .filter((e) => !/press|presentation|parade|anthem/i.test(e.name))[0]
+      : allSessions.filter((s) => s.dayOfWeek === day).sort((a, b) => a.startTime.localeCompare(b.startTime))[0];
+  // The day's headline F1 session, from the same session list every page uses.
+  const f1Rank = { race: 0, sprint: 1, qualifying: 2, practice: 3 } as Record<string, number>;
+  const mainF1 = (day: string) =>
+    allSessions
+      .filter((s) => s.dayOfWeek === day && s.sessionType in f1Rank)
+      .sort((a, b) => f1Rank[a.sessionType] - f1Rank[b.sessionType] || a.startTime.localeCompare(b.startTime))[0];
   const gateTimes = ['Thursday', 'Friday', 'Saturday', 'Sunday']
     .map(day => {
-      const daySessions = allSessions.filter(s => s.dayOfWeek === day);
-      const first = daySessions.sort((a, b) => a.startTime.localeCompare(b.startTime))[0];
-      return first ? { day, session: first.name, gates: formatGateTime(first.startTime, 2, tzLabel) } : null;
+      const first = firstOfDay(day);
+      if (!first) return null;
+      const f1 = mainF1(day);
+      return {
+        day,
+        firstOnTrack: `${first.name} ${first.startTime}`,
+        f1: f1 && f1.name !== first.name ? `${f1.sessionType === 'race' ? 'Grand Prix' : f1.name} ${f1.startTime}` : null,
+        gates: formatGateTime(first.startTime, 2, tzLabel),
+      };
     })
-    .filter((g): g is { day: string; session: string; gates: string } => g !== null);
+    .filter((g): g is { day: string; firstOnTrack: string; f1: string | null; gates: string } => g !== null);
 
   return (
     <>
@@ -87,7 +114,7 @@ export default async function GettingTherePage({ params }: Props) {
             <div className="mb-4">
               <RaceSwitcher currentRace={race} availableRaces={availableRaces} pageType="getting-there" />
             </div>
-            <h1 className="font-display font-black text-4xl sm:text-5xl text-white uppercase-heading leading-none mb-4">
+            <h1 className="font-display font-black text-4xl sm:text-5xl text-[var(--text-primary)] uppercase-heading leading-none mb-4">
               GETTING<br />THERE
             </h1>
             <p className="text-[var(--text-secondary)] text-lg leading-relaxed">
@@ -99,9 +126,7 @@ export default async function GettingTherePage({ params }: Props) {
               </p>
             ) : (
               <p className="text-[var(--text-secondary)] text-base leading-relaxed max-w-2xl mt-4">
-                {race.circuitName} is located in {race.city}.
-                The fastest and most stress-free option on race day is typically public transport or the official shuttle bus from your hotel.
-                Allow 45–60 minutes for travel from major hotel districts.
+                {guide?.intro ?? `${race.circuitName} is in ${race.city}. On race day, public transport or the official shuttle from your hotel is usually the least stressful option — allow extra time for race traffic.`}
               </p>
             )}
           </div>
@@ -122,7 +147,7 @@ export default async function GettingTherePage({ params }: Props) {
         <div className="max-w-3xl mx-auto">
           {transport.length > 0 && (
             <section className="mb-12">
-              <h2 className="font-display font-bold text-xl text-white uppercase-heading mb-6">
+              <h2 className="font-display font-bold text-xl text-[var(--text-primary)] uppercase-heading mb-6">
                 HOW TO GET THERE
               </h2>
               <div className="space-y-4">
@@ -135,7 +160,7 @@ export default async function GettingTherePage({ params }: Props) {
                       <span className="text-2xl mt-0.5 shrink-0">{t.icon}</span>
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-display font-bold text-white">{t.title}</h3>
+                          <h3 className="font-display font-bold text-[var(--text-primary)]">{t.title}</h3>
                           {t.bestFor && t.bestFor !== 'General' && (
                             <span
                               className="text-[10px] px-2 py-0.5 rounded-full font-medium uppercase tracking-wider"
@@ -155,6 +180,9 @@ export default async function GettingTherePage({ params }: Props) {
                   </div>
                 ))}
               </div>
+              {!raceContent?.transportGuide && guide?.note && (
+                <p className="mt-4 text-sm text-[var(--text-secondary)]">{guide.note}</p>
+              )}
             </section>
           )}
 
@@ -174,11 +202,11 @@ export default async function GettingTherePage({ params }: Props) {
           )}
 
           <section>
-            <h2 className="font-display font-bold text-xl text-white uppercase-heading mb-6">
-              GATE OPENING TIMES
+            <h2 className="font-display font-bold text-xl text-[var(--text-primary)] uppercase-heading mb-6">
+              ESTIMATED GATE TIMES
             </h2>
             <p className="text-sm text-[var(--text-secondary)] mb-4">
-              Gates open 2 hours before the first session each day.
+              Estimated: about 2 hours before the first track action each day. Check your ticket for the official gate times.
             </p>
             <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] overflow-hidden">
               {gateTimes.map((g, i) => (
@@ -188,11 +216,13 @@ export default async function GettingTherePage({ params }: Props) {
                     i < gateTimes.length - 1 ? 'border-b border-[var(--border-subtle)]' : ''
                   }`}
                 >
-                  <div>
-                    <p className="font-medium text-white">{g.day}</p>
-                    <p className="text-sm text-[var(--text-secondary)]">{g.session}</p>
+                  <div className="min-w-0">
+                    <p className="font-medium text-[var(--text-primary)]">{g.day}</p>
+                    <p className="text-sm text-[var(--text-secondary)]">First on track: {g.firstOnTrack}</p>
+                    {g.f1 && <p className="text-sm text-[var(--text-secondary)]">F1: {g.f1}</p>}
                   </div>
-                  <span className="mono-data text-sm text-[var(--accent-teal)] font-medium">
+                  <span className="mono-data text-sm text-[var(--accent-red)] font-medium text-right shrink-0 ml-4">
+                    <span className="block text-[10px] uppercase tracking-wider text-[var(--text-muted)]">Gates open ~</span>
                     {g.gates}
                   </span>
                 </div>
@@ -201,7 +231,7 @@ export default async function GettingTherePage({ params }: Props) {
           </section>
 
           <section className="mt-12 pt-8 border-t border-[var(--border-subtle)]">
-            <h2 className="font-display font-bold text-xl text-white uppercase-heading mb-3">
+            <h2 className="font-display font-bold text-xl text-[var(--text-primary)] uppercase-heading mb-3">
               Things to Do Between Sessions
             </h2>
             <p className="text-[var(--text-secondary)] text-sm leading-relaxed mb-4">
@@ -211,7 +241,7 @@ export default async function GettingTherePage({ params }: Props) {
             </p>
             <Link
               href={`/races/${raceSlug}/experiences`}
-              className="inline-block text-sm font-medium text-[var(--accent-teal)] hover:text-white transition-colors"
+              className="inline-block text-sm font-medium text-[var(--accent-teal)] hover:text-[var(--text-primary)] transition-colors"
             >
               Browse {race.city} experiences →
             </Link>

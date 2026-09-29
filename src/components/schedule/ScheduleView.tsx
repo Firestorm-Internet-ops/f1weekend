@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import type { ScheduleDay, SeriesKey, ScheduleEntry } from '@/types/schedule';
 import { computeISODayDates, getUtcOffsetHours, getSessionStatus, getSessionProgress } from '@/lib/schedule-utils';
 
@@ -18,6 +18,7 @@ const SERIES_CONFIG: Record<string, { color: string; label: string; shortLabel: 
   'sro-gt':          { color: '#00D2BE', label: 'SRO GT Cup',              shortLabel: 'GT'    },
   press:             { color: '#00D2BE', label: 'Press Conference',        shortLabel: 'PRESS' },
   promoter:          { color: '#3B82F6', label: 'Promoter Activity',       shortLabel: 'EVENT' },
+  support:           { color: '#F59E0B', label: 'Support Race',            shortLabel: 'SUP'   },
   'f1-exp':          { color: '#22C55E', label: 'F1 Experiences',          shortLabel: 'EXP'   },
   experiences:       { color: '#22C55E', label: 'F1 Experiences',          shortLabel: 'EXP'   },
 };
@@ -28,6 +29,7 @@ const FILTER_CHIPS: { key: SeriesKey | 'all'; label: string }[] = [
   { key: 'f1-academy',        label: '🎀 Academy'},
   { key: 'sro-gt',            label: '🏁 GT'     },
   { key: 'porsche-cup',       label: 'PCC'       },
+  { key: 'support',           label: '🏎 Support' },
   { key: 'press',             label: '📋 Press'  },
   { key: 'f1-exp',            label: '🎟 Exp'   },
 ];
@@ -125,8 +127,8 @@ function SessionRow({ entry, status, liveProgress, index, tzLabel }: SessionRowP
           {/* Session name */}
           <p
             className={isF1
-              ? 'font-display font-bold text-base uppercase-heading text-white leading-tight'
-              : 'text-sm font-medium text-white leading-tight'
+              ? 'font-display font-bold text-base uppercase-heading text-[var(--text-primary)] leading-tight'
+              : 'text-sm font-medium text-[var(--text-primary)] leading-tight'
             }
           >
             {entry.name}
@@ -173,71 +175,46 @@ interface Props {
 export default function ScheduleView({ schedule, initialDay = 'Thursday', tzLabel = 'AEDT', raceDate = '2026-03-08', timezone = 'Australia/Melbourne' }: Props) {
   const [activeDay, setActiveDay] = useState<Day>(initialDay);
   const [activeFilter, setActiveFilter] = useState<SeriesKey | 'all'>('all');
-  const [tick, setTick] = useState(0);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const dayDates = useMemo(() => computeISODayDates(raceDate), [raceDate]);
   const utcOffsetHours = useMemo(() => getUtcOffsetHours(timezone, raceDate), [timezone, raceDate]);
 
-  // Update statuses every 60s
+  const visibleDays = DAYS.filter((day) => schedule.some((d) => d.day === day && d.entries.length > 0));
+  const shownDay = visibleDays.includes(activeDay) ? activeDay : (visibleDays[0] ?? activeDay);
+  const matches = (e: ScheduleEntry) => activeFilter === 'all' || e.seriesKey === activeFilter;
+
+  // Statuses and live progress refresh every 10s. `clock` is passed into the
+  // status calls so the React compiler can't reuse a stale result.
+  const [clock, setClock] = useState(0);
   useEffect(() => {
-    intervalRef.current = setInterval(() => setTick((t) => t + 1), 60_000);
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, []);
-
-  const dayData = schedule.find((d) => d.day === activeDay) ?? { day: activeDay, date: '', entries: [] };
-
-  const filteredEntries = useMemo(
-    () =>
-      activeFilter === 'all'
-        ? dayData.entries
-        : dayData.entries.filter((e) => e.seriesKey === activeFilter),
-    [dayData, activeFilter],
-  );
-
-  // Compute statuses for the current tick
-  const statuses = useMemo(
-    () =>
-      filteredEntries.map((e) => getSessionStatus(activeDay, e.startTime, e.endTime, dayDates, utcOffsetHours)),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [filteredEntries, activeDay, tick],
-  );
-
-  // Update live progress every 10s
-  const [liveTick, setLiveTick] = useState(0);
-  useEffect(() => {
-    const id = setInterval(() => setLiveTick((t) => t + 1), 10_000);
+    const id = setInterval(() => setClock((t) => t + 1), 10_000);
     return () => clearInterval(id);
   }, []);
-
-  const liveProgressValues = useMemo(
-    () =>
-      filteredEntries.map((e, i) =>
-        statuses[i] === 'live'
-          ? getSessionProgress(activeDay, e.startTime, e.endTime, dayDates, utcOffsetHours)
-          : 0,
-      ),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [filteredEntries, activeDay, statuses, liveTick],
-  );
+  const statusAt = (day: Day, e: ScheduleEntry, tickCount: number) => {
+    void tickCount;
+    const status = getSessionStatus(day, e.startTime, e.endTime, dayDates, utcOffsetHours);
+    return { status, progress: status === 'live' ? getSessionProgress(day, e.startTime, e.endTime, dayDates, utcOffsetHours) : 0 };
+  };
 
   return (
     <div>
       {/* Day tabs — only show days that have entries */}
-      <div className="flex gap-2 mb-5 flex-wrap">
-        {DAYS.filter((day) => schedule.some((d) => d.day === day && d.entries.length > 0)).map((day) => (
+      <div className="flex gap-2 mb-5 flex-wrap" role="tablist" aria-label="Race weekend day">
+        {visibleDays.map((day) => (
           <button
             key={day}
+            role="tab"
+            id={`tab-${day}`}
+            aria-selected={shownDay === day}
+            aria-controls={`panel-${day}`}
             onClick={() => {
               setActiveDay(day);
               setActiveFilter('all');
             }}
             className={`px-5 py-2.5 rounded-full text-base font-semibold transition-all uppercase-label ${
-              activeDay === day
+              shownDay === day
                 ? 'bg-[var(--accent-red)] text-white'
-                : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-white hover:bg-[var(--bg-tertiary)]'
+                : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'
             }`}
           >
             {DAY_SHORT[day]}
@@ -247,14 +224,14 @@ export default function ScheduleView({ schedule, initialDay = 'Thursday', tzLabe
 
       {/* Series filter chips */}
       <div className="flex gap-2 mb-6 flex-wrap">
-        {FILTER_CHIPS.map((chip) => (
+        {FILTER_CHIPS.filter((chip) => chip.key === 'all' || schedule.some((d) => d.entries.some((e) => e.seriesKey === chip.key || (chip.key === 'porsche-cup' && e.seriesKey === 'porsche') || (chip.key === 'f1-exp' && e.seriesKey === 'experiences')))).map((chip) => (
           <button
             key={chip.key}
             onClick={() => setActiveFilter(chip.key)}
             className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
               activeFilter === chip.key
-                ? 'bg-[var(--accent-teal)] text-[var(--bg-primary)]'
-                : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-white hover:bg-[var(--bg-surface)]'
+                ? 'bg-[var(--accent-red)] text-white'
+                : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface)]'
             }`}
           >
             {chip.label}
@@ -262,34 +239,46 @@ export default function ScheduleView({ schedule, initialDay = 'Thursday', tzLabe
         ))}
       </div>
 
-      {/* Day header */}
-      <div className="flex items-center gap-3 mb-4">
-        <div className="h-px flex-1 bg-[var(--border-subtle)]" />
-        <span className="text-xs font-semibold uppercase-label text-[var(--text-secondary)]">
-          {activeDay.toUpperCase()} &nbsp; {dayData.date.toUpperCase()}
-        </span>
-        <div className="h-px flex-1 bg-[var(--border-subtle)]" />
-      </div>
+      {/* Every day is in the HTML (search engines and no-JS readers see the whole
+          weekend); the tabs only show one at a time. */}
+      {visibleDays.map((day) => {
+        const dayData = schedule.find((d) => d.day === day) ?? { day, date: '', entries: [] };
+        const entries = dayData.entries.filter(matches);
+        const isActive = day === shownDay;
+        return (
+          <section key={day} id={`panel-${day}`} role="tabpanel" aria-labelledby={`tab-${day}`} hidden={!isActive}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="h-px flex-1 bg-[var(--border-subtle)]" />
+              <h2 className="text-xs font-semibold uppercase-label text-[var(--text-secondary)]">
+                {day.toUpperCase()} &nbsp; {dayData.date.toUpperCase()}
+              </h2>
+              <div className="h-px flex-1 bg-[var(--border-subtle)]" />
+            </div>
 
-      {/* Session list — key forces re-mount (re-stagger) on day/filter change */}
-      {filteredEntries.length > 0 ? (
-        <div key={`${activeDay}-${activeFilter}`} className="flex flex-col gap-2">
-          {filteredEntries.map((entry, i) => (
-            <SessionRow
-              key={`${entry.startTime}-${entry.seriesKey}-${entry.name}-${i}`}
-              entry={entry}
-              status={statuses[i]}
-              liveProgress={liveProgressValues[i]}
-              index={i}
-              tzLabel={tzLabel}
-            />
-          ))}
-        </div>
-      ) : (
-        <p className="text-[var(--text-secondary)] text-sm py-10 text-center">
-          No {activeFilter === 'all' ? '' : (SERIES_CONFIG[activeFilter as string] || SERIES_CONFIG['promoter']).label + ' '}sessions on {activeDay}.
-        </p>
-      )}
+            {entries.length > 0 ? (
+              <div key={`${day}-${activeFilter}-${isActive}`} className="flex flex-col gap-2">
+                {entries.map((entry, i) => {
+                  const { status, progress } = statusAt(day, entry, clock);
+                  return (
+                    <SessionRow
+                      key={`${entry.startTime}-${entry.seriesKey}-${entry.name}-${i}`}
+                      entry={entry}
+                      status={status}
+                      liveProgress={progress}
+                      index={i}
+                      tzLabel={tzLabel}
+                    />
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-[var(--text-secondary)] text-sm py-10 text-center">
+                No {activeFilter === 'all' ? '' : (SERIES_CONFIG[activeFilter as string] || SERIES_CONFIG['promoter']).label + ' '}sessions on {day}.
+              </p>
+            )}
+          </section>
+        );
+      })}
     </div>
   );
 }

@@ -16,8 +16,9 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
-        const itinerary = await buildManualItinerary(body);
-        return NextResponse.json({ id: itinerary.id });
+        const { itinerary, saved } = await buildManualItinerary(body);
+        // Unsaved (database down): send the plan itself so the page can still show it.
+        return NextResponse.json(saved ? { id: itinerary.id } : { id: null, itinerary });
     } catch (error) {
         console.error('[itinerary] POST error:', error);
         return NextResponse.json({ error: 'Failed to build itinerary' }, { status: 500 });

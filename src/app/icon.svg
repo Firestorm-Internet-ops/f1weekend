@@ -1,7 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <rect width="32" height="32" rx="6" fill="#15151E"/>
-  <!-- Racing stripe accent -->
-  <rect x="0" y="24" width="32" height="4" fill="#E10600"/>
-  <!-- F1 text -->
-  <text x="16" y="21" font-family="Arial Black, Impact, sans-serif" font-size="15" font-weight="900" fill="#FFFFFF" text-anchor="middle" letter-spacing="1">F1</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="14" fill="#E10600"/>
+  <g fill="#FFFFFF" transform="skewX(-12) translate(8 0)">
+    <path d="M11 13h24v8H20v6h12v8H20v15h-9z"/>
+    <path d="M38 19l9-6h7v37h-9V24l-7 4z"/>
+  </g>
+  <g fill="#15151E" transform="skewX(-12) translate(10 0)">
+    <rect x="6" y="54" width="7" height="4"/><rect x="20" y="54" width="7" height="4"/><rect x="34" y="54" width="7" height="4"/><rect x="48" y="54" width="7" height="4"/>
+  </g>
 </svg>

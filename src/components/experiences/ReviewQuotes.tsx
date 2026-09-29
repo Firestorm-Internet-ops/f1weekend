@@ -20,12 +20,12 @@ export default function ReviewQuotes({ reviews }: Props) {
           key={i}
           className="p-4 rounded-xl border border-[var(--accent-teal)]/20 bg-[var(--accent-teal)]/5"
         >
-          <p className="text-sm text-white leading-relaxed italic mb-2">
+          <p className="text-sm text-[var(--text-primary)] leading-relaxed italic mb-2">
             &ldquo;{review.text}&rdquo;
           </p>
           <footer className="text-xs text-[var(--text-secondary)]">
             — {review.author}{review.country ? `, ${review.country}` : ''}{' '}
-            <span className="text-yellow-400">{'★'.repeat(review.rating)}</span>
+            <span className="text-amber-500">{'★'.repeat(review.rating)}</span>
           </footer>
         </blockquote>
       ))}
