@@ -13,6 +13,7 @@ import type { Experience } from '@/types/experience';
 import HomepageExploreSection, { type ExploreDayData } from '@/components/homepage/HomepageExploreSection';
 import NearbyFeed from '@/components/experiences/NearbyFeed';
 import WeekendGlance from '@/components/race/WeekendGlance';
+import RaceStrip from '@/components/race/RaceStrip';
 import TrackOutline from '@/components/race/TrackOutline';
 import { getTrackSvg } from '@/services/track.service';
 import { getNearbyFeed } from '@/services/nearby-feed.service';
@@ -256,6 +257,17 @@ export default async function HomePage() {
 
   const heroDateRange = formatRaceDates(race.raceDate, sessions.some(s => s.dayOfWeek === 'Thursday'));
   const expBasePath = `/races/${activeRaceSlug}/experiences`;
+  // "02 – 04 OCT": first to last day of the weekend (calendar dates when known).
+  const stripDates = (() => {
+    const cal = calendarEntry(activeRaceSlug);
+    const end = new Date(`${race.raceDate}T00:00:00Z`);
+    const start = cal ? new Date(`${cal.startDate}T00:00:00Z`) : new Date(end.getTime() - 2 * 86_400_000);
+    const dd = (d: Date) => String(d.getUTCDate()).padStart(2, '0');
+    const mon = (d: Date) => d.toLocaleDateString('en-GB', { month: 'short', timeZone: 'UTC' }).toUpperCase();
+    return start.getUTCMonth() === end.getUTCMonth()
+      ? `${dd(start)} – ${dd(end)} ${mon(end)}`
+      : `${dd(start)} ${mon(start)} – ${dd(end)} ${mon(end)}`;
+  })();
 
   // Timezone label for explore section (e.g. "GMT+11")
   const tzLabel = 'GMT' + tzOffset.replace(/:00$/, '');
@@ -341,15 +353,20 @@ export default async function HomePage() {
         <div className="absolute bottom-0 left-0 right-0 h-24 hero-gradient" />
 
         <div className="relative max-w-6xl mx-auto">
+          <RaceStrip
+            round={race.round}
+            dateLabel={stripDates}
+            flag={race.flag}
+            raceName={race.name}
+            href={`/races/${activeRaceSlug}/schedule`}
+            timezone={race.timezone}
+          />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center min-h-[420px]">
             <div className="flex flex-col justify-center py-8">
               <div className="flex flex-col gap-1.5 mb-5">
                 <span className="px-2 py-0.5 rounded-full bg-[var(--accent-red)] text-white text-[10px] font-bold tracking-wider w-fit">
                   NEXT RACE
                 </span>
-                <p className="text-xs font-medium uppercase-label text-[var(--accent-red)] tracking-widest leading-snug">
-                  🏎 {race.name} · {race.city} · {heroDateRange}
-                </p>
               </div>
 
               <h1 className="font-display font-black text-5xl md:text-6xl text-[var(--text-primary)] uppercase-heading leading-tight mb-4">
@@ -389,27 +406,27 @@ export default async function HomePage() {
               </div>
             </div>
 
-            {trackImage ? (
-              <div className="hidden md:flex items-center justify-center relative">
-              <CircuitMap
-                src={trackImage}
-                alt={`${race.circuitName} — Circuit Map`}
-                className="w-full max-w-2xl opacity-90"
-              />
-            </div>
-            ) : trackSvg ? (
-              <div className="hidden md:flex items-center justify-center relative">
-                <TrackOutline svg={trackSvg} className="w-full max-w-xl" />
-              </div>
-            ) : (
+            <div className="flex flex-col gap-4">
+              {trackImage ? (
+                <CircuitMap
+                  src={trackImage}
+                  alt={`${race.circuitName} — Circuit Map`}
+                  width={1252}
+                  height={704}
+                  className="hidden md:block w-full"
+                />
+              ) : trackSvg ? (
+                <TrackOutline svg={trackSvg} className="hidden md:block w-full max-w-xl mx-auto" />
+              ) : null}
               <WeekendGlance
                 sessions={sessions.filter((s) => ['practice', 'qualifying', 'sprint', 'race'].includes(s.sessionType))}
                 raceDate={race.raceDate}
                 circuitName={race.circuitName}
                 tzLabel={tzLabel}
+                timezone={race.timezone}
                 scheduleHref={`/races/${activeRaceSlug}/schedule`}
               />
-            )}
+            </div>
           </div>
         </div>
       </section>
