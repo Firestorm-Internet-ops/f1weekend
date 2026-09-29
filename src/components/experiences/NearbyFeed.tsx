@@ -26,6 +26,8 @@ interface Props {
   cities?: string[];
   /** Load Google Maps only when the visitor taps "Show map" (keeps within the daily map quota). */
   lazyMap?: boolean;
+  /** Editorial picks shown above everything else. */
+  picks?: FeedCard[];
 }
 
 type TierFilter = 'all' | NearbyTier;
@@ -72,7 +74,7 @@ function pointName(p: MapPoint): string {
   return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? p.cards[0].title;
 }
 
-export default function NearbyFeed({ cards, raceSlug, circuit, pageSize = 24, compact = false, moreHref, mapsApiKey, cities = [], lazyMap = false }: Props) {
+export default function NearbyFeed({ cards, raceSlug, circuit, pageSize = 24, compact = false, moreHref, mapsApiKey, cities = [], lazyMap = false, picks = [] }: Props) {
   const [tier, setTier] = useState<TierFilter>('all');
   const [category, setCategory] = useState<FeedCategory | 'all'>('all');
   const [sort, setSort] = useState<'recommended' | 'nearest' | 'price' | 'rating'>('recommended');
@@ -126,7 +128,11 @@ export default function NearbyFeed({ cards, raceSlug, circuit, pageSize = 24, co
       : sort === 'rating'
         ? [...matches].sort((a, b) => score(b) - score(a))
         : matches;
-  const visible = filtered.slice(0, compact ? pageSize : shown);
+  // In the default view the picks are already shown above; don't repeat them.
+  const pickKeys = new Set(picks.map((p) => p.key));
+  const isDefaultView = tier === 'all' && category === 'all' && sort === 'recommended' && pointId === null;
+  const listed = isDefaultView ? filtered.filter((c) => !pickKeys.has(c.key)) : filtered;
+  const visible = listed.slice(0, compact ? pageSize : shown);
   const selectedPoint = pointId !== null ? points.find((p) => p.id === pointId) : null;
 
   const selectPoint = (id: number) => {
@@ -144,6 +150,19 @@ export default function NearbyFeed({ cards, raceSlug, circuit, pageSize = 24, co
 
   return (
     <div>
+      {picks.length > 0 && (
+        <section className="mb-8" aria-labelledby="picks-heading">
+          <h2 id="picks-heading" className="font-display font-bold text-lg text-[var(--text-primary)] mb-1">Our picks for race weekend</h2>
+          <p className="text-sm text-[var(--text-secondary)] mb-4">Well reviewed, different from each other, and each one fits a gap in the F1 schedule.</p>
+          <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-3 sm:overflow-visible">
+            {picks.map((c) => (
+              <div key={c.key} className="snap-start shrink-0 w-[80%] sm:w-auto">
+                <FeedCardView card={c} raceSlug={raceSlug} cities={cities} onPin={() => { const id = pointOfCard.get(c.key); if (id !== undefined) selectPoint(id); }} />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
       <div className={compact ? 'grid lg:grid-cols-[minmax(0,420px)_1fr] gap-6 items-start' : ''}>
         <div className={compact ? '' : 'mb-8'}>
           {mapOpen ? <GoogleSpotsMap
@@ -249,13 +268,13 @@ export default function NearbyFeed({ cards, raceSlug, circuit, pageSize = 24, co
               </a>
             )
           ) : (
-            filtered.length > shown && (
+            listed.length > shown && (
               <div className="mt-6 text-center">
                 <button
                   onClick={() => setShown((n) => n + pageSize)}
                   className="px-5 py-2.5 rounded-full border border-[var(--border-subtle)] text-sm text-[var(--text-primary)] hover:border-[var(--border-medium)]"
                 >
-                  Show more ({filtered.length - shown} left)
+                  Show more ({listed.length - shown} left)
                 </button>
               </div>
             )
@@ -297,14 +316,16 @@ function FeedCardView({ card, raceSlug, cities, onPin }: { card: FeedCard; raceS
   const dur = duration(card.durationHours);
   const freeCancel = card.offers.some((o) => o.freeCancellation);
   const instant = card.offers.some((o) => o.instantConfirmation);
-  const where = card.locationName ? `${card.approximateLocation ? 'In' : 'At'} ${card.locationName}` : null;
+  const isTrip = !!card.destination || card.nearby.tier === 'daytrip';
+  // Day trips say where they go (the travel line); "In Kuala Lumpur" would be wrong.
+  const where = isTrip ? (card.destination ? null : 'Day trip') : card.locationName ? `${card.approximateLocation ? 'In' : 'At'} ${card.locationName}` : null;
   return (
     <article className="flex flex-col rounded-xl overflow-hidden border border-[var(--border-subtle)] bg-[var(--bg-secondary)] shadow-[0_1px_2px_rgba(21,21,30,0.04)] hover:shadow-[0_8px_24px_rgba(21,21,30,0.08)] transition-shadow">
       <div className="relative aspect-[16/10] bg-[var(--bg-tertiary)]">
         {card.imageUrl && (
           // Images come from three providers' CDNs; a plain <img> avoids per-host image config.
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={card.imageUrl} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
+          <img src={card.imageUrl} alt={card.title} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
         )}
         <button
           onClick={onPin}
@@ -322,6 +343,11 @@ function FeedCardView({ card, raceSlug, cities, onPin }: { card: FeedCard; raceS
         <h3 className="font-semibold text-[var(--text-primary)] leading-snug line-clamp-2">{displayTitle(card.title, cities)}</h3>
         {(where || dur) && (
           <p className="text-sm text-[var(--text-secondary)] mt-1">{[where, dur].filter(Boolean).join(' · ')}</p>
+        )}
+        {card.fitsLabel && (
+          <p className="text-sm font-medium text-[var(--accent-red)] mt-1.5 flex items-center gap-1.5">
+            <span aria-hidden>⏱</span>{card.fitsLabel}
+          </p>
         )}
         {card.rating && card.reviewCount > 0 ? (
           <p className="text-sm mt-1.5">

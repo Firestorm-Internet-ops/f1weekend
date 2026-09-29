@@ -18,7 +18,7 @@ import { codeFaqs } from '@/data/faqs-2026';
 import RaceStrip from '@/components/race/RaceStrip';
 import TrackOutline from '@/components/race/TrackOutline';
 import { getTrackSvg } from '@/services/track.service';
-import { getNearbyFeed } from '@/services/nearby-feed.service';
+import { getWeekendFeed } from '@/services/nearby-feed.service';
 import { calendarEntry, hasLiveExperiences } from '@/data/calendar-2026';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -189,7 +189,7 @@ export default async function HomePage() {
     live ? Promise.resolve([]) : getFeaturedExperiences(race.id),
     live ? Promise.resolve([]) : getMostPopularExperiences(race.id, 5), // Fetch more to allow for dedup
     live ? Promise.resolve([]) : getTopRatedExperiences(race.id, 5),    // Fetch more to allow for dedup
-    live ? getNearbyFeed(race) : Promise.resolve(null),
+    live ? getWeekendFeed(race) : Promise.resolve(null),
   ]);
 
   // Deduplication logic
@@ -487,6 +487,7 @@ export default async function HomePage() {
             compact
             pageSize={6}
             cards={feed.cards}
+            picks={feed.picks}
             raceSlug={activeRaceSlug}
             circuit={{ lat: race.circuitLat, lng: race.circuitLng, name: race.circuitName }}
             moreHref={expBasePath}

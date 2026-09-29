@@ -10,7 +10,7 @@ import { getRaceBySlug, getAvailableRaces, getRaceContent, getWindowsByRace } fr
 import { getExperiencesByRace, getExperiencesByWindow } from '@/services/experience.service';
 import { CATEGORY_LABELS } from '@/lib/constants/categories';
 import NearbyFeed from '@/components/experiences/NearbyFeed';
-import { getNearbyFeed } from '@/services/nearby-feed.service';
+import { getWeekendFeed } from '@/services/nearby-feed.service';
 import { hasLiveExperiences } from '@/data/calendar-2026';
 import { providerName } from '@/lib/providers/meta';
 
@@ -217,7 +217,7 @@ async function LiveExperiencesPage({
   race: NonNullable<Awaited<ReturnType<typeof getRaceBySlug>>>;
   availableRaces: Awaited<ReturnType<typeof getAvailableRaces>>;
 }) {
-  const feed = await getNearbyFeed(race);
+  const feed = await getWeekendFeed(race);
   const providers = ['getyourguide', 'viator', 'tiqets'].map(providerName).join(', ');
 
   const breadcrumbLd = {
@@ -238,10 +238,11 @@ async function LiveExperiencesPage({
           <p className="text-xs font-medium uppercase-label text-[var(--accent-red)] mb-2">
             {race.name} {race.season} · {race.circuitName}
           </p>
-          <h1 className="font-display font-black text-4xl text-[var(--text-primary)] uppercase-heading">Things to do near the circuit</h1>
+          <h1 className="font-display font-black text-4xl text-[var(--text-primary)] uppercase-heading">Things to do in {race.city} on race weekend</h1>
           <p className="text-[var(--text-secondary)] text-sm leading-relaxed max-w-2xl mt-3">
-            Every experience on {providers} within reach of {race.circuitName}, nearest first. Travel times
-            include race-weekend traffic; when the same experience is sold on more than one site, you see every price.
+            Every experience on {providers} within reach of {race.circuitName}. Each card says how long it takes to
+            get to the circuit and which gap in the F1 schedule it fits; when the same experience is sold on more
+            than one site, you see every price.
           </p>
         </div>
 
@@ -252,6 +253,7 @@ async function LiveExperiencesPage({
         {feed.cards.length > 0 ? (
           <NearbyFeed
             cards={feed.cards}
+            picks={feed.picks}
             raceSlug={race.slug}
             circuit={{ lat: race.circuitLat, lng: race.circuitLng, name: race.circuitName }}
             mapsApiKey={process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ''}

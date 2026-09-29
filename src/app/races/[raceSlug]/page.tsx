@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { hasLiveExperiences, calendarEntry } from '@/data/calendar-2026';
 import { getSessionsByRace } from '@/services/race.service';
-import { getNearbyFeed } from '@/services/nearby-feed.service';
+import { getWeekendFeed } from '@/services/nearby-feed.service';
 import NearbyFeed from '@/components/experiences/NearbyFeed';
 import WeekendGlance from '@/components/race/WeekendGlance';
 import TrackOutline from '@/components/race/TrackOutline';
@@ -88,7 +88,7 @@ export default async function RaceLandingPage({ params }: Props) {
   // built from the weekend timetable and the nearest bookable experiences.
   const live = hasLiveExperiences(raceSlug);
   const [liveSessions, liveFeed] = live
-    ? await Promise.all([getSessionsByRace(race.id), getNearbyFeed(race)])
+    ? await Promise.all([getSessionsByRace(race.id), getWeekendFeed(race)])
     : [[], null];
   const moved = !!calendarEntry(raceSlug)?.venue;
   const tzLabel = getTimezoneAbbr(race.timezone, new Date(`${race.raceDate}T12:00:00Z`));
