@@ -35,6 +35,8 @@ Vercel only builds `main` (production) and `staging` (staging.f1weekend.co) — 
 
 **2026 calendar**: `src/data/calendar-2026.ts` is the source of truth for race order, dates and moved venues (Bahrain GP → Sepang); `race.service` applies it over the `races` table, and the home page leads with the next race. F1 session times for upcoming races come from Jolpica (`src/lib/jolpica.ts`, api.jolpi.ca, cached 12 h) unless a full timetable is in `src/data/timetables-2026.ts`. Races flagged `liveExperiences` (Bahrain/Sepang and every race after it) show GetYourGuide + Viator + Tiqets products live around the circuit (`services/nearby-feed.service.ts`, `components/experiences/NearbyFeed.tsx`) instead of the database list.
 
+**SEO experiments (autumn 2026)**: each remaining race tests one SEO technique (`src/data/seo-experiments.ts`); method, metrics, weekly logs and the 2027 playbook live in `docs/seo-experiments/`. Keep the other races' pages identical while a test runs; Singapore is the control.
+
 ## Common Dev Commands
 ```bash
 npm run dev            # Start dev server
