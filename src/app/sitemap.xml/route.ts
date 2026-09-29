@@ -1,5 +1,5 @@
 import { getAllRaces } from '@/services/race.service';
-import { hasLiveExperiences } from '@/data/calendar-2026';
+import { hasLiveExperiences, hasMovedVenue } from '@/data/calendar-2026';
 import { getExperiencesByRace } from '@/services/experience.service';
 
 export const dynamic = 'force-dynamic';
@@ -78,12 +78,12 @@ export async function GET() {
     });
   }
 
-  // Live-feed races have no experience pages of their own (the list links
-  // straight to booking sites); their stored ones are for the old venue.
+  // A race that moved venue has no valid experience pages (stored ones are for
+  // the old venue and redirect); every other race keeps its written ones.
   const experiencesByRace = await Promise.all(
     races.map(async (race) => ({
       race,
-      experiences: hasLiveExperiences(race.slug) ? [] : await getExperiencesByRace(race.id),
+      experiences: hasMovedVenue(race.slug) ? [] : await getExperiencesByRace(race.id),
     })),
   );
 

@@ -223,7 +223,7 @@ export default async function TipsPage({ params }: Props) {
         <div className="mt-12 pt-8 border-t border-[var(--border-subtle)] flex flex-wrap gap-4">
           <Link
             href={`/races/${raceSlug}/experiences`}
-            className="px-5 py-2.5 bg-[var(--accent-teal)] hover:bg-[var(--accent-teal-hover)] text-[var(--bg-primary)] font-semibold text-sm rounded-full transition-colors"
+            className="px-5 py-2.5 bg-[var(--accent-red)] hover:bg-[var(--accent-red-hover)] text-white font-semibold text-sm rounded-full transition-colors"
           >
             Browse All Experiences
           </Link>

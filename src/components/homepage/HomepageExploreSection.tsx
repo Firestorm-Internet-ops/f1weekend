@@ -157,7 +157,7 @@ export default function HomepageExploreSection({ city, days, expBasePath, tzLabe
       <div className="mt-12 flex justify-center">
         <Link
           href={scheduleHref}
-          className="px-8 py-3 rounded-full bg-white text-[var(--bg-primary)] font-display font-black uppercase tracking-widest hover:bg-[var(--accent-teal)] transition-colors"
+          className="px-8 py-3 rounded-full bg-[var(--accent-red)] text-white font-display font-black uppercase tracking-widest hover:bg-[var(--accent-red-hover)] transition-colors"
         >
           View Full Schedule
         </Link>

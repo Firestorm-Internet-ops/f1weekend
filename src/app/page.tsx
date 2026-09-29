@@ -15,6 +15,18 @@ import NearbyFeed from '@/components/experiences/NearbyFeed';
 import WeekendGlance from '@/components/race/WeekendGlance';
 import { getNearbyFeed } from '@/services/nearby-feed.service';
 import { calendarEntry, hasLiveExperiences } from '@/data/calendar-2026';
+import fs from 'node:fs';
+import path from 'node:path';
+
+/** A /public image path, if the file is actually there (track images are added by hand). */
+function existingPublicFile(src: string | undefined): string | undefined {
+  if (!src) return undefined;
+  try {
+    return fs.existsSync(path.join(process.cwd(), 'public', src)) ? src : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 export const dynamic = 'force-dynamic';
 
@@ -148,6 +160,8 @@ export default async function HomePage() {
   const venueMoved = !!calendarEntry(activeRaceSlug)?.venue;
   const raceContent = venueMoved ? null : storedContent;
   const live = hasLiveExperiences(activeRaceSlug);
+  // Track image: stored for the race, or the new venue's (Sepang) once added to /public/tracks.
+  const trackImage = raceContent?.circuitMapSrc ?? existingPublicFile(calendarEntry(activeRaceSlug)?.venue?.trackImage);
 
   if (!race) {
     return (
@@ -350,7 +364,7 @@ export default async function HomePage() {
               <div className="flex flex-wrap gap-3 mb-8 mt-6">
                 <Link
                   href={expBasePath}
-                  className="px-5 py-2.5 bg-[var(--accent-teal)] hover:bg-[var(--accent-teal-hover)] text-[var(--bg-primary)] font-semibold text-sm rounded-full transition-colors whitespace-nowrap"
+                  className="px-5 py-2.5 bg-[var(--accent-red)] hover:bg-[var(--accent-red-hover)] text-white font-semibold text-sm rounded-full transition-colors whitespace-nowrap"
                 >
                   Explore {race.city}
                 </Link>
@@ -370,10 +384,10 @@ export default async function HomePage() {
               </div>
             </div>
 
-            {raceContent?.circuitMapSrc ? (
+            {trackImage ? (
               <div className="hidden md:flex items-center justify-center relative">
               <CircuitMap
-                src={raceContent?.circuitMapSrc ?? undefined}
+                src={trackImage}
                 alt={`${race.circuitName} — Circuit Map`}
                 className="w-full max-w-2xl opacity-90"
               />

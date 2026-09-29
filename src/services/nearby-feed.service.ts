@@ -9,7 +9,11 @@ const FEED_TTL = 6 * 3600;
 /** Search radius around the circuit; the nearby rules then drop anything > 2 h away. */
 const RADIUS_KM = 100;
 
-const CURRENCY_BY_COUNTRY: Record<string, string> = { MY: 'MYR' };
+/** Prices in the host country's currency; EUR where we have no mapping. */
+const CURRENCY_BY_COUNTRY: Record<string, string> = {
+  MY: 'MYR', SG: 'SGD', US: 'USD', MX: 'MXN', BR: 'BRL', QA: 'QAR', AE: 'AED',
+  AU: 'AUD', CN: 'CNY', JP: 'JPY', CA: 'CAD', GB: 'GBP', HU: 'HUF', AZ: 'AZN', MC: 'EUR',
+};
 
 export interface NearbyFeed {
   cards: FeedCard[];
@@ -19,9 +23,7 @@ export interface NearbyFeed {
   failed: string[];
 }
 
-export async function fetchNearbyOffers(race: Pick<Race, 'city' | 'circuitLat' | 'circuitLng' | 'countryCode'>) {
-  const currency = CURRENCY_BY_COUNTRY[race.countryCode] ?? 'EUR';
-  const query = { city: race.city, lat: race.circuitLat, lng: race.circuitLng, radiusKm: RADIUS_KM, currency };
+async function searchAll(query: { city: string; lat: number; lng: number; radiusKm: number; currency: string }) {
   const failed: string[] = [];
   const results = await Promise.all(
     Object.values(ALL_SEARCH_ADAPTERS).map(async (adapter) => {
@@ -32,13 +34,27 @@ export async function fetchNearbyOffers(race: Pick<Race, 'city' | 'circuitLat' |
       try {
         return await adapter.search(query);
       } catch (err) {
-        console.error(`[nearby-feed] ${adapter.id} failed:`, (err as Error).message);
+        console.error(`[nearby-feed] ${adapter.id} (${query.currency}) failed:`, (err as Error).message.slice(0, 200));
         failed.push(PROVIDER_NAMES[adapter.id]);
         return [] as NormalizedOffer[];
       }
     })
   );
-  return { offers: results.flat(), currency, failed };
+  return { offers: results.flat(), failed };
+}
+
+/**
+ * All providers around the circuit, in the local currency. Some sites reject
+ * some currencies (Qatari riyal, Brazilian real): then the whole race is
+ * fetched in US dollars, so every price on a card is in the same currency.
+ */
+export async function fetchNearbyOffers(race: Pick<Race, 'city' | 'circuitLat' | 'circuitLng' | 'countryCode'>) {
+  const local = CURRENCY_BY_COUNTRY[race.countryCode] ?? 'EUR';
+  const base = { city: race.city, lat: race.circuitLat, lng: race.circuitLng, radiusKm: RADIUS_KM };
+  const first = await searchAll({ ...base, currency: local });
+  if (first.failed.length === 0 || local === 'USD') return { ...first, currency: local };
+  const usd = await searchAll({ ...base, currency: 'USD' });
+  return usd.failed.length < first.failed.length ? { ...usd, currency: 'USD' } : { ...first, currency: local };
 }
 
 export async function getNearbyFeed(race: Race): Promise<NearbyFeed> {
@@ -50,11 +66,12 @@ export async function getNearbyFeed(race: Race): Promise<NearbyFeed> {
         lat: race.circuitLat,
         lng: race.circuitLng,
         placeWords: [race.city, race.country],
+        city: race.city,
         places: RACE_BASES[raceKey(race.slug)] ?? [],
       });
       return { cards, currency, fetchedAt: new Date().toISOString(), failed };
     },
-    [`nearby-feed:${race.slug}:${race.circuitLat},${race.circuitLng}:v3`],
+    [`nearby-feed:${race.slug}:${race.circuitLat},${race.circuitLng}:v4`],
     { revalidate: FEED_TTL, tags: ['nearby-feed', `nearby-feed:${race.slug}`] }
   )();
 }

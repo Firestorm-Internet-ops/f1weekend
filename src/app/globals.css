@@ -18,9 +18,9 @@
   --color-pit-red-muted: #E1060014;
 
   /* Pitlane Teal — identity color, AI features, secondary CTAs */
-  --color-pit-teal: #00796B;
-  --color-pit-teal-hover: #00695C;
-  --color-pit-teal-muted: #00796B14;
+  --color-pit-teal: #C40500;
+  --color-pit-teal-hover: #A00400;
+  --color-pit-teal-muted: #E1060012;
 
   /* Text */
   --color-pit-text: #15151E;
@@ -123,9 +123,10 @@
   --accent-red: #E10600;
   --accent-red-hover: #C40500;
   --accent-red-muted: #E1060014;
-  --accent-teal: #00796B;
-  --accent-teal-hover: #00695C;
-  --accent-teal-muted: #00796B14;
+  /* "Teal" is the historical name: actions and links are F1 red site-wide. */
+  --accent-teal: #C40500;
+  --accent-teal-hover: #A00400;
+  --accent-teal-muted: #E1060012;
 
   /* Text */
   --text-primary: #15151E;

@@ -198,7 +198,7 @@ export default function NearbyFeed({ cards, raceSlug, circuit, pageSize = 24, co
                     aria-pressed={category === k}
                     className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
                       category === k
-                        ? 'bg-[var(--text-primary)] text-white'
+                        ? 'bg-[var(--accent-red)] text-white'
                         : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                     }`}
                   >
@@ -284,7 +284,7 @@ function MapPlaceholder({ height, counts, circuitName, onOpen }: { height: strin
           {(['near', 'city', 'daytrip'] as NearbyTier[]).filter((t) => counts[t] > 0).map((t) => `${counts[t]} ${t === 'near' ? 'near the circuit' : t === 'city' ? 'in the city' : 'day trips'}`).join(' · ')}
         </p>
       </div>
-      <button onClick={onOpen} className="px-5 py-2.5 rounded-full text-sm font-semibold bg-[var(--text-primary)] text-white hover:bg-[var(--accent-red)] transition-colors">
+      <button onClick={onOpen} className="px-5 py-2.5 rounded-full text-sm font-semibold bg-[var(--accent-red)] text-white hover:bg-[var(--accent-red-hover)] transition-colors">
         Show map
       </button>
     </div>
@@ -353,7 +353,7 @@ function FeedCardView({ card, raceSlug, cities, onPin }: { card: FeedCard; raceS
               </div>
               <button
                 onClick={() => openFeedBooking(raceSlug, best)}
-                className="w-full px-4 py-2.5 rounded-lg text-sm font-semibold bg-[var(--text-primary)] text-white hover:bg-[var(--accent-red)] transition-colors"
+                className="w-full px-4 py-2.5 rounded-lg text-sm font-semibold bg-[var(--accent-red)] text-white hover:bg-[var(--accent-red-hover)] transition-colors"
               >
                 Check availability →
               </button>
