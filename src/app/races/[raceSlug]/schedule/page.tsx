@@ -39,6 +39,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
+/** Intro built from the actual sessions (no "Sprint (if applicable)" boilerplate). */
+function scheduleIntro(race: { season: number; name: string; circuitName: string; city: string }, sessions: { name: string; dayOfWeek: string; startTime: string; sessionType: string }[]): string {
+  const at = (s?: { dayOfWeek: string; startTime: string }) => (s ? `${s.dayOfWeek} at ${s.startTime.slice(0, 5)}` : null);
+  const f1 = sessions.filter((s) => ['practice', 'qualifying', 'sprint', 'race'].includes(s.sessionType));
+  const quali = f1.find((s) => s.sessionType === 'qualifying' && !/sprint/i.test(s.name));
+  const sprint = f1.find((s) => s.sessionType === 'sprint');
+  const raceStart = f1.find((s) => s.sessionType === 'race');
+  const parts = [
+    `The ${race.season} ${race.name} runs at ${race.circuitName}, ${race.city}.`,
+    f1[0] ? `Track action starts ${at(f1[0])}` + (quali ? `, qualifying is ${at(quali)}` : '') + (sprint ? `, the Sprint is ${at(sprint)}` : '') + (raceStart ? ` and the race starts ${at(raceStart)} (local time).` : '.') : '',
+    `Find things to do in ${race.city} that fit around the sessions.`,
+  ];
+  return parts.filter(Boolean).join(' ');
+}
+
 export default async function SchedulePage({ params }: Props) {
   const { raceSlug } = await params;
   const [race, raceContent, availableRaces] = await Promise.all([
@@ -127,9 +142,7 @@ export default async function SchedulePage({ params }: Props) {
           </p>
         ) : (
           <p className="text-[var(--text-secondary)] text-base leading-relaxed max-w-2xl mb-8">
-            The {race.season} {race.name} runs at {race.circuitName}, {race.city}.
-            The weekend brings qualifying, the F1 Sprint (if applicable), and the main race on Sunday.
-            Explore curated experiences in {race.city} matched to your session gaps.
+            {scheduleIntro(race, sessions)}
           </p>
         )}
         <ScheduleView

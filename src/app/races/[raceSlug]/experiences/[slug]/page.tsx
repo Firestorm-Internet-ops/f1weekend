@@ -1,4 +1,5 @@
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
+import { hasLiveExperiences } from '@/data/calendar-2026';
 import type { Metadata } from 'next';
 import { marked } from 'marked';
 import { getExperienceBySlug, getExperiencesByRace, getSuggestedExperiences } from '@/services/experience.service';
@@ -30,7 +31,7 @@ export async function generateStaticParams() {
   try {
     const availableRaces = await getAvailableRaces();
     const results = await Promise.all(
-      availableRaces.map(async (race) => {
+      availableRaces.filter((race) => !hasLiveExperiences(race.slug)).map(async (race) => {
         const raceSlug = race.slug;
         const exps = await getExperiencesByRace(race.id);
         return exps.map((e) => ({ raceSlug, slug: e.slug }));
@@ -211,6 +212,9 @@ function stripArticleFrontMatter(md: string): string {
 
 export default async function ExperienceDetailPage({ params }: Props) {
   const { raceSlug, slug } = await params;
+  // Live-feed races (Bahrain GP → Sepang): stored experiences are for the old
+  // venue; send visitors to the live list.
+  if (hasLiveExperiences(raceSlug)) permanentRedirect(`/races/${raceSlug}/experiences`);
   const exp = await getExperienceBySlug(slug);
   if (!exp) notFound();
 
@@ -337,7 +341,7 @@ export default async function ExperienceDetailPage({ params }: Props) {
               </h1>
 
               <div className="flex items-center gap-5 text-sm text-[var(--text-secondary)] mb-6 flex-wrap">
-                <span className="mono-data">⏱ {exp.durationLabel}</span>
+                {exp.durationLabel && <span className="mono-data">⏱ {exp.durationLabel}</span>}
                 <span className="mono-data">
                   ★ {exp.rating.toFixed(1)}{' '}
                   <span className="text-[var(--text-secondary)]">({exp.reviewCount.toLocaleString()} reviews)</span>
@@ -557,7 +561,8 @@ export default async function ExperienceDetailPage({ params }: Props) {
                 <div className="text-sm text-[var(--text-secondary)]">
                   {offers.length > 1 ? `Compare ${offers.length} booking sites above` : `Booked via ${partnerName}`} · Cancellation policies apply
                 </div>
-                <BookButton experience={exp} source="guide" />
+                {/* A second Book button only helps on long pages (with a guide article). */}
+                {guideHtml && <BookButton experience={exp} source="guide" />}
               </div>
             </div>
 

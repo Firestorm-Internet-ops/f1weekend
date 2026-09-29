@@ -5,7 +5,7 @@ import GoogleSpotsMap, { type MapSpot } from '@/components/experiences/GoogleSpo
 import { TIER_STYLE } from '@/lib/constants/nearby-styles';
 import { providerName } from '@/lib/providers/meta';
 import { openFeedBooking } from '@/lib/analytics';
-import type { FeedCard } from '@/lib/providers/nearby-feed';
+import { FEED_CATEGORY_LABELS, type FeedCard, type FeedCategory } from '@/lib/providers/nearby-feed';
 import { haversineKm, type NearbyTier } from '@/lib/nearby';
 
 /** Experiences closer together than this share one pin (pins would overlap at map scale). */
@@ -70,6 +70,8 @@ function pointName(p: MapPoint): string {
 
 export default function NearbyFeed({ cards, raceSlug, circuit, pageSize = 24, compact = false, moreHref, mapsApiKey }: Props) {
   const [tier, setTier] = useState<TierFilter>('all');
+  const [category, setCategory] = useState<FeedCategory | 'all'>('all');
+  const [sort, setSort] = useState<'nearest' | 'price' | 'rating'>('nearest');
   const [pointId, setPointId] = useState<number | null>(null);
   const [shown, setShown] = useState(pageSize);
 
@@ -97,9 +99,26 @@ export default function NearbyFeed({ cards, raceSlug, circuit, pageSize = 24, co
     return c;
   }, [cards]);
 
-  const filtered = cards.filter(
-    (c) => (tier === 'all' || c.nearby.tier === tier) && (pointId === null || pointOfCard.get(c.key) === pointId)
+  const categoryCounts = useMemo(() => {
+    const c = new Map<FeedCategory, number>();
+    for (const card of cards) if (card.category) c.set(card.category, (c.get(card.category) ?? 0) + 1);
+    return c;
+  }, [cards]);
+
+  const matches = cards.filter(
+    (c) =>
+      (tier === 'all' || c.nearby.tier === tier) &&
+      (category === 'all' || c.category === category) &&
+      (pointId === null || pointOfCard.get(c.key) === pointId)
   );
+  // Cards arrive nearest-first. Rating sort favours well-reviewed ones (few reviews count less).
+  const score = (c: FeedCard) => (c.rating ?? 0) * Math.min(1, Math.log10(c.reviewCount + 1) / 2);
+  const filtered =
+    sort === 'price'
+      ? [...matches].sort((a, b) => (a.offers[0]?.priceAmount ?? Infinity) - (b.offers[0]?.priceAmount ?? Infinity))
+      : sort === 'rating'
+        ? [...matches].sort((a, b) => score(b) - score(a))
+        : matches;
   const visible = filtered.slice(0, compact ? pageSize : shown);
   const selectedPoint = pointId !== null ? points.find((p) => p.id === pointId) : null;
 
@@ -142,7 +161,7 @@ export default function NearbyFeed({ cards, raceSlug, circuit, pageSize = 24, co
                   aria-pressed={tier === c.id}
                   className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
                     tier === c.id
-                      ? 'border-white text-[var(--text-primary)] bg-[var(--bg-tertiary)]'
+                      ? 'border-[var(--text-primary)] text-[var(--text-primary)] bg-[var(--bg-secondary)] font-medium'
                       : 'border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                   }`}
                 >
@@ -152,6 +171,39 @@ export default function NearbyFeed({ cards, raceSlug, circuit, pageSize = 24, co
                   {c.label} · {c.count}
                 </button>
               ))}
+            </div>
+          )}
+
+          {!compact && categoryCounts.size > 1 && (
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+              <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by type">
+                {(['all', ...(Object.keys(FEED_CATEGORY_LABELS) as FeedCategory[]).filter((k) => categoryCounts.has(k))] as const).map((k) => (
+                  <button
+                    key={k}
+                    onClick={() => { setCategory(k); setShown(pageSize); }}
+                    aria-pressed={category === k}
+                    className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
+                      category === k
+                        ? 'bg-[var(--text-primary)] text-white'
+                        : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                    }`}
+                  >
+                    {k === 'all' ? 'Everything' : `${FEED_CATEGORY_LABELS[k]} · ${categoryCounts.get(k)}`}
+                  </button>
+                ))}
+              </div>
+              <label className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
+                Sort
+                <select
+                  value={sort}
+                  onChange={(e) => { setSort(e.target.value as typeof sort); setShown(pageSize); }}
+                  className="px-3 py-1.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-secondary)] text-[var(--text-primary)]"
+                >
+                  <option value="nearest">Nearest first</option>
+                  <option value="price">Lowest price</option>
+                  <option value="rating">Best rated</option>
+                </select>
+              </label>
             </div>
           )}
 
@@ -177,7 +229,7 @@ export default function NearbyFeed({ cards, raceSlug, circuit, pageSize = 24, co
 
           {compact ? (
             moreHref && (
-              <a href={moreHref} className="inline-block mt-5 text-sm text-[var(--accent-teal,#00D2BE)] hover:underline">
+              <a href={moreHref} className="inline-flex items-center min-h-11 mt-3 text-sm font-medium text-[var(--accent-teal)] hover:underline">
                 See all {cards.length} experiences, nearest first →
               </a>
             )
@@ -214,7 +266,7 @@ function FeedCardView({ card, raceSlug, onPin }: { card: FeedCard; raceSlug: str
         <button
           onClick={onPin}
           disabled={card.lat == null}
-          className="absolute left-3 top-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold text-[var(--text-primary)] disabled:cursor-default"
+          className="absolute left-3 top-3 inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold text-[var(--text-primary)] disabled:cursor-default"
           style={{ background: 'rgba(255,255,255,0.94)', boxShadow: '0 1px 3px rgba(21,21,30,0.18)' }}
           title="Show on map"
         >

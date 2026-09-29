@@ -1,4 +1,4 @@
-import { redirect } from 'next/navigation';
+import { permanentRedirect } from 'next/navigation';
 
 interface Props {
   params: Promise<{ raceSlug: string }>;
@@ -6,5 +6,5 @@ interface Props {
 
 export default async function GuidePage({ params }: Props) {
   const { raceSlug } = await params;
-  redirect(`/races/${raceSlug}`);
+  permanentRedirect(`/races/${raceSlug}`); // the guide is the race page
 }

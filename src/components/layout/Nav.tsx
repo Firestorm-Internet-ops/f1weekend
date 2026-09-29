@@ -25,7 +25,9 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  const raceSlug = extractRaceSlug(pathname);
+  // Unknown slugs (a 404 page) fall back to the current race, so nav links still work.
+  const urlSlug = extractRaceSlug(pathname);
+  const raceSlug = urlSlug && races.some((r) => r.slug === urlSlug) ? urlSlug : null;
   const displayRaceSlug = raceSlug ?? defaultRaceSlug;
   const displayRace = races.find(r => r.slug === displayRaceSlug) ?? races[0] ?? null;
 
@@ -112,7 +114,7 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
                 {raceDropdownOpen && (() => {
                   const today = new Date().toISOString().slice(0, 10);
                   const upcoming = races.filter((r) => r.raceDate >= today && r.available);
-                  const mobileRaces = upcoming.slice(0, 2);
+                  const mobileRaces = upcoming.slice(0, 4);
 
                   const renderRaceItem = (race: Race) => {
                     const d = new Date(race.raceDate + 'T00:00:00Z');
@@ -182,7 +184,7 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
                   return (
                     <div className="absolute right-0 sm:right-auto sm:left-1/2 sm:-translate-x-1/2 top-full mt-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-primary)] shadow-xl z-50 overflow-hidden
                       w-64 sm:w-auto sm:min-w-[900px]">
-                      {/* Mobile: 2 upcoming races only */}
+                      {/* Mobile: next 4 races */}
                       <div className="sm:hidden">
                         {mobileRaces.map((race) => renderRaceItem(race))}
                         <div className="border-t border-[var(--border-subtle)]">{calendarLink}</div>

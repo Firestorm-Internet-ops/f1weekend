@@ -1,7 +1,12 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { hasLiveExperiences } from '@/data/calendar-2026';
+import { hasLiveExperiences, calendarEntry } from '@/data/calendar-2026';
+import { getSessionsByRace } from '@/services/race.service';
+import { getNearbyFeed } from '@/services/nearby-feed.service';
+import NearbyFeed from '@/components/experiences/NearbyFeed';
+import WeekendGlance from '@/components/race/WeekendGlance';
+import { getTimezoneAbbr } from '@/lib/utils';
 import { getRaceBySlug, getRaceContent } from '@/services/race.service';
 import { getExperiencesByWindow } from '@/services/experience.service';
 import CircuitMap from '@/components/race/CircuitMap';
@@ -69,11 +74,21 @@ export default async function RaceLandingPage({ params }: Props) {
 
   const hasThursdayFreeDay = raceContent?.hasThursdayFreeDay ?? false;
 
+  // Live-feed races (Bahrain GP at Sepang): no stored write-up, so the page is
+  // built from the weekend timetable and the nearest bookable experiences.
+  const live = hasLiveExperiences(raceSlug);
+  const [liveSessions, liveFeed] = live
+    ? await Promise.all([getSessionsByRace(race.id), getNearbyFeed(race)])
+    : [[], null];
+  const moved = !!calendarEntry(raceSlug)?.venue;
+  const tzLabel = getTimezoneAbbr(race.timezone, new Date(`${race.raceDate}T12:00:00Z`));
+  const nearCount = liveFeed?.cards.filter((c) => c.nearby.tier === 'near').length ?? 0;
+
   return (
     <div className="min-h-screen pt-24 pb-24 px-4">
       {faqLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }} />}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
-      <div className="max-w-3xl mx-auto">
+      <div className={live ? 'max-w-5xl mx-auto' : 'max-w-3xl mx-auto'}>
         <Breadcrumb items={[
           { label: 'Home', href: '/' },
           { label: race.name },
@@ -113,13 +128,52 @@ export default async function RaceLandingPage({ params }: Props) {
           ))}
         </div>
 
+        {live ? (
+          <>
+            <p className="text-[var(--text-secondary)] leading-relaxed mt-8">
+              {moved && <>For 2026 the {race.name.replace(/ in .*$/, '')} is held at {race.circuitName}, next to Kuala Lumpur International Airport. </>}
+              Round {race.round} runs {firstDateStr}–{sunStr}. Most fans stay in {race.city} or Putrajaya
+              {liveFeed && liveFeed.cards[0]?.circuitKm != null && <> — central {race.city} is about {Math.round(liveFeed.cards.find((c) => c.locationName === race.city)?.circuitKm ?? 44)} km from the circuit</>}.
+              {liveFeed && liveFeed.cards.length > 0 && <> We list {liveFeed.cards.length} bookable experiences around the circuit{nearCount > 0 ? `, ${nearCount} of them within 30 minutes` : ''}, sorted by race-weekend travel time.</>}
+            </p>
+
+            {liveSessions.length > 0 && (
+              <section className="mt-10">
+                <WeekendGlance
+                  desktopOnly={false}
+                  sessions={liveSessions.filter((s) => ['practice', 'qualifying', 'sprint', 'race'].includes(s.sessionType))}
+                  raceDate={race.raceDate}
+                  circuitName={race.circuitName}
+                  tzLabel={tzLabel}
+                  scheduleHref={`/races/${raceSlug}/schedule`}
+                />
+              </section>
+            )}
+
+            {liveFeed && liveFeed.cards.length > 0 && (
+              <section className="mt-12">
+                <h2 className="font-display font-bold text-xl text-[var(--text-primary)] uppercase-heading mb-4">Nearest things to do</h2>
+                <NearbyFeed
+                  compact
+                  pageSize={4}
+                  cards={liveFeed.cards}
+                  raceSlug={raceSlug}
+                  circuit={{ lat: race.circuitLat, lng: race.circuitLng, name: race.circuitName }}
+                  moreHref={`/races/${raceSlug}/experiences`}
+                  mapsApiKey={process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ''}
+                />
+              </section>
+            )}
+          </>
+        ) : (
         <p className="text-[var(--text-secondary)] text-sm leading-relaxed mt-6 mb-2">
-          Looking for things to do between sessions?{' '}
-          <Link href={`/races/${raceSlug}/experiences`} className="text-[var(--accent-teal)] hover:underline">
-            Browse {race.city} F1 {race.season} experiences
-          </Link>{' '}
-          — curated activities matched to every session gap in the weekend.
-        </p>
+            Looking for things to do between sessions?{' '}
+            <Link href={`/races/${raceSlug}/experiences`} className="text-[var(--accent-teal)] hover:underline">
+              Browse {race.city} F1 {race.season} experiences
+            </Link>{' '}
+            — curated activities matched to every session gap in the weekend.
+          </p>
+        )}
 
         {(raceContent?.whyCityText || raceContent?.circuitMapSrc) && (
           <section className="mt-12 pt-8 border-t border-[var(--border-subtle)]">

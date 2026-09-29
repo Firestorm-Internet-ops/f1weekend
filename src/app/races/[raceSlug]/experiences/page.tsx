@@ -6,8 +6,8 @@ import ExperiencesClient from '@/components/experiences/ExperiencesClient';
 import GoogleSpotsMap from '@/components/experiences/GoogleSpotsMap';
 import { classifyExperience, nearbyLabel } from '@/lib/nearby';
 import RaceSwitcher from '@/components/race/RaceSwitcher';
-import { getRaceBySlug, getAvailableRaces, getRaceContent } from '@/services/race.service';
-import { getExperiencesByRace } from '@/services/experience.service';
+import { getRaceBySlug, getAvailableRaces, getRaceContent, getWindowsByRace } from '@/services/race.service';
+import { getExperiencesByRace, getExperiencesByWindow } from '@/services/experience.service';
 import { CATEGORY_LABELS } from '@/lib/constants/categories';
 import NearbyFeed from '@/components/experiences/NearbyFeed';
 import { getNearbyFeed } from '@/services/nearby-feed.service';
@@ -78,6 +78,11 @@ export default async function ExperiencesPage({ params, searchParams }: Props) {
   }
 
   const exps = await getExperiencesByRace(race.id);
+  // Session-window chips only for windows this race has experiences in.
+  const windows = await getWindowsByRace(race.id);
+  const windowCounts = Object.fromEntries(
+    await Promise.all(windows.map(async (w) => [w.slug, (await getExperiencesByWindow(w.slug, race.id)).length] as const))
+  );
 
   const expFaqLd = raceContent?.faqLd as any;
 
@@ -193,7 +198,7 @@ export default async function ExperiencesPage({ params, searchParams }: Props) {
             </div>
           }
         >
-          <ExperiencesClient initialExperiences={exps} raceSlug={raceSlug} />
+          <ExperiencesClient initialExperiences={exps} raceSlug={raceSlug} windowCounts={windowCounts} />
         </Suspense>
       </div>
     </div>
