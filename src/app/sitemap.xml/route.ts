@@ -1,4 +1,5 @@
 import { getAllRaces } from '@/services/race.service';
+import { hasLiveExperiences } from '@/data/calendar-2026';
 import { getExperiencesByRace } from '@/services/experience.service';
 
 export const dynamic = 'force-dynamic';
@@ -30,9 +31,7 @@ const STATIC_ROUTES: Array<{
   { path: '/f1-2026', changefreq: 'weekly', priority: '0.8', useStaticDate: true },
   { path: '/about', changefreq: 'monthly', priority: '0.4', useStaticDate: true },
   { path: '/contact', changefreq: 'monthly', priority: '0.3', useStaticDate: true },
-  { path: '/experiences', changefreq: 'daily', priority: '0.7' },
-  { path: '/experiences/map', changefreq: 'weekly', priority: '0.6' },
-  { path: '/guide', changefreq: 'weekly', priority: '0.7' },
+  // /experiences, /experiences/map and /guide only redirect to the current race: not listed.
   { path: '/schedule', changefreq: 'weekly', priority: '0.5', useStaticDate: true },
   { path: '/getting-there', changefreq: 'monthly', priority: '0.5', useStaticDate: true },
   // /privacy and /itinerary are intentionally omitted (noindex pages)
@@ -46,7 +45,6 @@ const RACE_ROUTE_SUFFIXES: Array<{
 }> = [
   { suffix: '', changefreq: 'daily', priority: '0.9' },
   { suffix: '/experiences', changefreq: 'daily', priority: '0.9' },
-  { suffix: '/guide', changefreq: 'weekly', priority: '0.85' },
   { suffix: '/schedule', changefreq: 'weekly', priority: '0.7', useStaticDate: true },
   { suffix: '/getting-there', changefreq: 'monthly', priority: '0.6', useStaticDate: true },
   { suffix: '/experiences/map', changefreq: 'weekly', priority: '0.6' },
@@ -80,15 +78,21 @@ export async function GET() {
     });
   }
 
+  // Live-feed races have no experience pages of their own (the list links
+  // straight to booking sites); their stored ones are for the old venue.
   const experiencesByRace = await Promise.all(
     races.map(async (race) => ({
       race,
-      experiences: await getExperiencesByRace(race.id),
+      experiences: hasLiveExperiences(race.slug) ? [] : await getExperiencesByRace(race.id),
     })),
   );
 
   for (const { race, experiences } of experiencesByRace) {
+    const live = hasLiveExperiences(race.slug);
     for (const route of RACE_ROUTE_SUFFIXES) {
+      // Only list pages that exist and don't redirect.
+      if (route.suffix === '/tips' && race.hasTips === false) continue;
+      if (route.suffix === '/experiences/map' && live) continue;
       addUrl({
         loc: `${baseUrl}/races/${race.slug}${route.suffix}`,
         lastmod: fmt(route.useStaticDate ? staticDate : now),

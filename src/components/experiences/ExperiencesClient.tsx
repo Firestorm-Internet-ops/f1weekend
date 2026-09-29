@@ -63,9 +63,12 @@ function getSessionWindows(raceSlug: string): SessionWindow[] {
 export default function ExperiencesClient({
   initialExperiences = [],
   raceSlug,
+  windowCounts,
 }: {
   initialExperiences?: Experience[];
   raceSlug: string;
+  /** Experiences per session window for this race; windows missing or at 0 are hidden. */
+  windowCounts?: Record<string, number>;
 }) {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -79,7 +82,10 @@ export default function ExperiencesClient({
   const [loading, setLoading] = useState(false);
   const isFirstRender = useRef(true);
 
-  const sessionWindows = useMemo(() => getSessionWindows(raceSlug), [raceSlug]);
+  const sessionWindows = useMemo(
+    () => getSessionWindows(raceSlug).filter((w) => !windowCounts || (windowCounts[w.slug] ?? 0) > 0),
+    [raceSlug, windowCounts]
+  );
 
   // Stable category counts from initial data (don't change with filter)
   const categoryCounts = useMemo(() => {

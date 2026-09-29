@@ -39,23 +39,19 @@ const FAQ = [
   },
   {
     q: 'Which cities host F1 races in 2026?',
-    a: 'The 2026 F1 calendar includes Melbourne, Shanghai, Suzuka, Sakhir, Jeddah, Miami, Imola, Monaco, Barcelona, Montreal, Spielberg, Silverstone, Spa, Budapest, Zandvoort, Monza, Baku, Singapore, Austin, Mexico City, São Paulo, Las Vegas, Lusail, and Abu Dhabi.',
+    a: 'The 2026 calendar visits Melbourne, Shanghai, Suzuka, Miami, Montreal, Monaco, Barcelona, Spielberg, Silverstone, Spa, Budapest, Zandvoort, Monza, Madrid, Baku, Sepang (Kuala Lumpur — the Bahrain Grand Prix is held in Malaysia this year), Singapore, Austin, Mexico City, São Paulo, Las Vegas, Lusail and Abu Dhabi.',
   },
   {
     q: 'What is the best F1 race to travel to in 2026?',
-    a: 'Melbourne is widely regarded as one of the best F1 races for first-time F1 travellers — incredible atmosphere, world-class city to explore, and a street-style circuit at Albert Park. Monaco, Silverstone, and Spa are other legendary destinations worth considering.',
+    a: 'For the rest of the season: Singapore for a night race in the city centre, Austin and Mexico City for the atmosphere, São Paulo for passionate crowds, Las Vegas for the spectacle and Abu Dhabi for the season finale. Street circuits like Singapore and Las Vegas make it easy to explore between sessions.',
   },
   {
     q: 'How do I plan an F1 race trip?',
-    a: 'Book your race tickets and accommodation early — popular races like Melbourne and Monaco sell out months in advance. Plan activities for session gaps using guides like ours. Arrive a day before and stay a day after to enjoy the host city without race-day crowds.',
+    a: 'Book race tickets and a hotel first — they sell out early. Check the weekend schedule, then fill the gaps between sessions with things to do near the circuit. Arrive a day before and stay a day after to see the host city without race-day crowds.',
   },
   {
-    q: 'Is Melbourne a good destination for the 2026 Australian Grand Prix?',
-    a: 'Yes — Melbourne is one of the most liveable cities in the world with an exceptional food scene, vibrant culture, and easy access to the Albert Park Circuit. The city is compact and walkable, making it ideal for F1 travellers who want to explore between sessions.',
-  },
-  {
-    q: 'When should I book for the 2026 F1 races?',
-    a: 'For the Australian GP (Mar 5–8) you should book now — hotels and tickets sell out fast. For later races like Silverstone and Monaco, book 6–12 months in advance. Las Vegas, Miami, and Singapore require early booking due to limited accommodation options.',
+    q: 'When should I book for the remaining 2026 races?',
+    a: 'As soon as you can. Hotels near Singapore, Las Vegas and Mexico City fill up months ahead, and prices rise sharply in race week. Experiences near the circuit also sell out on race weekends, so book the ones you want before you travel.',
   },
 ];
 
@@ -117,10 +113,10 @@ export default async function F12026Page() {
     })),
   };
 
-  // Next 2 upcoming guide races (race weekend not yet over)
+  // Next 3 upcoming guide races (race weekend not yet over)
   const guideRaces = F1_2026
     .filter((r) => r.isAvailable && r.raceEnd && new Date(r.raceEnd) >= today)
-    .slice(0, 2);
+    .slice(0, 3);
 
   return (
     <>
@@ -273,13 +269,13 @@ export default async function F12026Page() {
               Start Planning
             </p>
             <div className="flex flex-wrap gap-4">
-              {F1_2026.filter(r => r.isAvailable).slice(0, 3).map(race => (
+              {F1_2026.filter(r => r.isAvailable && r.raceEnd && new Date(r.raceEnd) >= today).slice(0, 3).map(race => (
                 <Link
                   key={race.slug}
                   href={`/itinerary?race=${race.slug}`}
                   className="px-6 py-3 rounded-xl bg-[var(--accent-red)] hover:bg-[var(--accent-red-hover)] text-white font-display font-bold transition-colors"
                 >
-                  {race.flag} {race.city} GP Guide
+                  {race.flag} Plan {race.city}
                 </Link>
               ))}
             </div>

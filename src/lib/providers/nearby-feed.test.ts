@@ -61,3 +61,16 @@ test('same travel time: most popular first', () => {
   ], SEPANG);
   assert.deepEqual(cards.map((c) => c.title), ['Famous Food Tour', 'Quiet Museum Visit']);
 });
+
+test('categories from titles', async () => {
+  const { categorize } = await import('./nearby-feed');
+  const c = (title: string, durationHours: number | null = 2) => categorize({ title, categories: [], durationHours });
+  assert.equal(c('Kuala Lumpur: Sambal Streets Food Tour with 15+ Tastings'), 'food');
+  assert.equal(c('Kuala Lumpur: Local Street Food Night Tour'), 'food');
+  assert.equal(c('Kuala Selangor Fireflies and Blue Tears Tour'), 'nightlife');
+  assert.equal(c('From Kuala Lumpur: Cameron Highlands Day Tour with Lunch', 12), 'daytrip'); // 12 h outing, not a food tour
+  assert.equal(c('Genting Highland Day Tour', 8), 'daytrip');
+  assert.equal(c('Sepang: Dirt Go-Kart Adventure at Sepang Bay 13'), 'adventure');
+  assert.equal(c('Kuala Lumpur: Skip-the-Line Petronas Twin Towers E-Ticket'), 'attraction');
+  assert.equal(c('Kuala Lumpur: Batu Caves Half-Day Tour with Pick-Up Option'), 'culture');
+});

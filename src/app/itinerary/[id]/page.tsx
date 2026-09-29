@@ -1,3 +1,4 @@
+import { getTimezoneAbbr } from '@/lib/utils';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getItinerary } from '@/services/itinerary.service';
@@ -48,6 +49,8 @@ export default async function ItineraryDetailPage({ params }: Props) {
 
   const race = itinerary.raceId ? await getRaceById(itinerary.raceId) : await getActiveRace();
   const experiences = race ? await getExperiencesByRace(race.id) : [];
+  const firstDate = itinerary.days[0]?.date;
+  const tzLabel = race?.timezone ? getTimezoneAbbr(race.timezone, firstDate ? new Date(`${firstDate}T12:00:00Z`) : new Date()) : '';
 
   return (
     <div className="min-h-screen pt-24 pb-24 px-4">
@@ -61,7 +64,7 @@ export default async function ItineraryDetailPage({ params }: Props) {
           </Link>
         </div>
 
-        <ItineraryView itinerary={itinerary} experiences={experiences} />
+        <ItineraryView itinerary={itinerary} experiences={experiences} tzLabel={tzLabel} />
       </div>
     </div>
   );

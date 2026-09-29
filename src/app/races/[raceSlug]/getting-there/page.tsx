@@ -4,6 +4,8 @@ import Link from 'next/link';
 import CircuitMap from '@/components/race/CircuitMap';
 import RaceSwitcher from '@/components/race/RaceSwitcher';
 import Breadcrumb from '@/components/Breadcrumb';
+import { venueGuide } from '@/data/venue-guides-2026';
+import { timetableFor } from '@/data/timetables-2026';
 import { getRaceBySlug, getSessionsByRace, getAvailableRaces, getRaceContent } from '@/services/race.service';
 import { getTimezoneAbbr } from '@/lib/utils';
 
@@ -45,7 +47,9 @@ export default async function GettingTherePage({ params }: Props) {
   ]);
   if (!race) notFound();
 
-  const transport = raceContent?.transportGuide?.options ?? [];
+  // Venues without a stored guide for this year's circuit (Bahrain GP → Sepang) use the one in code.
+  const guide = venueGuide(raceSlug);
+  const transport = raceContent?.transportGuide?.options ?? guide?.options ?? [];
   const mapsUrl = raceContent?.transportGuide?.mapsUrl ?? `https://www.google.com/maps/dir/?api=1&destination=${race.circuitLat},${race.circuitLng}&travelmode=transit`;
   const tzLabel = getTimezoneAbbr(race.timezone, new Date(race.raceDate));
 
@@ -61,11 +65,18 @@ export default async function GettingTherePage({ params }: Props) {
     })),
   } : null;
 
+  // First track action each day: the full timetable (support races included)
+  // when we have one, otherwise the stored sessions.
   const allSessions = await getSessionsByRace(race.id);
+  const timetable = timetableFor(raceSlug);
+  const firstOfDay = (day: string) =>
+    timetable
+      ? timetable.filter((e) => e.day === day).map((e) => ({ name: e.series === 'Formula 1' ? e.name : `${e.series} · ${e.name}`, startTime: e.start }))
+          .filter((e) => !/press|presentation|parade|anthem/i.test(e.name))[0]
+      : allSessions.filter((s) => s.dayOfWeek === day).sort((a, b) => a.startTime.localeCompare(b.startTime))[0];
   const gateTimes = ['Thursday', 'Friday', 'Saturday', 'Sunday']
     .map(day => {
-      const daySessions = allSessions.filter(s => s.dayOfWeek === day);
-      const first = daySessions.sort((a, b) => a.startTime.localeCompare(b.startTime))[0];
+      const first = firstOfDay(day);
       return first ? { day, session: first.name, gates: formatGateTime(first.startTime, 2, tzLabel) } : null;
     })
     .filter((g): g is { day: string; session: string; gates: string } => g !== null);
@@ -99,9 +110,7 @@ export default async function GettingTherePage({ params }: Props) {
               </p>
             ) : (
               <p className="text-[var(--text-secondary)] text-base leading-relaxed max-w-2xl mt-4">
-                {race.circuitName} is located in {race.city}.
-                The fastest and most stress-free option on race day is typically public transport or the official shuttle bus from your hotel.
-                Allow 45–60 minutes for travel from major hotel districts.
+                {guide?.intro ?? `${race.circuitName} is in ${race.city}. On race day, public transport or the official shuttle from your hotel is usually the least stressful option — allow extra time for race traffic.`}
               </p>
             )}
           </div>
@@ -155,6 +164,9 @@ export default async function GettingTherePage({ params }: Props) {
                   </div>
                 ))}
               </div>
+              {!raceContent?.transportGuide && guide?.note && (
+                <p className="mt-4 text-sm text-[var(--text-secondary)]">{guide.note}</p>
+              )}
             </section>
           )}
 
@@ -175,10 +187,10 @@ export default async function GettingTherePage({ params }: Props) {
 
           <section>
             <h2 className="font-display font-bold text-xl text-[var(--text-primary)] uppercase-heading mb-6">
-              GATE OPENING TIMES
+              ESTIMATED GATE TIMES
             </h2>
             <p className="text-sm text-[var(--text-secondary)] mb-4">
-              Gates open 2 hours before the first session each day.
+              Estimated: about 2 hours before the first track action each day. Check your ticket for the official gate times.
             </p>
             <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] overflow-hidden">
               {gateTimes.map((g, i) => (

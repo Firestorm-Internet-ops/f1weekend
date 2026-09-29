@@ -18,6 +18,41 @@ export interface FeedOffer {
   freeCancellation: boolean;
 }
 
+export type FeedCategory = 'food' | 'nightlife' | 'daytrip' | 'adventure' | 'attraction' | 'culture';
+
+export const FEED_CATEGORY_LABELS: Record<FeedCategory, string> = {
+  food: '🍜 Food & drink',
+  culture: '🏛 Sightseeing & culture',
+  attraction: '🎟 Attractions & tickets',
+  adventure: '🧗 Adventure & outdoors',
+  nightlife: '🌙 Nightlife',
+  daytrip: '🚐 Day trips',
+};
+
+const OUT_OF_TOWN = /\b(day trip|day tour|excursion|from [a-z ]+:|highlands|malacca|melaka|genting|cameron|selangor|port dickson|fraser)\b/i;
+
+// Checked in this order: the first group with a match wins.
+const CATEGORY_RULES: [FeedCategory, RegExp][] = [
+  ['food', /\b(food|tasting|culinary|cooking|cook|street eats|dinner|lunch|brunch|breakfast|cafe|coffee|market|chocolate|wine|durian|hawker)\b/i],
+  ['nightlife', /\b(night|nightlife|bar|bars|pub|club|rooftop|cocktail|evening|fireflies)\b/i],
+  ['daytrip', /\b(day trip|highlands|malacca|melaka|genting|cameron|taman negara)\b/i],
+  ['adventure', /\b(kayak|hike|hiking|trek|trekking|zipline|zip line|atv|rafting|kart|karting|go-kart|dive|diving|snorkel|climb|climbing|cycling|bike|biking|rainforest|jungle|waterfall|paintball|skydive|surf|segway|outdoor|adventure)\b/i],
+  ['attraction', /\b(ticket|tickets|entry|admission|pass|aquarium|aquaria|zoo|bird park|theme park|water park|lagoon|tower|observation|skydeck|sky xperience|illusion|museum of illusions)\b/i],
+];
+
+/** Category from the title (and GetYourGuide's category names when present). */
+export function categorize(o: Pick<NormalizedOffer, 'title' | 'categories' | 'durationHours'>, tier?: NearbyTier): FeedCategory {
+  // Out-of-town outings are day trips whatever else the title mentions ("…with Lunch");
+  // a 10-hour city tour is not.
+  if (tier === 'daytrip') return 'daytrip';
+  if ((o.durationHours ?? 0) >= 7 && OUT_OF_TOWN.test(o.title)) return 'daytrip';
+  const text = `${o.title} ${o.categories.filter((c) => /[a-z]/i.test(c)).join(' ')}`;
+  for (const [cat, re] of CATEGORY_RULES) {
+    if (re.test(text)) return cat;
+  }
+  return 'culture';
+}
+
 export interface FeedCard {
   /** "<provider>:<productId>" of the card's main (most reviewed) product. */
   key: string;
@@ -37,6 +72,7 @@ export interface FeedCard {
   reviewCount: number;
   /** Every site selling it, cheapest first. */
   offers: FeedOffer[];
+  category: FeedCategory;
 }
 
 export interface FeedRace {
@@ -132,6 +168,7 @@ export function buildNearbyFeed(offers: NormalizedOffer[], race: FeedRace): Feed
       rating,
       reviewCount: reviewTotal,
       offers: group.map(toFeedOffer).sort((a, b) => (a.priceAmount ?? Infinity) - (b.priceAmount ?? Infinity)),
+      category: categorize(lead, nearby.tier),
     };
   });
 }

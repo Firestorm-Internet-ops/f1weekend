@@ -12,6 +12,7 @@ import BookButton from '@/components/experiences/BookButton';
 import type { Experience } from '@/types/experience';
 import HomepageExploreSection, { type ExploreDayData } from '@/components/homepage/HomepageExploreSection';
 import NearbyFeed from '@/components/experiences/NearbyFeed';
+import WeekendGlance from '@/components/race/WeekendGlance';
 import { getNearbyFeed } from '@/services/nearby-feed.service';
 import { calendarEntry, hasLiveExperiences } from '@/data/calendar-2026';
 
@@ -132,52 +133,6 @@ function FeaturedCard({ exp, badge, activeRaceSlug }: { exp: Experience, badge?:
         </p>
       </div>
     </Link>
-  );
-}
-
-const GLANCE_DAYS = ['Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
-const GLANCE_OFFSET: Record<string, number> = { Thursday: -3, Friday: -2, Saturday: -1, Sunday: 0 };
-
-/** Hero card with the weekend's F1 sessions, shown when there is no circuit image. */
-function WeekendGlance({ sessions, raceDate, circuitName, tzLabel, scheduleHref }: {
-  sessions: { name: string; dayOfWeek: string; startTime: string; sessionType: string }[];
-  raceDate: string;
-  circuitName: string;
-  tzLabel: string;
-  scheduleHref: string;
-}) {
-  if (sessions.length === 0) return null;
-  const dateOf = (day: string) => {
-    const d = new Date(`${raceDate}T00:00:00Z`);
-    d.setUTCDate(d.getUTCDate() + (GLANCE_OFFSET[day] ?? 0));
-    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
-  };
-  return (
-    <div className="hidden md:block">
-      <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] shadow-[0_8px_30px_rgba(21,21,30,0.06)] p-6">
-        <p className="text-xs font-bold uppercase-label text-[var(--accent-red)] mb-1">Race weekend</p>
-        <p className="font-display font-bold text-xl text-[var(--text-primary)] mb-5">{circuitName}</p>
-        <div className="space-y-4">
-          {GLANCE_DAYS.filter((d) => sessions.some((s) => s.dayOfWeek === d)).map((day) => (
-            <div key={day}>
-              <p className="text-xs font-semibold uppercase-label text-[var(--text-muted)] mb-1.5">{day} · {dateOf(day)}</p>
-              <ul className="divide-y divide-[var(--border-subtle)]">
-                {sessions.filter((s) => s.dayOfWeek === day).map((s) => (
-                  <li key={s.name} className="flex items-center justify-between py-1.5">
-                    <span className={`text-sm ${s.sessionType === 'race' ? 'font-bold text-[var(--accent-red)]' : 'text-[var(--text-primary)]'}`}>{s.name}</span>
-                    <span className="text-sm mono-data text-[var(--text-secondary)]">{s.startTime.slice(0, 5)}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-        <div className="mt-5 pt-4 border-t border-[var(--border-subtle)] flex items-center justify-between text-xs text-[var(--text-muted)]">
-          <span>Local time ({tzLabel})</span>
-          <Link href={scheduleHref} className="font-medium text-[var(--accent-teal)] hover:underline">Full schedule →</Link>
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -356,7 +311,7 @@ export default async function HomePage() {
     <div className="min-h-screen">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(allSchemas) }} />
       {/* ── Hero ── */}
-      <section className="relative overflow-hidden pt-20 pb-12 px-4">
+      <section className="relative overflow-hidden pt-20 pb-4 px-4">
         <div className="absolute inset-0 carbon-texture" />
         <div
           className="absolute inset-0"
@@ -387,7 +342,9 @@ export default async function HomePage() {
               </h1>
 
               <p className="text-[var(--text-secondary)] text-base md:text-lg max-w-sm">
-                {raceContent?.homepageCopy?.heroSubtitle ?? `Discover the best of ${race.city} — curated experiences for every session gap of the race weekend.`}
+                {raceContent?.homepageCopy?.heroSubtitle ?? (live
+                  ? `Everything you can book around ${race.circuitName}, sorted by how long it takes to get there on race weekend.`
+                  : `Discover the best of ${race.city} — curated experiences for every session gap of the race weekend.`)}
               </p>
 
               <div className="flex flex-wrap gap-3 mb-8 mt-6">

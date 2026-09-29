@@ -52,7 +52,7 @@ export async function getNearbyFeed(race: Race): Promise<NearbyFeed> {
       });
       return { cards, currency, fetchedAt: new Date().toISOString(), failed };
     },
-    [`nearby-feed:${race.slug}:${race.circuitLat},${race.circuitLng}:v1`],
+    [`nearby-feed:${race.slug}:${race.circuitLat},${race.circuitLng}:v2`],
     { revalidate: FEED_TTL, tags: ['nearby-feed', `nearby-feed:${race.slug}`] }
   )();
 }
