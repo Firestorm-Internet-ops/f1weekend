@@ -1,10 +1,10 @@
 import { unstable_cache } from 'next/cache';
 import { getDb } from '@/lib/db';
 import { races, sessions, experience_windows, race_content, experiences } from '@/lib/db/schema';
-import { eq, asc, sql, inArray, notInArray } from 'drizzle-orm';
+import { eq, asc, sql, inArray, notInArray, or, and } from 'drizzle-orm';
 import { redis } from '@/lib/redis';
 import type { Race, Session, ExperienceWindow } from '@/types/race';
-import { calendarEntry, nextCalendarRace, sortByCalendar } from '@/data/calendar-2026';
+import { calendarEntry, nextCalendarRace, sortByCalendar, LIVE_EXPERIENCE_SLUGS } from '@/data/calendar-2026';
 import { timetableSessions, timetableFor } from '@/data/timetables-2026';
 import { fetchSeasonSchedule, findJolpicaRace, mergeSessions, sessionsOf, toSessionRows, type JolpicaRace } from '@/lib/jolpica';
 
@@ -162,11 +162,13 @@ export const getAvailableRaces = unstable_cache(
       .select({ race: races, content: race_content })
       .from(races)
       .leftJoin(race_content, eq(races.id, race_content.race_id))
-      .where(eq(races.available, true))
+      // `available` is set from stored experiences (syncAvailableRaces). Live-feed
+      // races (Bahrain at Sepang) get theirs from providers, so they always count.
+      .where(or(eq(races.available, true), inArray(races.slug, LIVE_EXPERIENCE_SLUGS)))
       .orderBy(asc(races.race_date));
     return sortByCalendar(rows.map((row) => mapRace(row.race, !!row.content?.has_thursday_free_day)));
   },
-  ['races:available:calendar-2026'],
+  ['races:available:calendar-2026:live'],
   { revalidate: CACHE_TTL, tags: ['races'] }
 );
 
@@ -428,12 +430,12 @@ export async function syncAvailableRaces(): Promise<void> {
       .set({ available: true })
       .where(inArray(races.id, withExpIds));
 
-    // Mark races without experiences as unavailable
+    // Mark races without experiences as unavailable (live-feed races excepted)
     await db.update(races)
       .set({ available: false })
-      .where(notInArray(races.id, withExpIds));
+      .where(and(notInArray(races.id, withExpIds), notInArray(races.slug, LIVE_EXPERIENCE_SLUGS)));
   } else {
-    // If no races have experiences, mark all as unavailable
-    await db.update(races).set({ available: false });
+    // If no races have experiences, mark all as unavailable (live-feed races excepted)
+    await db.update(races).set({ available: false }).where(notInArray(races.slug, LIVE_EXPERIENCE_SLUGS));
   }
 }
