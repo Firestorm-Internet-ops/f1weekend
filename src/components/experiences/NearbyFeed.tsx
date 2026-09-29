@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import DistanceMap from '@/components/experiences/DistanceMap';
+import GoogleSpotsMap, { type MapSpot } from '@/components/experiences/GoogleSpotsMap';
 import { TIER_STYLE } from '@/lib/constants/nearby-styles';
 import { providerName } from '@/lib/providers/meta';
 import { openFeedBooking } from '@/lib/analytics';
@@ -20,6 +20,8 @@ interface Props {
   /** Home page version: map + first cards + link to the full list. */
   compact?: boolean;
   moreHref?: string;
+  /** Google Maps browser key (GOOGLE_MAPS_API_KEY), passed from the server. */
+  mapsApiKey: string;
 }
 
 type TierFilter = 'all' | NearbyTier;
@@ -66,7 +68,7 @@ function pointName(p: MapPoint): string {
   return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? p.cards[0].title;
 }
 
-export default function NearbyFeed({ cards, raceSlug, circuit, pageSize = 24, compact = false, moreHref }: Props) {
+export default function NearbyFeed({ cards, raceSlug, circuit, pageSize = 24, compact = false, moreHref, mapsApiKey }: Props) {
   const [tier, setTier] = useState<TierFilter>('all');
   const [pointId, setPointId] = useState<number | null>(null);
   const [shown, setShown] = useState(pageSize);
@@ -79,14 +81,15 @@ export default function NearbyFeed({ cards, raceSlug, circuit, pageSize = 24, co
     return m;
   }, [points]);
 
-  const mapItems = points.map((p) => ({
+  const spots: MapSpot[] = points.map((p) => ({
     id: p.id,
-    slug: '',
-    title: p.cards.length > 1 ? `${pointName(p)} · ${p.cards.length} experiences` : p.cards[0].title,
     lat: p.lat,
     lng: p.lng,
+    tier: p.cards[0].nearby.tier,
+    title: p.cards.length > 1 ? `${pointName(p)} · ${p.cards.length} experiences` : p.cards[0].title,
+    subtitle: p.cards[0].nearbyLabel,
+    count: p.cards.length,
   }));
-  const badges = Object.fromEntries(points.filter((p) => p.cards.length > 1).map((p) => [p.id, String(p.cards.length)]));
 
   const tierCounts = useMemo(() => {
     const c: Record<NearbyTier, number> = { near: 0, city: 0, daytrip: 0, unknown: 0, 'too-far': 0 };
@@ -117,16 +120,15 @@ export default function NearbyFeed({ cards, raceSlug, circuit, pageSize = 24, co
     <div>
       <div className={compact ? 'grid lg:grid-cols-[minmax(0,420px)_1fr] gap-6 items-start' : ''}>
         <div className={compact ? '' : 'mb-8'}>
-          <DistanceMap
-            compact={compact}
+          <GoogleSpotsMap
+            apiKey={mapsApiKey}
             raceSlug={raceSlug}
             circuit={circuit}
-            experiences={mapItems}
+            spots={spots}
             onSelect={selectPoint}
             selectedId={pointId}
-            badges={badges}
-            fitContent
             legendCounts={tierCounts}
+            height={compact ? '420px' : '520px'}
           />
         </div>
 

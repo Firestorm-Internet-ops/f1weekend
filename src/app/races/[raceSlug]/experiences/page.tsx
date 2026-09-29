@@ -3,7 +3,8 @@ import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import Link from 'next/link';
 import ExperiencesClient from '@/components/experiences/ExperiencesClient';
-import DistanceMap from '@/components/experiences/DistanceMap';
+import GoogleSpotsMap from '@/components/experiences/GoogleSpotsMap';
+import { classifyExperience, nearbyLabel } from '@/lib/nearby';
 import RaceSwitcher from '@/components/race/RaceSwitcher';
 import { getRaceBySlug, getAvailableRaces, getRaceContent } from '@/services/race.service';
 import { getExperiencesByRace } from '@/services/experience.service';
@@ -161,11 +162,24 @@ export default async function ExperiencesPage({ params, searchParams }: Props) {
                 Open full map →
               </Link>
             </div>
-            <DistanceMap
-              compact
+            <GoogleSpotsMap
               raceSlug={raceSlug}
               circuit={{ lat: race.circuitLat, lng: race.circuitLng, name: race.circuitName }}
-              experiences={exps.map((e) => ({ id: e.id, title: e.title, slug: e.slug, lat: e.lat, lng: e.lng }))}
+              apiKey={process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ''}
+              spots={exps
+                .filter((e) => e.lat != null && e.lng != null && !(e.lat === 0 && e.lng === 0))
+                .map((e) => {
+                  const nearby = classifyExperience({ lat: e.lat!, lng: e.lng! }, raceSlug, { lat: race.circuitLat, lng: race.circuitLng });
+                  return {
+                    id: e.id,
+                    lat: e.lat!,
+                    lng: e.lng!,
+                    tier: nearby.tier,
+                    title: e.title,
+                    subtitle: nearbyLabel(nearby),
+                    href: `/races/${raceSlug}/experiences/${e.slug}`,
+                  };
+                })}
             />
           </section>
         )}
@@ -235,6 +249,7 @@ async function LiveExperiencesPage({
             cards={feed.cards}
             raceSlug={race.slug}
             circuit={{ lat: race.circuitLat, lng: race.circuitLng, name: race.circuitName }}
+            mapsApiKey={process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ''}
           />
         ) : (
           <p className="text-[var(--text-secondary)]">Experiences are loading from our partners — please check back shortly.</p>
