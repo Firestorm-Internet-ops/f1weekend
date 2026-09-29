@@ -8,7 +8,7 @@ function ref(ctx: AffiliateContext): string {
   return ctx.experienceId != null ? String(ctx.experienceId) : `p${ctx.productId ?? ''}`;
 }
 
-const GYG_TRACKING_PARAMS = ['partner_id', 'utm_medium', 'utm_source', 'utm_content', 'utm_term'];
+const GYG_TRACKING_PARAMS = ['partner_id', 'cmp', 'utm_medium', 'utm_source', 'utm_content', 'utm_term'];
 
 /** Removes GYG tracking params stored on legacy affiliate_url values. */
 export function stripGygTracking(trackedUrl: string): string {
@@ -27,6 +27,8 @@ function gyg(baseUrl: string, ctx: AffiliateContext): string {
   const url = new URL(stripGygTracking(baseUrl));
   const partnerId = process.env.GYG_PARTNER_ID || (existing && existing !== 'PLACEHOLDER' ? existing : null);
   if (partnerId) url.searchParams.set('partner_id', partnerId);
+  // `cmp` is GetYourGuide's campaign field in partner reports.
+  url.searchParams.set('cmp', ctx.campaign);
   url.searchParams.set('utm_medium', 'online_publisher');
   url.searchParams.set('utm_source', 'pitlane');
   url.searchParams.set('utm_content', ctx.source);
@@ -37,7 +39,7 @@ function gyg(baseUrl: string, ctx: AffiliateContext): string {
 /** Viator: product URL already carries pid/mcid; `campaign` is the sub-ID shown in Viator reports. */
 function viator(baseUrl: string, ctx: AffiliateContext): string {
   const url = new URL(baseUrl);
-  url.searchParams.set('campaign', `f1w-${ref(ctx)}-${ctx.source}`);
+  url.searchParams.set('campaign', ctx.campaign);
   return url.toString();
 }
 
@@ -47,7 +49,7 @@ function tiqets(baseUrl: string, ctx: AffiliateContext): string {
   if (!url.searchParams.get('partner') && process.env.TIQETS_PARTNER_ID) {
     url.searchParams.set('partner', process.env.TIQETS_PARTNER_ID);
   }
-  url.searchParams.set('tq_campaign', `f1w-${ref(ctx)}-${ctx.source}`);
+  url.searchParams.set('tq_campaign', ctx.campaign);
   return url.toString();
 }
 

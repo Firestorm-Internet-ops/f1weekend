@@ -82,4 +82,6 @@ export interface AffiliateContext {
   /** Used in the sub-ID when there is no experience id. */
   productId?: string;
   source: ClickSource;
+  /** "f1-{race}-{page}", e.g. "f1-bahrain-experiences" (see campaign.ts). */
+  campaign: string;
 }

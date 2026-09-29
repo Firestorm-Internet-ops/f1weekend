@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { logClick } from '@/lib/click-log';
 import { getRaceBySlug } from '@/services/race.service';
 import { findFeedOffer } from '@/services/nearby-feed.service';
-import { buildAffiliateUrl, type ClickSource } from '@/lib/providers';
+import { buildAffiliateUrl, campaignId, resolveCampaignPage, type ClickSource } from '@/lib/providers';
 import { hasLiveExperiences } from '@/data/calendar-2026';
 
 const VALID_SOURCES: ClickSource[] = ['feed', 'itinerary', 'featured', 'map', 'guide'];
@@ -27,7 +27,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL(race ? `/races/${race.slug}/experiences` : '/experiences', req.url), 302);
   }
 
-  const url = buildAffiliateUrl(found.offer.provider, found.offer.url, { experienceId: null, productId, source });
+  const campaign = campaignId(race.slug, resolveCampaignPage(params.get('page'), req.headers.get('referer'), source));
+  const url = buildAffiliateUrl(found.offer.provider, found.offer.url, { experienceId: null, productId, source, campaign });
   await logClick(req, {
     experienceId: null,
     provider: found.offer.provider,

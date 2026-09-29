@@ -6,6 +6,7 @@ import { getyourguide } from './getyourguide';
 export * from './types';
 export { PROVIDER_NAMES, providerName, toProviderId } from './meta';
 export { buildAffiliateUrl, stripGygTracking } from './affiliate-url';
+export { campaignId, pageFromPath, resolveCampaignPage, type CampaignPage } from './campaign';
 export { sortOffers } from './offers';
 
 /**
