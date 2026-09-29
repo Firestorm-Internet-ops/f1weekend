@@ -13,6 +13,8 @@ import type { Experience } from '@/types/experience';
 import HomepageExploreSection, { type ExploreDayData } from '@/components/homepage/HomepageExploreSection';
 import NearbyFeed from '@/components/experiences/NearbyFeed';
 import WeekendGlance from '@/components/race/WeekendGlance';
+import TrackOutline from '@/components/race/TrackOutline';
+import { getTrackSvg } from '@/services/track.service';
 import { getNearbyFeed } from '@/services/nearby-feed.service';
 import { calendarEntry, hasLiveExperiences } from '@/data/calendar-2026';
 import fs from 'node:fs';
@@ -162,6 +164,8 @@ export default async function HomePage() {
   const live = hasLiveExperiences(activeRaceSlug);
   // Track image: stored for the race, or the new venue's (Sepang) once added to /public/tracks.
   const trackImage = raceContent?.circuitMapSrc ?? existingPublicFile(calendarEntry(activeRaceSlug)?.venue?.trackImage);
+  // No image file: draw the layout from OpenStreetMap (cached 30 days).
+  const trackSvg = !trackImage && race ? await getTrackSvg(race) : null;
 
   if (!race) {
     return (
@@ -392,6 +396,10 @@ export default async function HomePage() {
                 className="w-full max-w-2xl opacity-90"
               />
             </div>
+            ) : trackSvg ? (
+              <div className="hidden md:flex items-center justify-center relative">
+                <TrackOutline svg={trackSvg} className="w-full max-w-xl" />
+              </div>
             ) : (
               <WeekendGlance
                 sessions={sessions.filter((s) => ['practice', 'qualifying', 'sprint', 'race'].includes(s.sessionType))}

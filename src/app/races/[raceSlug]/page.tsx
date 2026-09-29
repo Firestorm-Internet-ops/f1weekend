@@ -6,6 +6,8 @@ import { getSessionsByRace } from '@/services/race.service';
 import { getNearbyFeed } from '@/services/nearby-feed.service';
 import NearbyFeed from '@/components/experiences/NearbyFeed';
 import WeekendGlance from '@/components/race/WeekendGlance';
+import TrackOutline from '@/components/race/TrackOutline';
+import { getTrackSvg } from '@/services/track.service';
 import { getTimezoneAbbr } from '@/lib/utils';
 import { getRaceBySlug, getRaceContent } from '@/services/race.service';
 import { getExperiencesByWindow } from '@/services/experience.service';
@@ -83,6 +85,8 @@ export default async function RaceLandingPage({ params }: Props) {
   const moved = !!calendarEntry(raceSlug)?.venue;
   const tzLabel = getTimezoneAbbr(race.timezone, new Date(`${race.raceDate}T12:00:00Z`));
   const nearCount = liveFeed?.cards.filter((c) => c.nearby.tier === 'near').length ?? 0;
+  // Moved venue with no stored circuit image: draw it from OpenStreetMap.
+  const trackSvg = moved && !raceContent?.circuitMapSrc ? await getTrackSvg(race) : null;
 
   return (
     <div className="min-h-screen pt-24 pb-24 px-4">
@@ -138,7 +142,8 @@ export default async function RaceLandingPage({ params }: Props) {
             </p>
 
             {liveSessions.length > 0 && (
-              <section className="mt-10">
+              <section className={`mt-10 ${trackSvg ? 'grid md:grid-cols-2 gap-6 items-center' : ''}`}>
+                {trackSvg && <TrackOutline svg={trackSvg} />}
                 <WeekendGlance
                   desktopOnly={false}
                   sessions={liveSessions.filter((s) => ['practice', 'qualifying', 'sprint', 'race'].includes(s.sessionType))}
