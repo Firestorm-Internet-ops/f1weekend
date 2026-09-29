@@ -4,6 +4,7 @@
  * Each call is guarded so a missing or blocked tracker never breaks the UI.
  */
 import { track } from '@vercel/analytics';
+import { pageFromPath } from '@/lib/providers/campaign';
 
 type EventProps = Record<string, string | number | boolean | null>;
 
@@ -57,7 +58,8 @@ export function openBooking(
     ...(offer ? { provider: offer.provider } : {}),
   });
 
-  const params = new URLSearchParams({ id: String(experienceId), source });
+  // page → the "f1-{race}-{page}" campaign ID on the partner link.
+  const params = new URLSearchParams({ id: String(experienceId), source, page: pageFromPath(window.location.pathname) });
   if (offer?.id) params.set('offer', String(offer.id));
   const sessionId = getSessionId();
   if (sessionId) params.set('sid', sessionId);
@@ -69,7 +71,7 @@ export function openBooking(
 /** Booking click on a live-feed card (a provider product, not a database experience). */
 export function openFeedBooking(raceSlug: string, offer: { provider: string; productId: string }, source: ClickSource = 'feed'): void {
   trackEvent('book_click', { race: raceSlug, provider: offer.provider, product_id: offer.productId, source, page: window.location.pathname });
-  const params = new URLSearchParams({ race: raceSlug, provider: offer.provider, product: offer.productId, source });
+  const params = new URLSearchParams({ race: raceSlug, provider: offer.provider, product: offer.productId, source, page: pageFromPath(window.location.pathname) });
   const sessionId = getSessionId();
   if (sessionId) params.set('sid', sessionId);
   window.open(`/api/go?${params.toString()}`, '_blank', 'noopener');
