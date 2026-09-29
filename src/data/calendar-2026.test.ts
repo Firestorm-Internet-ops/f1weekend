@@ -1,7 +1,7 @@
 // Run: npm run test:providers
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { CALENDAR_2026, nextCalendarRace, sortByCalendar, hasLiveExperiences, calendarEntry } from './calendar-2026';
+import { CALENDAR_2026, TRACK_TIMEZONES, nextCalendarRace, sortByCalendar, hasLiveExperiences, calendarEntry } from './calendar-2026';
 
 // Baku and Las Vegas race on Saturday in 2026.
 const SATURDAY_RACES = new Set(['azerbaijan-2026', 'las-vegas-2026']);
@@ -45,4 +45,15 @@ test('Sepang timetable: F1 sessions become FP1–FP3, Qualifying, Race in local 
   assert.ok(s.every((x) => x.id < 0 && x.raceId === 7));
   assert.equal(timetableFor('bahrain-2026')?.length, 15);
   assert.equal(timetableFor('monaco-2026'), undefined);
+});
+
+test('the next race switches when race day is over at the track, not in UTC', () => {
+  // Sepang (UTC+8): race day 4 Oct ends at 16:00 UTC.
+  assert.equal(nextCalendarRace(new Date('2026-10-04T15:59:00Z'))?.slug, 'bahrain-2026');
+  assert.equal(nextCalendarRace(new Date('2026-10-04T16:01:00Z'))?.slug, 'singapore-2026');
+  // Las Vegas races Saturday 21 Nov at 22:00 local (06:00 UTC on the 22nd): still "next" then.
+  assert.equal(nextCalendarRace(new Date('2026-11-22T06:00:00Z'))?.slug, 'las-vegas-2026');
+  assert.equal(nextCalendarRace(new Date('2026-11-22T08:01:00Z'))?.slug, 'qatar-2026');
+  // Every calendar race has a track time zone.
+  for (const r of CALENDAR_2026) assert.ok(TRACK_TIMEZONES[r.slug], r.slug);
 });

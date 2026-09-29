@@ -3,10 +3,13 @@
  * (race_content), so known factual errors never reach a page even before the
  * stored text is rewritten.
  *
- *  - DRS was removed from Formula 1 under the 2026 rules: "DRS Zones" facts,
- *    FAQs about DRS and sentences mentioning it are dropped.
+ *  - DRS was removed from Formula 1 under the 2026 rules: "DRS Zones" facts
+ *    and sentences mentioning it are dropped, and an FAQ about DRS is replaced
+ *    by one about the 2026 overtaking rules (in the same shape).
  *  - Per-race fixes for claims that are simply wrong.
  */
+
+import { OVERTAKING_2026_FAQ } from '@/data/faqs-2026';
 
 interface Fix {
   pattern: RegExp;
@@ -41,18 +44,35 @@ function correctString(text: string, fixes: Fix[]): string {
   return dropDrsSentences(out);
 }
 
+const isDrsQuestion = (item: unknown): item is Record<string, unknown> =>
+  !!item && typeof item === 'object' && !Array.isArray(item) &&
+  Object.values(item).some((x) => typeof x === 'string' && DRS.test(x) && x.trim().endsWith('?'));
+
+/** The 2026 overtaking FAQ in the shape of the item it replaces. */
+function overtakingFaqLike(item: Record<string, unknown>): Record<string, unknown> {
+  const { q, a } = OVERTAKING_2026_FAQ;
+  if ('acceptedAnswer' in item) return { '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } };
+  if ('question' in item) return { question: q, answer: a };
+  return { q, a };
+}
+
 /**
- * Deep-corrects a content value: strings are fixed, objects whose key or
- * question is about DRS are dropped (e.g. { "DRS Zones": "2" }, an FAQ item).
+ * Deep-corrects a content value: strings are fixed, keys about DRS are
+ * dropped (e.g. { "DRS Zones": "2" }) and a DRS question is replaced by the
+ * 2026 overtaking FAQ (once per list).
  */
 export function correctContent<T>(raceSlug: string, value: T): T {
   const fixes = RACE_FIXES[raceSlug] ?? [];
   const walk = (v: unknown): unknown => {
     if (typeof v === 'string') return correctString(v, fixes);
     if (Array.isArray(v)) {
-      return v
-        .filter((item) => !(item && typeof item === 'object' && Object.values(item).some((x) => typeof x === 'string' && DRS.test(x) && x.trim().endsWith('?'))))
-        .map(walk);
+      let replaced = false;
+      return v.flatMap((item) => {
+        if (!isDrsQuestion(item)) return [walk(item)];
+        if (replaced) return [];
+        replaced = true;
+        return [overtakingFaqLike(item)];
+      });
     }
     if (v && typeof v === 'object') {
       const out: Record<string, unknown> = {};

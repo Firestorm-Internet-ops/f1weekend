@@ -5,7 +5,7 @@ import { eq, asc, sql, inArray, notInArray, or, and } from 'drizzle-orm';
 import { redis } from '@/lib/redis';
 import type { Race, Session, ExperienceWindow } from '@/types/race';
 import { correctContent } from '@/lib/content-corrections';
-import { calendarEntry, nextCalendarRace, sortByCalendar, LIVE_EXPERIENCE_SLUGS } from '@/data/calendar-2026';
+import { calendarEntry, isRaceOver, nextCalendarRace, sortByCalendar, LIVE_EXPERIENCE_SLUGS } from '@/data/calendar-2026';
 import { timetableSessions, timetableFor } from '@/data/timetables-2026';
 import { fetchSeasonSchedule, findJolpicaRace, mergeSessions, sessionsOf, toSessionRows, type JolpicaRace } from '@/lib/jolpica';
 
@@ -73,9 +73,6 @@ function withCalendar(race: Race): Race {
   };
 }
 
-function todayUtc(): string {
-  return new Date().toISOString().split('T')[0];
-}
 
 function mapRaceRow(r: typeof races.$inferSelect, hasThursdayFreeDay?: boolean): Race {
   return {
@@ -133,7 +130,7 @@ function mapWindow(w: typeof experience_windows.$inferSelect): ExperienceWindow 
 export async function getActiveRace(): Promise<Race | null> {
   const available = await getAvailableRaces();
   const bySlug = new Map(available.map((r) => [r.slug, r]));
-  const cal = nextCalendarRace(todayUtc(), new Set(bySlug.keys()));
+  const cal = nextCalendarRace(new Date(), new Set(bySlug.keys()));
   if (cal) return bySlug.get(cal.slug) ?? null;
   return available[available.length - 1] ?? null;
 }
@@ -184,11 +181,12 @@ export const getRacesWithExperiences = unstable_cache(
       .select({ race: races, content: race_content })
       .from(races)
       .leftJoin(race_content, eq(races.id, race_content.race_id))
-      .where(sql`EXISTS (SELECT 1 FROM experiences WHERE race_id = ${races.id})`)
+      // Live-feed races have their experiences from the providers, not the table.
+      .where(or(sql`EXISTS (SELECT 1 FROM experiences WHERE race_id = ${races.id})`, inArray(races.slug, LIVE_EXPERIENCE_SLUGS)))
       .orderBy(asc(races.race_date));
     return sortByCalendar(rows.map((row) => mapRace(row.race, !!row.content?.has_thursday_free_day, !!row.content?.tips_content)));
   },
-  ['races:with-experiences:calendar-2026'],
+  ['races:with-experiences:calendar-2026:live'],
   { revalidate: CACHE_TTL, tags: ['races', 'experiences'] }
 );
 
@@ -231,7 +229,7 @@ export async function getRaceById(id: number): Promise<Race | null> {
 export async function getUpcomingRace(): Promise<Race | null> {
   const all = await getAllRaces();
   const bySlug = new Map(all.map((r) => [r.slug, r]));
-  const cal = nextCalendarRace(todayUtc(), new Set(bySlug.keys()));
+  const cal = nextCalendarRace(new Date(), new Set(bySlug.keys()));
   return cal ? bySlug.get(cal.slug) ?? null : null;
 }
 
@@ -257,7 +255,7 @@ export async function getSessionsByRace(raceId: number): Promise<Session[]> {
   if (race && timetableFor(race.slug)) return timetableSessions(race.slug, raceId);
   const moved = await venueMoved(raceId);
   const stored = moved ? [] : await getStoredSessions(raceId);
-  if (race && race.raceDate >= todayUtc()) {
+  if (race && !isRaceOver(race, new Date())) {
     return mergeSessions(stored, await jolpicaSessions(race));
   }
   return stored;
