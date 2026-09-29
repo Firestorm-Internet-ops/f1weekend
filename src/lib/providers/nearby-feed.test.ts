@@ -1,7 +1,7 @@
 // Run: npm run test:providers
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildNearbyFeed, groupSameProducts, isExperience } from './nearby-feed';
+import { buildNearbyFeed, byNearest, displayTitle, groupSameProducts, isExperience, raceDayMinsFromCircuit, recommendedScore, relocateByTitle } from './nearby-feed';
 import type { NormalizedOffer } from './types';
 
 const SEPANG = { slug: 'bahrain-2026', lat: 2.7608, lng: 101.7382, placeWords: ['Kuala Lumpur', 'Malaysia'] };
@@ -40,13 +40,13 @@ test('two products from the same site are never merged', () => {
   assert.equal(groups.length, 2);
 });
 
-test('nearest first: near the circuit, then Kuala Lumpur, then day trips; too far dropped', () => {
+test('nearest sort: near the circuit, then Kuala Lumpur, then day trips; too far dropped', () => {
   const cards = buildNearbyFeed([
     offer({ title: 'Genting Highlands Day Trip', lat: 3.4236, lng: 101.7933, reviewCount: 5000 }), // ~30 km past KL
     offer({ title: 'Batu Caves Tour', reviewCount: 10 }),
     offer({ title: 'Sepang Go-Kart', lat: 2.78, lng: 101.73, reviewCount: 5 }),
     offer({ title: 'Penang Street Food', lat: 5.4141, lng: 100.3288 }),
-  ], SEPANG);
+  ], SEPANG).sort(byNearest);
   assert.deepEqual(cards.map((c) => c.title), ['Sepang Go-Kart', 'Batu Caves Tour', 'Genting Highlands Day Trip']);
   assert.equal(cards[0].nearby.tier, 'near');
   assert.equal(cards[1].nearbyLabel, '5 min from Kuala Lumpur');
@@ -54,13 +54,49 @@ test('nearest first: near the circuit, then Kuala Lumpur, then day trips; too fa
   assert.equal(cards[1].circuitKm, 44);
 });
 
-test('same travel time: most popular first', () => {
-  const cards = buildNearbyFeed([
-    offer({ title: 'Quiet Museum Visit', reviewCount: 3 }),
-    offer({ title: 'Famous Food Tour', reviewCount: 3000 }),
-  ], SEPANG);
-  assert.deepEqual(cards.map((c) => c.title), ['Famous Food Tour', 'Quiet Museum Visit']);
+test('one travel line per card: race-day time from the circuit, or the day-trip line', () => {
+  const [kart, batu] = buildNearbyFeed([
+    offer({ title: 'Sepang Go-Kart', lat: 2.78, lng: 101.73, reviewCount: 5 }),
+    offer({ title: 'Batu Caves Tour', reviewCount: 10 }),
+  ], SEPANG).sort(byNearest);
+  assert.match(kart.travelLabel!, /^\d+ min from the circuit$/);
+  assert.match(batu.travelLabel!, /^~\dh \d\d from the circuit$/);
+  assert.equal(batu.circuitMins, raceDayMinsFromCircuit(44.3));
 });
+
+test('recommended order: well-reviewed first, even a little further away', () => {
+  const cards = buildNearbyFeed([
+    offer({ title: 'Unreviewed Kart Session', lat: 2.78, lng: 101.73, rating: null, reviewCount: 0 }),
+    offer({ title: 'Batu Caves Half-Day Tour', rating: 4.5, reviewCount: 4779 }),
+    offer({ title: 'Single Five Star Walk', rating: 5, reviewCount: 1 }),
+  ], SEPANG);
+  assert.equal(cards[0].title, 'Batu Caves Half-Day Tour');
+  assert.ok(recommendedScore(cards[0]) > recommendedScore(cards[2]));
+});
+
+test('same travel time and reviews: nearest breaks the tie', () => {
+  const cards = buildNearbyFeed([
+    offer({ title: 'Quiet Museum Visit', reviewCount: 3000 }),
+    offer({ title: 'Famous Food Tour', reviewCount: 3000, lat: 2.78, lng: 101.73 }),
+  ], SEPANG);
+  assert.equal(cards[0].title, 'Famous Food Tour'); // near the circuit weighs more
+});
+
+test('a tour filed under the wrong town moves to the place in its title', () => {
+  const places = [{ name: 'Putrajaya', lat: 2.9264, lng: 101.6964 }, { name: 'Kuala Lumpur', lat: 3.1579, lng: 101.7116 }];
+  const moved = relocateByTitle({ title: 'Putrajaya Tour: Pink Mosque', lat: 2.806, lng: 101.735, locationName: 'Sepang', approximateLocation: true }, places);
+  assert.equal(moved.locationName, 'Putrajaya');
+  assert.equal(relocateByTitle({ title: 'From Kuala Lumpur: Genting', lat: 2.806, lng: 101.735, locationName: 'Sepang', approximateLocation: true }, places).locationName, 'Kuala Lumpur');
+  // exact venue points are never moved
+  assert.equal(relocateByTitle({ title: 'Putrajaya Lake Cruise', lat: 2.806, lng: 101.735, locationName: 'Pier', approximateLocation: false }, places).locationName, 'Pier');
+});
+
+test('display title drops the race city prefix only', () => {
+  assert.equal(displayTitle('Kuala Lumpur: Batu Caves Half-Day Tour', ['Kuala Lumpur']), 'Batu Caves Half-Day Tour');
+  assert.equal(displayTitle('From Kuala Lumpur: Malacca Day Trip', ['Kuala Lumpur']), 'From Kuala Lumpur: Malacca Day Trip');
+  assert.equal(displayTitle('Kuala Lumpur Tower Ticket', ['Kuala Lumpur']), 'Kuala Lumpur Tower Ticket');
+});
+
 
 test('categories from titles', async () => {
   const { categorize } = await import('./nearby-feed');
@@ -73,4 +109,12 @@ test('categories from titles', async () => {
   assert.equal(c('Sepang: Dirt Go-Kart Adventure at Sepang Bay 13'), 'adventure');
   assert.equal(c('Kuala Lumpur: Skip-the-Line Petronas Twin Towers E-Ticket'), 'attraction');
   assert.equal(c('Kuala Lumpur: Batu Caves Half-Day Tour with Pick-Up Option'), 'culture');
+});
+
+test('a long trip that picks up in the city is labelled a day trip, not "~2 h from the circuit"', () => {
+  const [c] = buildNearbyFeed([
+    offer({ title: 'From Kuala Lumpur: Cameron Highlands Day Tour with Lunch', durationHours: 12, approximateLocation: true, locationName: 'Kuala Lumpur', reviewCount: 1000 }),
+  ], SEPANG);
+  assert.equal(c.travelLabel, 'Day trip from Kuala Lumpur');
+  assert.equal(c.category, 'daytrip');
 });

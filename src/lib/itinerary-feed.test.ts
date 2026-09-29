@@ -9,8 +9,8 @@ let n = 0;
 function card(tier: NearbyTier, circuitKm: number, durationHours: number | null, title = `x${++n}`): FeedCard {
   return {
     key: `getyourguide:${title}`, title, imageUrl: null, durationHours, lat: 0, lng: 0, locationName: null, approximateLocation: true,
-    nearby: { tier, distanceKm: circuitKm, travelMins: 10, from: 'the circuit' }, nearbyLabel: 'x', circuitKm, rating: 4.5, reviewCount: 10,
-    offers: [{ provider: 'getyourguide', productId: title, url: 'https://x', priceAmount: 100, priceCurrency: 'MYR', rating: 4.5, reviewCount: 10, freeCancellation: false }],
+    nearby: { tier, distanceKm: circuitKm, travelMins: 10, from: 'the circuit' }, nearbyLabel: 'x', circuitKm, circuitMins: null, travelLabel: null, rating: 4.5, reviewCount: 10,
+    offers: [{ provider: 'getyourguide', productId: title, url: 'https://x', priceAmount: 100, priceCurrency: 'MYR', rating: 4.5, reviewCount: 10, freeCancellation: false, instantConfirmation: false }],
     category: 'culture',
   };
 }

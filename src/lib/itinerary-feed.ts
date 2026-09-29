@@ -28,7 +28,8 @@ const toMins = (t: string) => {
 };
 
 /** Race-day minutes between the circuit and the experience. */
-export function circuitTravelMins(card: Pick<FeedCard, 'circuitKm'>): number | null {
+export function circuitTravelMins(card: Pick<FeedCard, 'circuitKm'> & Partial<Pick<FeedCard, 'circuitMins'>>): number | null {
+  if (card.circuitMins != null) return card.circuitMins;
   return card.circuitKm == null ? null : Math.round(estimateTravelMins(card.circuitKm) * RACE_TRAFFIC_FACTOR);
 }
 
@@ -56,7 +57,7 @@ export function toSuggestion(card: FeedCard): FeedSuggestion {
     key: card.key,
     title: card.title,
     imageUrl: card.imageUrl,
-    nearbyLabel: card.nearbyLabel,
+    nearbyLabel: card.travelLabel ?? card.nearbyLabel,
     circuitKm: card.circuitKm,
     durationHours: card.durationHours,
     rating: card.rating,
