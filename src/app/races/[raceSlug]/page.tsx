@@ -85,8 +85,10 @@ export default async function RaceLandingPage({ params }: Props) {
   const moved = !!calendarEntry(raceSlug)?.venue;
   const tzLabel = getTimezoneAbbr(race.timezone, new Date(`${race.raceDate}T12:00:00Z`));
   const nearCount = liveFeed?.cards.filter((c) => c.nearby.tier === 'near').length ?? 0;
-  // Moved venue with no stored circuit image: draw it from OpenStreetMap.
-  const trackSvg = moved && !raceContent?.circuitMapSrc ? await getTrackSvg(race) : null;
+  // Moved venue: the calendar's track image (F1's map) if set, else draw it from OpenStreetMap.
+  const venueTrackImage = moved ? calendarEntry(raceSlug)?.venue?.trackImage : undefined;
+  const trackImageUrl = venueTrackImage && /^https:\/\//.test(venueTrackImage) ? venueTrackImage : undefined;
+  const trackSvg = moved && !raceContent?.circuitMapSrc && !trackImageUrl ? await getTrackSvg(race) : null;
 
   return (
     <div className="min-h-screen pt-24 pb-24 px-4">
@@ -142,7 +144,8 @@ export default async function RaceLandingPage({ params }: Props) {
             </p>
 
             {liveSessions.length > 0 && (
-              <section className={`mt-10 ${trackSvg ? 'grid md:grid-cols-2 gap-6 items-center' : ''}`}>
+              <section className={`mt-10 ${trackSvg || trackImageUrl ? 'grid md:grid-cols-2 gap-6 items-center' : ''}`}>
+                {trackImageUrl && <CircuitMap src={trackImageUrl} alt={`${race.circuitName} — Circuit Map`} width={1252} height={704} />}
                 {trackSvg && <TrackOutline svg={trackSvg} />}
                 <WeekendGlance
                   desktopOnly={false}

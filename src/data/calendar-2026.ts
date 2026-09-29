@@ -16,7 +16,7 @@ export interface CalendarVenue {
   circuitLng: number;
   timezone: string;
   flag: string;
-  /** Track image in /public for the new venue (shown once the file exists). */
+  /** Track image for the new venue: a /public path (shown once the file exists) or an https URL. */
   trackImage?: string;
 }
 
@@ -59,7 +59,7 @@ export const CALENDAR_2026: CalendarRace[] = [
       circuitLng: 101.7382,
       timezone: 'Asia/Kuala_Lumpur',
       flag: '🇲🇾',
-      trackImage: '/tracks/Malaysia_Circuit.avif',
+      trackImage: 'https://media.formula1.com/image/upload/c_fit,h_704/q_auto/v1740000001/common/f1/2026/track/2026trackkualalumpurdetailed.webp',
     },
     liveExperiences: true,
   },
