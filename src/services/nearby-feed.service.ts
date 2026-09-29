@@ -3,6 +3,8 @@ import { ALL_SEARCH_ADAPTERS, PROVIDER_NAMES, type NormalizedOffer } from '@/lib
 import { buildNearbyFeed, type FeedCard } from '@/lib/providers/nearby-feed';
 import type { Race } from '@/types/race';
 import { RACE_BASES, raceKey } from '@/lib/nearby';
+import { editorialPicks, withGapLabels } from '@/lib/providers/feed-enrich';
+import { getSessionsByRace } from '@/services/race.service';
 
 /** Refreshed from the providers every 6 hours. */
 const FEED_TTL = 6 * 3600;
@@ -71,9 +73,19 @@ export async function getNearbyFeed(race: Race): Promise<NearbyFeed> {
       });
       return { cards, currency, fetchedAt: new Date().toISOString(), failed };
     },
-    [`nearby-feed:${race.slug}:${race.circuitLat},${race.circuitLng}:v4`],
+    [`nearby-feed:${race.slug}:${race.circuitLat},${race.circuitLng}:v5`],
     { revalidate: FEED_TTL, tags: ['nearby-feed', `nearby-feed:${race.slug}`] }
   )();
+}
+
+/**
+ * The feed as the race pages show it: each card says which session gap it
+ * fits (from this race's timetable), plus three editorial picks.
+ */
+export async function getWeekendFeed(race: Race): Promise<NearbyFeed & { picks: FeedCard[] }> {
+  const [feed, sessions] = await Promise.all([getNearbyFeed(race), getSessionsByRace(race.id)]);
+  const cards = withGapLabels(feed.cards, sessions);
+  return { ...feed, cards, picks: editorialPicks(cards) };
 }
 
 /** The card for one product, for the click redirect. */

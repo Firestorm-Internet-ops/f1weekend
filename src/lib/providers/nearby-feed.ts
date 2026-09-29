@@ -5,6 +5,7 @@
  */
 import { applyNearbyRules, estimateTravelMins, haversineKm as haversine, nearbyLabel, RACE_TRAFFIC_FACTOR, type NearbyInfo, type NearbyTier } from '@/lib/nearby';
 import { scorePair, MATCH_THRESHOLDS } from './match';
+import { destinationOf, diversify, zoneFor, zoneLabel } from './feed-enrich';
 import type { NormalizedOffer, ProviderId } from './types';
 
 export interface FeedOffer {
@@ -75,8 +76,12 @@ export interface FeedCard {
   circuitKm: number | null;
   /** Estimated race-day minutes from the circuit (traffic included). */
   circuitMins: number | null;
-  /** The one travel line the card shows, e.g. "~1h 55 from the circuit" or "Day trip · 1h 30 from Kuala Lumpur". */
+  /** The one travel line the card shows, e.g. "~1h from the circuit by KLIA Ekspres + shuttle" or "Day trip to Malacca". */
   travelLabel: string | null;
+  /** Where a day trip goes ("Malacca"), when the title says. */
+  destination?: string | null;
+  /** The first session gap it fits, e.g. "Fits Fri before FP1 12:30" (set per page from the timetable). */
+  fitsLabel?: string | null;
   rating: number | null;
   reviewCount: number;
   /** Every site selling it, cheapest first. */
@@ -205,7 +210,16 @@ export function buildNearbyFeed(offers: NormalizedOffer[], race: FeedRace): Feed
     const reviewTotal = group.reduce((n, o) => n + o.reviewCount, 0);
     const km = located.lat != null && located.lng != null ? haversine(circuit, { lat: located.lat, lng: located.lng }) : null;
     const circuitKm = km == null ? null : Math.round(km);
-    const circuitMins = km == null ? null : raceDayMinsFromCircuit(km);
+    const category = categorize(lead, nearby.tier);
+    // A day trip goes somewhere: a named place in the title, or where the
+    // product itself is (a venue in Melaka). A 10-hour city tour is not one.
+    const destination = category === 'daytrip' || nearby.tier === 'daytrip'
+      ? destinationOf(lead.title) ?? (nearby.tier === 'daytrip' ? located.locationName ?? null : null)
+      : null;
+    const isTrip = destination != null || nearby.tier === 'daytrip';
+    // Out-of-town circuits: the realistic way in from where fans stay beats a road-speed guess.
+    const zone = !isTrip && nearby.tier !== 'near' ? zoneFor(located, race.slug) : null;
+    const circuitMins = zone ? zone.mins : km == null ? null : raceDayMinsFromCircuit(km);
     const rated = group.filter((o) => o.rating != null && o.reviewCount > 0);
     const rating = rated.length
       ? Math.round((rated.reduce((n, o) => n + o.rating! * o.reviewCount, 0) / rated.reduce((n, o) => n + o.reviewCount, 0)) * 10) / 10
@@ -223,23 +237,28 @@ export function buildNearbyFeed(offers: NormalizedOffer[], race: FeedRace): Feed
       nearbyLabel: nearbyLabel(nearby),
       circuitKm,
       circuitMins,
-      // Out-of-town trips that pick up in the city ("From Kuala Lumpur: Cameron Highlands")
-      // are day trips, not a city activity ~2 h from the circuit.
-      travelLabel: nearby.tier !== 'daytrip' && categorize(lead, nearby.tier) === 'daytrip' && (located.locationName || race.city)
-        ? `Day trip from ${located.approximateLocation && located.locationName ? located.locationName : race.city ?? located.locationName}`
-        : travelLabelFor(nearby, circuitMins),
+      // Day trips say where they go ("Day trip to Malacca"), not "~2 h from the circuit".
+      travelLabel: isTrip
+        ? destination
+          ? `Day trip to ${destination}`
+          : `Day trip from ${located.approximateLocation && located.locationName ? located.locationName : race.city ?? located.locationName ?? 'the city'}`
+        : zone
+          ? zoneLabel(zone)
+          : travelLabelFor(nearby, circuitMins),
+      destination,
       rating,
       reviewCount: reviewTotal,
       offers: group.map(toFeedOffer).sort((a, b) => (a.priceAmount ?? Infinity) - (b.priceAmount ?? Infinity)),
-      category: categorize(lead, nearby.tier),
+      category,
     } satisfies FeedCard;
   });
 
-  // Recommended order; ties (e.g. no reviews yet) → nearest first.
-  return cards.sort((a, b) =>
+  // Recommended order; ties (e.g. no reviews yet) → nearest first. Then no
+  // venue twice near the top.
+  return diversify(cards.sort((a, b) =>
     recommendedScore(b) - recommendedScore(a) ||
     TIER_ORDER[a.nearby.tier] - TIER_ORDER[b.nearby.tier] ||
-    (a.circuitMins ?? Infinity) - (b.circuitMins ?? Infinity));
+    (a.circuitMins ?? Infinity) - (b.circuitMins ?? Infinity)));
 }
 
 /** Nearest-first order (the "Nearest" sort). */

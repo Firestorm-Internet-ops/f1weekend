@@ -1,7 +1,7 @@
 // Run: npm run test:providers
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildNearbyFeed, byNearest, displayTitle, groupSameProducts, isExperience, raceDayMinsFromCircuit, recommendedScore, relocateByTitle } from './nearby-feed';
+import { buildNearbyFeed, byNearest, displayTitle, groupSameProducts, isExperience, recommendedScore, relocateByTitle } from './nearby-feed';
 import type { NormalizedOffer } from './types';
 
 const SEPANG = { slug: 'bahrain-2026', lat: 2.7608, lng: 101.7382, placeWords: ['Kuala Lumpur', 'Malaysia'] };
@@ -60,8 +60,9 @@ test('one travel line per card: race-day time from the circuit, or the day-trip 
     offer({ title: 'Batu Caves Tour', reviewCount: 10 }),
   ], SEPANG).sort(byNearest);
   assert.match(kart.travelLabel!, /^\d+ min from the circuit$/);
-  assert.match(batu.travelLabel!, /^~\dh \d\d from the circuit$/);
-  assert.equal(batu.circuitMins, raceDayMinsFromCircuit(44.3));
+  // Central KL: the curated train + shuttle time, not a road-speed guess.
+  assert.equal(batu.travelLabel, '~1h from the circuit by KLIA Ekspres + shuttle');
+  assert.equal(batu.circuitMins, 60);
 });
 
 test('recommended order: well-reviewed first, even a little further away', () => {
@@ -115,6 +116,19 @@ test('a long trip that picks up in the city is labelled a day trip, not "~2 h fr
   const [c] = buildNearbyFeed([
     offer({ title: 'From Kuala Lumpur: Cameron Highlands Day Tour with Lunch', durationHours: 12, approximateLocation: true, locationName: 'Kuala Lumpur', reviewCount: 1000 }),
   ], SEPANG);
-  assert.equal(c.travelLabel, 'Day trip from Kuala Lumpur');
+  assert.equal(c.travelLabel, 'Day trip to Cameron Highlands');
+  assert.equal(c.destination, 'Cameron Highlands');
   assert.equal(c.category, 'daytrip');
+});
+
+test('a full-day city tour keeps the city travel line; a venue out of town is a day trip to it', () => {
+  const cards = buildNearbyFeed([
+    offer({ title: 'Kuala Lumpur Grand Full Day Guided Tour with 25 Attractions', durationHours: 10, reviewCount: 900 }),
+    offer({ title: 'Huskitory Connecting People and Dogs', lat: 2.45, lng: 101.95, locationName: 'Melaka', approximateLocation: false, durationHours: 1, reviewCount: 800 }),
+  ], SEPANG);
+  const tour = cards.find((c) => c.title.startsWith('Kuala Lumpur Grand'))!;
+  assert.equal(tour.travelLabel, '~1h from the circuit by KLIA Ekspres + shuttle');
+  assert.equal(tour.destination, null);
+  const dogs = cards.find((c) => c.title.startsWith('Huskitory'))!;
+  assert.equal(dogs.travelLabel, 'Day trip to Melaka');
 });
