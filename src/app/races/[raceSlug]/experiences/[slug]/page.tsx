@@ -1,5 +1,5 @@
 import { notFound, permanentRedirect } from 'next/navigation';
-import { hasLiveExperiences } from '@/data/calendar-2026';
+import { hasMovedVenue } from '@/data/calendar-2026';
 import type { Metadata } from 'next';
 import { marked } from 'marked';
 import { getExperienceBySlug, getExperiencesByRace, getSuggestedExperiences } from '@/services/experience.service';
@@ -31,7 +31,7 @@ export async function generateStaticParams() {
   try {
     const availableRaces = await getAvailableRaces();
     const results = await Promise.all(
-      availableRaces.filter((race) => !hasLiveExperiences(race.slug)).map(async (race) => {
+      availableRaces.filter((race) => !hasMovedVenue(race.slug)).map(async (race) => {
         const raceSlug = race.slug;
         const exps = await getExperiencesByRace(race.id);
         return exps.map((e) => ({ raceSlug, slug: e.slug }));
@@ -212,9 +212,10 @@ function stripArticleFrontMatter(md: string): string {
 
 export default async function ExperienceDetailPage({ params }: Props) {
   const { raceSlug, slug } = await params;
-  // Live-feed races (Bahrain GP → Sepang): stored experiences are for the old
-  // venue; send visitors to the live list.
-  if (hasLiveExperiences(raceSlug)) permanentRedirect(`/races/${raceSlug}/experiences`);
+  // Race moved venue (Bahrain GP → Sepang): stored experiences are for the old
+  // venue; send visitors to the live list. Other live-feed races keep their
+  // written experience pages (guide articles).
+  if (hasMovedVenue(raceSlug)) permanentRedirect(`/races/${raceSlug}/experiences`);
   const exp = await getExperienceBySlug(slug);
   if (!exp) notFound();
 

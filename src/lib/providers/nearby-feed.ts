@@ -30,7 +30,9 @@ export const FEED_CATEGORY_LABELS: Record<FeedCategory, string> = {
   daytrip: '🚐 Day trips',
 };
 
-const OUT_OF_TOWN = /\b(day trip|day tour|excursion|from [a-z ]+:|highlands|malacca|melaka|genting|cameron|selangor|port dickson|fraser)\b/i;
+const OUT_OF_TOWN = /\b(day trip|day tour|excursion|from [a-z ]+:|highlands|malacca|melaka|genting|cameron|selangor|port dickson|fraser|grand canyon|hoover dam|antelope canyon|zion|death valley|valley of fire|teotihuacan|puebla|hill country|fredericksburg|sentosa|bintan|batam|johor|desert safari|dubai)\b/i;
+/** Anything this long is a day out, wherever it starts. */
+const DAY_OUT_HOURS = 9;
 
 // Checked in this order: the first group with a match wins.
 const CATEGORY_RULES: [FeedCategory, RegExp][] = [
@@ -46,7 +48,9 @@ export function categorize(o: Pick<NormalizedOffer, 'title' | 'categories' | 'du
   // Out-of-town outings are day trips whatever else the title mentions ("…with Lunch");
   // a 10-hour city tour is not.
   if (tier === 'daytrip') return 'daytrip';
+  if ((o.durationHours ?? 0) >= DAY_OUT_HOURS) return 'daytrip';
   if ((o.durationHours ?? 0) >= 7 && OUT_OF_TOWN.test(o.title)) return 'daytrip';
+  if (/\b(day trip|grand canyon|hoover dam|antelope canyon|zion|death valley)\b/i.test(o.title)) return 'daytrip';
   const text = `${o.title} ${o.categories.filter((c) => /[a-z]/i.test(c)).join(' ')}`;
   for (const [cat, re] of CATEGORY_RULES) {
     if (re.test(text)) return cat;
@@ -86,6 +90,8 @@ export interface FeedRace {
   lng: number;
   /** Place names that appear in most titles and say nothing about the product. */
   placeWords?: string[];
+  /** Race city, used when a place name is a venue rather than a town. */
+  city?: string;
   /** Named places (where fans stay) used to fix approximate locations, e.g. Putrajaya. */
   places?: { name: string; lat: number; lng: number }[];
 }
@@ -135,7 +141,7 @@ export function recommendedScore(c: { rating: number | null; reviewCount: number
 }
 
 /** Travel services, not things to do. */
-const NOT_AN_EXPERIENCE = /\b(airport|lounge|e-?sim|sim card|pocket wi-?fi)\b/i;
+const NOT_AN_EXPERIENCE = /\b(airport|lounge|e-?sim|sim card|pocket wi-?fi|spa van)\b|^private transfer|\btransfers? (from|to|between)\b/i;
 
 export function isExperience(o: Pick<NormalizedOffer, 'title'>): boolean {
   return !NOT_AN_EXPERIENCE.test(o.title);
@@ -219,8 +225,8 @@ export function buildNearbyFeed(offers: NormalizedOffer[], race: FeedRace): Feed
       circuitMins,
       // Out-of-town trips that pick up in the city ("From Kuala Lumpur: Cameron Highlands")
       // are day trips, not a city activity ~2 h from the circuit.
-      travelLabel: nearby.tier !== 'daytrip' && categorize(lead, nearby.tier) === 'daytrip' && located.locationName
-        ? `Day trip from ${located.locationName}`
+      travelLabel: nearby.tier !== 'daytrip' && categorize(lead, nearby.tier) === 'daytrip' && (located.locationName || race.city)
+        ? `Day trip from ${located.approximateLocation && located.locationName ? located.locationName : race.city ?? located.locationName}`
         : travelLabelFor(nearby, circuitMins),
       rating,
       reviewCount: reviewTotal,

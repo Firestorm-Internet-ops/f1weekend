@@ -16,6 +16,8 @@ export interface CalendarVenue {
   circuitLng: number;
   timezone: string;
   flag: string;
+  /** Track image in /public for the new venue (shown once the file exists). */
+  trackImage?: string;
 }
 
 export interface CalendarRace {
@@ -57,16 +59,17 @@ export const CALENDAR_2026: CalendarRace[] = [
       circuitLng: 101.7382,
       timezone: 'Asia/Kuala_Lumpur',
       flag: '🇲🇾',
+      trackImage: '/tracks/Malaysia_Circuit.avif',
     },
     liveExperiences: true,
   },
-  { slug: 'singapore-2026', round: 17, name: 'Singapore Grand Prix', startDate: '2026-10-09', raceDate: '2026-10-11' },
-  { slug: 'usa-2026', round: 18, name: 'United States Grand Prix', startDate: '2026-10-23', raceDate: '2026-10-25' },
-  { slug: 'mexico-2026', round: 19, name: 'Gran Premio de la Ciudad de México', startDate: '2026-10-30', raceDate: '2026-11-01' },
-  { slug: 'brazil-2026', round: 20, name: 'Grande Prêmio de São Paulo', startDate: '2026-11-06', raceDate: '2026-11-08' },
-  { slug: 'las-vegas-2026', round: 21, name: 'Las Vegas Grand Prix', startDate: '2026-11-19', raceDate: '2026-11-21' },
-  { slug: 'qatar-2026', round: 22, name: 'Qatar Grand Prix', startDate: '2026-11-27', raceDate: '2026-11-29' },
-  { slug: 'abu-dhabi-2026', round: 23, name: 'Abu Dhabi Grand Prix', startDate: '2026-12-04', raceDate: '2026-12-06' },
+  { slug: 'singapore-2026', round: 17, name: 'Singapore Grand Prix', startDate: '2026-10-09', raceDate: '2026-10-11', liveExperiences: true },
+  { slug: 'usa-2026', round: 18, name: 'United States Grand Prix', startDate: '2026-10-23', raceDate: '2026-10-25', liveExperiences: true },
+  { slug: 'mexico-2026', round: 19, name: 'Gran Premio de la Ciudad de México', startDate: '2026-10-30', raceDate: '2026-11-01', liveExperiences: true },
+  { slug: 'brazil-2026', round: 20, name: 'Grande Prêmio de São Paulo', startDate: '2026-11-06', raceDate: '2026-11-08', liveExperiences: true },
+  { slug: 'las-vegas-2026', round: 21, name: 'Las Vegas Grand Prix', startDate: '2026-11-19', raceDate: '2026-11-21', liveExperiences: true },
+  { slug: 'qatar-2026', round: 22, name: 'Qatar Grand Prix', startDate: '2026-11-27', raceDate: '2026-11-29', liveExperiences: true },
+  { slug: 'abu-dhabi-2026', round: 23, name: 'Abu Dhabi Grand Prix', startDate: '2026-12-04', raceDate: '2026-12-06', liveExperiences: true },
 ];
 
 /** Races in the database that are not on the 2026 calendar: kept reachable by URL, never listed or featured. */
@@ -84,6 +87,11 @@ export function isOffCalendar(slug: string): boolean {
 
 /** Races whose experiences come live from providers: always listed, whatever the database's `available` flag says. */
 export const LIVE_EXPERIENCE_SLUGS = CALENDAR_2026.filter((r) => r.liveExperiences).map((r) => r.slug);
+
+/** The race moved venue after its content was written (Bahrain GP → Sepang): stored pages describe the old venue. */
+export function hasMovedVenue(slug: string): boolean {
+  return BY_SLUG.get(slug)?.venue != null;
+}
 
 export function hasLiveExperiences(slug: string): boolean {
   return BY_SLUG.get(slug)?.liveExperiences === true;

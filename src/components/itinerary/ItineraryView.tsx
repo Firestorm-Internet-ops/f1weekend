@@ -165,7 +165,7 @@ export default function ItineraryView({ itinerary, experiences, tzLabel }: Props
                                     <p className="text-sm font-medium text-[var(--text-primary)] truncate">{fs.title}</p>
                                     <p className="text-xs text-[var(--text-secondary)]">{fs.nearbyLabel}</p>
                                 </div>
-                                <FeedBookButton raceSlug={raceSlug} s={fs} className="shrink-0 px-4 py-2 rounded-full text-sm font-medium bg-[var(--text-primary)] hover:bg-[var(--accent-red)] text-white transition-colors" />
+                                <FeedBookButton raceSlug={raceSlug} s={fs} className="shrink-0 px-4 py-2 rounded-full text-sm font-medium bg-[var(--accent-red)] hover:bg-[var(--accent-red-hover)] text-white transition-colors" />
                             </div>
                         ))}
                     </div>
@@ -269,7 +269,7 @@ function FeedSuggestionCard({ s, raceSlug }: { s: FeedSuggestion; raceSlug: stri
                 <FeedBookButton
                     raceSlug={raceSlug}
                     s={s}
-                    className="mt-2 text-sm px-3 py-1.5 rounded-full font-medium bg-[var(--text-primary)] hover:bg-[var(--accent-red)] text-white transition-colors"
+                    className="mt-2 text-sm px-3 py-1.5 rounded-full font-medium bg-[var(--accent-red)] hover:bg-[var(--accent-red-hover)] text-white transition-colors"
                 />
             </div>
         </div>

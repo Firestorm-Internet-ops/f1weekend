@@ -281,7 +281,7 @@ export default function ExperienceMap({ experiences, height = '500px', raceSlug 
                 <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
                   <a
                     href={raceSlug ? `/races/${raceSlug}/experiences/${activeExp.slug}` : `/experiences/${activeExp.slug}`}
-                    style={{ fontSize: '12px', color: '#00D2BE', textDecoration: 'none', fontWeight: 500 }}
+                    style={{ fontSize: '12px', color: '#C40500', textDecoration: 'none', fontWeight: 500 }}
                   >
                     View →
                   </a>

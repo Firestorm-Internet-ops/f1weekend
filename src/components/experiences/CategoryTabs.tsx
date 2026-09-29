@@ -23,7 +23,7 @@ export default function CategoryTabs({ active, onChange }: Props) {
           onClick={() => onChange(tab.value)}
           className={`px-5 py-2.5 rounded-full text-base font-medium transition-all uppercase-label shrink-0 ${
             active === tab.value
-              ? 'bg-[var(--accent-teal)] text-[var(--bg-primary)]'
+              ? 'bg-[var(--accent-red)] text-white'
               : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'
           }`}
         >

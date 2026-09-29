@@ -255,7 +255,7 @@ export default function ScheduleView({ schedule, initialDay = 'Thursday', tzLabe
             onClick={() => setActiveFilter(chip.key)}
             className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
               activeFilter === chip.key
-                ? 'bg-[var(--accent-teal)] text-[var(--bg-primary)]'
+                ? 'bg-[var(--accent-red)] text-white'
                 : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface)]'
             }`}
           >
