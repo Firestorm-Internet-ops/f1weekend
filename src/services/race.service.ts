@@ -52,6 +52,8 @@ function withCalendar(race: Race): Race {
     ...race,
     round: cal.round,
     raceDate: cal.raceDate,
+    // Live-feed races have experiences from providers, whatever the stored flag says.
+    available: race.available || cal.liveExperiences === true,
     ...(v
       ? {
           name: cal.name,

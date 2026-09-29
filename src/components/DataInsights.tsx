@@ -64,7 +64,7 @@ export default async function DataInsights({ countryName, year, circuitName }: D
 
     return (
         <section className="mb-12 border-t border-[var(--border-subtle)] pt-10">
-            <h2 className="font-display font-bold text-2xl text-white uppercase-heading mb-4">
+            <h2 className="font-display font-bold text-2xl text-[var(--text-primary)] uppercase-heading mb-4">
                 Data Insights from the {year} Race
             </h2>
             <p className="text-[var(--text-secondary)] text-base leading-relaxed mb-6">
@@ -74,7 +74,7 @@ export default async function DataInsights({ countryName, year, circuitName }: D
                 {insights.map(({ label, value }) => (
                     <div key={label} className="p-4 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
                         <p className="text-xs font-medium uppercase-label text-[var(--text-secondary)] mb-1">{label}</p>
-                        <p className="font-display font-bold text-white text-sm">{String(value)}</p>
+                        <p className="font-display font-bold text-[var(--text-primary)] text-sm">{String(value)}</p>
                     </div>
                 ))}
             </div>

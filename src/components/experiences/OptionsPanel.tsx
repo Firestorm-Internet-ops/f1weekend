@@ -14,7 +14,7 @@ export default function OptionsPanel({ experience, options }: Props) {
 
   return (
     <div className="mb-8 p-5 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
-      <h3 className="font-medium text-white mb-3 text-sm">Choose your option</h3>
+      <h3 className="font-medium text-[var(--text-primary)] mb-3 text-sm">Choose your option</h3>
       <div className="space-y-2">
         {options.map((opt) => (
           <div
@@ -22,7 +22,7 @@ export default function OptionsPanel({ experience, options }: Props) {
             className="flex items-center justify-between gap-3 p-3 rounded-xl border border-[var(--border-subtle)] hover:border-[var(--border-medium)] transition-colors"
           >
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-white leading-snug">{opt.title}</p>
+              <p className="text-sm font-medium text-[var(--text-primary)] leading-snug">{opt.title}</p>
               <p className="text-xs text-[var(--text-secondary)]">
                 {formatPrice(Math.round(opt.price * 100), experience.priceCurrency)} per person
               </p>

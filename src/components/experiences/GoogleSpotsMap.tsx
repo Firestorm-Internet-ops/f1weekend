@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { GoogleMap, InfoWindowF, MarkerF, useJsApiLoader } from '@react-google-maps/api';
-import { DARK_MAP_STYLE } from '@/components/experiences/ExperienceMap';
+import { LIGHT_MAP_STYLE } from '@/lib/map-style';
 import { TIER_STYLE } from '@/lib/constants/nearby-styles';
 import { RACE_BASES, raceKey, type NearbyTier } from '@/lib/nearby';
 
@@ -44,6 +44,10 @@ export default function GoogleSpotsMap({ spots, raceSlug, circuit, apiKey, heigh
   const [openId, setOpenId] = useState<number | null>(null);
   const bases = useMemo(() => RACE_BASES[raceKey(raceSlug)] ?? [], [raceSlug]);
 
+  // Stable initial centre: a new object each render would re-centre the map
+  // and undo the fit below.
+  const initialCenter = useMemo(() => ({ lat: circuit.lat, lng: circuit.lng }), [circuit.lat, circuit.lng]);
+
   const onLoad = useCallback((m: google.maps.Map) => setMap(m), []);
   const onUnmount = useCallback(() => setMap(null), []);
 
@@ -80,10 +84,10 @@ export default function GoogleSpotsMap({ spots, raceSlug, circuit, apiKey, heigh
       <div className="relative w-full rounded-2xl overflow-hidden border border-[var(--border-subtle)]" style={{ height }}>
         <GoogleMap
           mapContainerClassName="w-full h-full"
-          center={{ lat: circuit.lat, lng: circuit.lng }}
+          center={initialCenter}
           zoom={11}
           options={{
-            styles: DARK_MAP_STYLE,
+            styles: LIGHT_MAP_STYLE,
             mapTypeControl: false,
             streetViewControl: false,
             fullscreenControl: true,
@@ -120,14 +124,14 @@ export default function GoogleSpotsMap({ spots, raceSlug, circuit, apiKey, heigh
                 position={{ lat: s.lat, lng: s.lng }}
                 title={s.title}
                 zIndex={selected ? 800 : n}
-                label={n > 1 ? { text: String(n), color: '#0b0b12', fontSize: '11px', fontWeight: '700' } : undefined}
+                label={n > 1 ? { text: String(n), color: '#FFFFFF', fontSize: '11px', fontWeight: '700' } : undefined}
                 icon={{
                   path: G.SymbolPath.CIRCLE,
                   scale: n > 1 ? Math.min(20, 10 + Math.log2(n) * 2) : 7,
                   fillColor: TIER_STYLE[s.tier].color,
-                  fillOpacity: 0.95,
-                  strokeColor: '#ffffff',
-                  strokeWeight: selected ? 3 : 1.5,
+                  fillOpacity: 1,
+                  strokeColor: selected ? '#15151E' : '#FFFFFF',
+                  strokeWeight: selected ? 3 : 2,
                 }}
                 onClick={() => {
                   setOpenId(s.id);

@@ -142,8 +142,8 @@ export default function NearbyFeed({ cards, raceSlug, circuit, pageSize = 24, co
                   aria-pressed={tier === c.id}
                   className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
                     tier === c.id
-                      ? 'border-white text-white bg-white/10'
-                      : 'border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-white'
+                      ? 'border-white text-[var(--text-primary)] bg-[var(--bg-tertiary)]'
+                      : 'border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                   }`}
                 >
                   {c.id !== 'all' && (
@@ -157,7 +157,7 @@ export default function NearbyFeed({ cards, raceSlug, circuit, pageSize = 24, co
 
           {selectedPoint && (
             <div className="flex items-center justify-between gap-3 mb-4 px-4 py-2.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] text-sm">
-              <span className="text-white">
+              <span className="text-[var(--text-primary)]">
                 📍 {pointName(selectedPoint)} · {selectedPoint.cards.length} experience{selectedPoint.cards.length === 1 ? '' : 's'}
               </span>
               <button onClick={() => setPointId(null)} className="text-[var(--accent-teal,#00D2BE)] hover:underline">Show all</button>
@@ -186,7 +186,7 @@ export default function NearbyFeed({ cards, raceSlug, circuit, pageSize = 24, co
               <div className="mt-6 text-center">
                 <button
                   onClick={() => setShown((n) => n + pageSize)}
-                  className="px-5 py-2.5 rounded-full border border-[var(--border-subtle)] text-sm text-white hover:border-[var(--border-medium)]"
+                  className="px-5 py-2.5 rounded-full border border-[var(--border-subtle)] text-sm text-[var(--text-primary)] hover:border-[var(--border-medium)]"
                 >
                   Show more ({filtered.length - shown} left)
                 </button>
@@ -204,8 +204,8 @@ function FeedCardView({ card, raceSlug, onPin }: { card: FeedCard; raceSlug: str
   const best = card.offers[0];
   const dur = duration(card.durationHours);
   return (
-    <article className="flex flex-col rounded-xl overflow-hidden border border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
-      <div className="relative aspect-[16/10] bg-[var(--bg-surface,#15151e)]">
+    <article className="flex flex-col rounded-xl overflow-hidden border border-[var(--border-subtle)] bg-[var(--bg-secondary)] shadow-[0_1px_2px_rgba(21,21,30,0.04)] hover:shadow-[0_8px_24px_rgba(21,21,30,0.08)] transition-shadow">
+      <div className="relative aspect-[16/10] bg-[var(--bg-tertiary)]">
         {card.imageUrl && (
           // Images come from three providers' CDNs; a plain <img> avoids per-host image config.
           // eslint-disable-next-line @next/next/no-img-element
@@ -214,8 +214,8 @@ function FeedCardView({ card, raceSlug, onPin }: { card: FeedCard; raceSlug: str
         <button
           onClick={onPin}
           disabled={card.lat == null}
-          className="absolute left-3 top-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold text-white disabled:cursor-default"
-          style={{ background: 'rgba(11,11,18,0.82)' }}
+          className="absolute left-3 top-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold text-[var(--text-primary)] disabled:cursor-default"
+          style={{ background: 'rgba(255,255,255,0.94)', boxShadow: '0 1px 3px rgba(21,21,30,0.18)' }}
           title="Show on map"
         >
           <span className="inline-block w-2 h-2 rounded-full" style={{ background: style.color }} />
@@ -224,7 +224,7 @@ function FeedCardView({ card, raceSlug, onPin }: { card: FeedCard; raceSlug: str
       </div>
 
       <div className="flex flex-col flex-1 p-4">
-        <h3 className="font-medium text-white leading-snug mb-1.5 line-clamp-2">{card.title}</h3>
+        <h3 className="font-semibold text-[var(--text-primary)] leading-snug mb-1.5 line-clamp-2">{card.title}</h3>
         <p className="text-xs text-[var(--text-secondary)] mb-3">
           {card.circuitKm != null && <>{card.circuitKm} km from the circuit</>}
           {card.locationName && <> · {card.approximateLocation ? 'in ' : 'at '}{card.locationName}</>}
@@ -233,23 +233,26 @@ function FeedCardView({ card, raceSlug, onPin }: { card: FeedCard; raceSlug: str
         </p>
 
         <div className="mt-auto space-y-1.5">
-          {card.offers.map((o, i) => (
-            <button
-              key={`${o.provider}:${o.productId}`}
-              onClick={() => openFeedBooking(raceSlug, o)}
-              className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
-                i === 0
-                  ? 'bg-[var(--accent-red)] hover:bg-[var(--accent-red-hover)] text-white'
-                  : 'border border-[var(--border-subtle)] text-white hover:border-[var(--border-medium)]'
-              }`}
-            >
-              <span>
-                {providerName(o.provider)}
-                {i === 0 && card.offers.length > 1 && <span className="ml-1.5 text-[10px] font-bold uppercase-label opacity-90">Lowest</span>}
-              </span>
-              <span className="font-semibold">{price(o.priceAmount, o.priceCurrency)} →</span>
-            </button>
-          ))}
+          {card.offers.map((o, i) => {
+            const lowest = i === 0 && card.offers.length > 1 && o.priceAmount != null;
+            return (
+              <button
+                key={`${o.provider}:${o.productId}`}
+                onClick={() => openFeedBooking(raceSlug, o)}
+                className={`group w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-sm border transition-colors ${
+                  i === 0
+                    ? 'border-[var(--text-primary)] bg-[var(--text-primary)] text-white hover:bg-[var(--accent-red)] hover:border-[var(--accent-red)]'
+                    : 'border-[var(--border-subtle)] text-[var(--text-primary)] hover:border-[var(--text-primary)]'
+                }`}
+              >
+                <span className="flex items-center gap-1.5">
+                  {providerName(o.provider)}
+                  {lowest && <span className="text-[10px] font-bold uppercase-label px-1.5 py-0.5 rounded bg-white/15">Lowest</span>}
+                </span>
+                <span className="font-semibold">{price(o.priceAmount, o.priceCurrency)} →</span>
+              </button>
+            );
+          })}
           {best?.freeCancellation && <p className="text-[11px] text-[var(--text-secondary)]">Free cancellation on {providerName(best.provider)}</p>}
         </div>
       </div>

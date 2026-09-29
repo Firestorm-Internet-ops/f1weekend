@@ -150,11 +150,11 @@ export default function RaceSchedule({ sessions, windows, windowData, basePath =
             className={`px-6 py-3 rounded-full text-base font-medium transition-all flex flex-col items-center leading-tight ${
               activeDay === day
                 ? 'bg-[var(--accent-red)] text-white'
-                : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-white hover:bg-[var(--bg-tertiary)]'
+                : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'
             }`}
           >
             <span className="uppercase-label">{DAY_SHORT[day]}</span>
-            <span className={`text-sm font-normal mt-0.5 ${activeDay === day ? 'text-white/80' : 'text-[var(--text-secondary)]'}`}>{dayDisplayDates[day]}</span>
+            <span className={`text-sm font-normal mt-0.5 ${activeDay === day ? 'text-[var(--text-primary)]/80' : 'text-[var(--text-secondary)]'}`}>{dayDisplayDates[day]}</span>
           </button>
         ))}
       </div>
@@ -164,7 +164,7 @@ export default function RaceSchedule({ sessions, windows, windowData, basePath =
         <div className="mb-6 flex flex-col gap-5">
           {merged.map((group) => (
             <div key={group.label}>
-              <h3 className="text-sm font-semibold uppercase-label text-white mb-3">
+              <h3 className="text-sm font-semibold uppercase-label text-[var(--text-primary)] mb-3">
                 {group.label}
               </h3>
               {/* key={activeDay} forces remount on tab switch → triggers stagger */}
@@ -209,7 +209,7 @@ export default function RaceSchedule({ sessions, windows, windowData, basePath =
                       <div className="pl-4 pr-3 py-3 flex items-center gap-3">
                         {/* Session name + time */}
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-white text-base leading-tight">
+                          <p className="font-medium text-[var(--text-primary)] text-base leading-tight">
                             {session.name}
                           </p>
                           <p className="text-base text-[var(--text-secondary)] mono-data mt-0.5">
@@ -277,7 +277,7 @@ export default function RaceSchedule({ sessions, windows, windowData, basePath =
       <div className="mt-6 pt-4 border-t border-[var(--border-subtle)]">
         <Link
           href={schedulePath}
-          className="text-sm font-medium text-[var(--accent-teal)] hover:text-white transition-colors flex items-center gap-1"
+          className="text-sm font-medium text-[var(--accent-teal)] hover:text-[var(--text-primary)] transition-colors flex items-center gap-1"
         >
           View full schedule →
         </Link>

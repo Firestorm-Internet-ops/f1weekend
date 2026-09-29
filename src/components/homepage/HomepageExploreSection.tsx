@@ -60,7 +60,7 @@ export default function HomepageExploreSection({ city, days, expBasePath, tzLabe
 
   return (
     <section className="max-w-6xl mx-auto px-4 py-16 border-t border-[var(--border-subtle)]">
-      <h2 className="font-display font-black text-3xl text-white uppercase-heading mb-8 text-center">
+      <h2 className="font-display font-black text-3xl text-[var(--text-primary)] uppercase-heading mb-8 text-center">
         Explore {city}
       </h2>
 
@@ -73,7 +73,7 @@ export default function HomepageExploreSection({ city, days, expBasePath, tzLabe
             className={`flex flex-col items-center gap-0.5 w-[72px] py-3 rounded-full font-bold transition-colors cursor-pointer ${
               i === selectedIdx
                 ? 'bg-[var(--accent-red)] text-white'
-                : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-white border border-[var(--border-subtle)]'
+                : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)]'
             }`}
           >
             <span className="text-sm">{d.label}</span>
@@ -92,7 +92,7 @@ export default function HomepageExploreSection({ city, days, expBasePath, tzLabe
             <div className="space-y-2">
               {day.sessions.map((s) => (
                 <div key={s.name} className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
-                  <p className="font-semibold text-white">{s.name}</p>
+                  <p className="font-semibold text-[var(--text-primary)]">{s.name}</p>
                   <p className="text-sm text-[var(--text-secondary)] mt-0.5">
                     {fmt12(s.startTime)} – {fmt12(s.endTime)} {tzLabel}
                   </p>
@@ -112,7 +112,7 @@ export default function HomepageExploreSection({ city, days, expBasePath, tzLabe
               {activeWindows.map((w) => (
                 <div key={w.slug} className="rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)] overflow-hidden">
                   <div className="px-5 pt-5 pb-3">
-                    <h3 className="font-bold text-white text-base">{w.label}</h3>
+                    <h3 className="font-bold text-[var(--text-primary)] text-base">{w.label}</h3>
                     {w.startTime && w.endTime && (
                       <p className="text-sm text-[var(--text-secondary)] mt-0.5">
                         {fmt12(w.startTime)} – {fmt12(w.endTime)} {tzLabel}
@@ -130,7 +130,7 @@ export default function HomepageExploreSection({ city, days, expBasePath, tzLabe
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           <span className="text-xl shrink-0">{exp.imageEmoji}</span>
-                          <span className="text-sm font-medium text-white truncate">{exp.title}</span>
+                          <span className="text-sm font-medium text-[var(--text-primary)] truncate">{exp.title}</span>
                         </div>
                         <span className="text-xs text-[var(--text-secondary)] mono-data shrink-0 ml-4">
                           {exp.durationLabel}

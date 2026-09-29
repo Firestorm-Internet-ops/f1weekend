@@ -28,7 +28,7 @@ export default function RaceSwitcher({ currentRace, availableRaces, pageType }: 
     <div className="relative inline-block" ref={ref}>
       <button
         onClick={() => setOpen(o => !o)}
-        className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] text-sm font-medium text-white hover:border-[var(--border-medium)] transition-colors"
+        className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] text-sm font-medium text-[var(--text-primary)] hover:border-[var(--border-medium)] transition-colors"
         aria-expanded={open}
         aria-haspopup="listbox"
       >
@@ -64,7 +64,7 @@ export default function RaceSwitcher({ currentRace, availableRaces, pageType }: 
                 >
                   <span className="text-xl">{race.flag}</span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-white">{race.name}</p>
+                    <p className="text-sm font-medium text-[var(--text-primary)]">{race.name}</p>
                     <p className="text-xs text-[var(--text-secondary)]">{race.city} · {formatRaceDates(race.raceDate, race.hasThursdayFreeDay)}</p>
                   </div>
                   {race.slug === currentRace.slug && (
@@ -75,7 +75,7 @@ export default function RaceSwitcher({ currentRace, availableRaces, pageType }: 
                 <div className="flex items-center gap-3 px-4 py-3 opacity-50 cursor-not-allowed">
                   <span className="text-xl">{race.flag}</span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-white">{race.name}</p>
+                    <p className="text-sm font-medium text-[var(--text-primary)]">{race.name}</p>
                     <p className="text-xs text-[var(--text-secondary)]">{race.city} · {formatRaceDates(race.raceDate, race.hasThursdayFreeDay)}</p>
                   </div>
                   <span className="text-xs text-[var(--text-secondary)] px-2 py-0.5 rounded-full border border-[var(--border-subtle)]">

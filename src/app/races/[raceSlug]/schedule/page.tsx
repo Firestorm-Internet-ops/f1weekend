@@ -115,7 +115,7 @@ export default async function SchedulePage({ params }: Props) {
         <div className="mb-4">
           <RaceSwitcher currentRace={race} availableRaces={availableRaces} pageType="schedule" />
         </div>
-        <h1 className="font-display font-black text-4xl md:text-5xl text-white uppercase-heading mb-2">
+        <h1 className="font-display font-black text-4xl md:text-5xl text-[var(--text-primary)] uppercase-heading mb-2">
           Weekend Schedule
         </h1>
         <p className="text-[var(--text-secondary)] text-sm mb-8">
@@ -141,7 +141,7 @@ export default async function SchedulePage({ params }: Props) {
         />
         {raceContent?.sessionGapCopy && raceContent.sessionGapCopy.length > 0 && (
           <section className="mt-12 border-t border-[var(--border-subtle)] pt-8">
-            <h2 className="font-display font-bold text-xl text-white uppercase-heading mb-4">
+            <h2 className="font-display font-bold text-xl text-[var(--text-primary)] uppercase-heading mb-4">
               Session Gap Planner
             </h2>
             <p className="text-[var(--text-secondary)] text-sm leading-relaxed mb-6">
@@ -154,12 +154,12 @@ export default async function SchedulePage({ params }: Props) {
                   <p className="text-xs font-medium uppercase-label text-[var(--accent-teal)] mb-2">
                     {windows.find(w => w.slug === gap.windowSlug)?.label ?? 'GAP'}
                   </p>
-                  <h3 className="font-display font-bold text-white text-lg mb-2">{gap.heading}</h3>
+                  <h3 className="font-display font-bold text-[var(--text-primary)] text-lg mb-2">{gap.heading}</h3>
                   <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-4">
                     {gap.copy}
                   </p>
                   <div className="flex flex-wrap gap-3">
-                    <Link href={`/races/${raceSlug}/experiences?window=${gap.windowSlug}`} className="text-xs font-medium text-[var(--accent-teal)] hover:text-white transition-colors">
+                    <Link href={`/races/${raceSlug}/experiences?window=${gap.windowSlug}`} className="text-xs font-medium text-[var(--accent-teal)] hover:text-[var(--text-primary)] transition-colors">
                       Browse experiences for this gap →
                     </Link>
                   </div>
@@ -168,7 +168,7 @@ export default async function SchedulePage({ params }: Props) {
             </div>
             <Link
               href={`/races/${raceSlug}/experiences`}
-              className="inline-block mt-6 text-sm font-medium text-[var(--accent-teal)] hover:text-white transition-colors"
+              className="inline-block mt-6 text-sm font-medium text-[var(--accent-teal)] hover:text-[var(--text-primary)] transition-colors"
             >
               Browse all {race.city} experiences →
             </Link>

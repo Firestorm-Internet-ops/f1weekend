@@ -42,7 +42,7 @@ export default async function ExperienceMapPage({ params }: Props) {
             <p className="text-xs font-medium uppercase-label text-[var(--accent-red)] mb-2">
               {race.city} {race.season}
             </p>
-            <h1 className="font-display font-black text-4xl text-white uppercase-heading">
+            <h1 className="font-display font-black text-4xl text-[var(--text-primary)] uppercase-heading">
               Experience Map
             </h1>
             <p className="text-[var(--text-secondary)] mt-2">
@@ -51,7 +51,7 @@ export default async function ExperienceMapPage({ params }: Props) {
           </div>
           <Link
             href={`/races/${raceSlug}/experiences`}
-            className="flex-shrink-0 mt-1 flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] text-sm text-[var(--text-secondary)] hover:text-white hover:border-[var(--border-medium)] transition-colors"
+            className="flex-shrink-0 mt-1 flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-medium)] transition-colors"
           >
             <span>≡</span>
             <span>Grid</span>

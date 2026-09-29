@@ -23,7 +23,7 @@ export default function OfferComparison({ experience, offers }: Props) {
 
   return (
     <section id="compare" className="mb-8 p-5 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
-      <h2 className="font-medium text-white mb-1 text-sm">Compare {offers.length} booking sites</h2>
+      <h2 className="font-medium text-[var(--text-primary)] mb-1 text-sm">Compare {offers.length} booking sites</h2>
       <p className="text-xs text-[var(--text-secondary)] mb-3">Same experience, different sellers. Prices per person, checked recently.</p>
       <ul className="space-y-2">
         {offers.map((o) => {
@@ -38,10 +38,10 @@ export default function OfferComparison({ experience, offers }: Props) {
               className="flex items-center justify-between gap-3 p-3 rounded-xl border border-[var(--border-subtle)] hover:border-[var(--border-medium)] transition-colors"
             >
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-white leading-snug">
+                <p className="text-sm font-medium text-[var(--text-primary)] leading-snug">
                   {providerName(o.provider)}
                   {o.priceAmount !== null && o.priceAmount === cheapest && (
-                    <span className="ml-2 text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-500/15 text-green-400 uppercase-label">
+                    <span className="ml-2 text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700 uppercase-label">
                       Lowest price
                     </span>
                   )}
