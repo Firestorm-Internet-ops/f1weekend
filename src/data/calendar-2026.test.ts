@@ -35,3 +35,14 @@ test('sortByCalendar orders by round and drops off-calendar races', () => {
   const list = [{ slug: 'saudi-2026' }, { slug: 'bahrain-2026' }, { slug: 'melbourne-2026' }, { slug: 'unknown-2026' }];
   assert.deepEqual(sortByCalendar(list).map((r) => r.slug), ['melbourne-2026', 'bahrain-2026', 'unknown-2026']);
 });
+
+test('Sepang timetable: F1 sessions become FP1–FP3, Qualifying, Race in local time', async () => {
+  const { timetableSessions, timetableFor } = await import('./timetables-2026');
+  const s = timetableSessions('bahrain-2026', 7);
+  assert.deepEqual(s.map((x) => `${x.shortName} ${x.dayOfWeek} ${x.startTime}`), [
+    'FP1 Friday 12:30', 'FP2 Friday 16:00', 'FP3 Saturday 12:30', 'Q Saturday 16:00', 'RACE Sunday 15:00',
+  ]);
+  assert.ok(s.every((x) => x.id < 0 && x.raceId === 7));
+  assert.equal(timetableFor('bahrain-2026')?.length, 15);
+  assert.equal(timetableFor('monaco-2026'), undefined);
+});

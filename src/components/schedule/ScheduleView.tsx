@@ -18,6 +18,7 @@ const SERIES_CONFIG: Record<string, { color: string; label: string; shortLabel: 
   'sro-gt':          { color: '#00D2BE', label: 'SRO GT Cup',              shortLabel: 'GT'    },
   press:             { color: '#00D2BE', label: 'Press Conference',        shortLabel: 'PRESS' },
   promoter:          { color: '#3B82F6', label: 'Promoter Activity',       shortLabel: 'EVENT' },
+  support:           { color: '#F59E0B', label: 'Support Race',            shortLabel: 'SUP'   },
   'f1-exp':          { color: '#22C55E', label: 'F1 Experiences',          shortLabel: 'EXP'   },
   experiences:       { color: '#22C55E', label: 'F1 Experiences',          shortLabel: 'EXP'   },
 };
@@ -28,6 +29,7 @@ const FILTER_CHIPS: { key: SeriesKey | 'all'; label: string }[] = [
   { key: 'f1-academy',        label: '🎀 Academy'},
   { key: 'sro-gt',            label: '🏁 GT'     },
   { key: 'porsche-cup',       label: 'PCC'       },
+  { key: 'support',           label: '🏎 Support' },
   { key: 'press',             label: '📋 Press'  },
   { key: 'f1-exp',            label: '🎟 Exp'   },
 ];

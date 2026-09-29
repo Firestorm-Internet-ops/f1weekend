@@ -5,6 +5,7 @@ import { eq, asc, sql, inArray, notInArray } from 'drizzle-orm';
 import { redis } from '@/lib/redis';
 import type { Race, Session, ExperienceWindow } from '@/types/race';
 import { calendarEntry, nextCalendarRace, sortByCalendar } from '@/data/calendar-2026';
+import { timetableSessions, timetableFor } from '@/data/timetables-2026';
 
 const CACHE_TTL = 3600; // 1 hour
 
@@ -214,6 +215,9 @@ async function venueMoved(raceId: number): Promise<boolean> {
 }
 
 export async function getSessionsByRace(raceId: number): Promise<Session[]> {
+  const race = await getRaceById(raceId);
+  // A timetable in code (src/data/timetables-2026.ts) wins over stored sessions.
+  if (race && timetableFor(race.slug)) return timetableSessions(race.slug, raceId);
   if (await venueMoved(raceId)) return [];
   const DAY_ORDER = { Thursday: 0, Friday: 1, Saturday: 2, Sunday: 3 };
 

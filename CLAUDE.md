@@ -53,6 +53,7 @@ npx drizzle-kit studio # Browse database
 | Create the multi-provider offers table (once) | `npm run db:migrate-offers` |
 | Fetch + match Viator/Tiqets offers for a race | `npm run offers:fetch -- --race <slug>` |
 | Change race dates / venue / order | `src/data/calendar-2026.ts`, then `npm run db:sync-calendar` |
+| Weekend timetable for a race not in the DB | `src/data/timetables-2026.ts` (wins over stored sessions) |
 
 ## Data Pipeline (`pipeline/`)
 Self-contained Python pipeline that fetches GYG experiences and seeds the f1weekend DB.

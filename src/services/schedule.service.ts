@@ -3,6 +3,7 @@ import { getDb } from '@/lib/db';
 import { schedule_entries } from '@/lib/db/schema';
 import { eq, asc } from 'drizzle-orm';
 import type { ScheduleDay, ScheduleEntry, SeriesKey } from '@/types/schedule';
+import { timetableFor } from '@/data/timetables-2026';
 
 const CACHE_TTL = 3600; // 1 hour
 
@@ -30,8 +31,10 @@ function toHHMM(t: string | null): string {
   return t.slice(0, 5);
 }
 
-export async function getScheduleByRace(raceId: number, raceDate?: string): Promise<ScheduleDay[]> {
-  const fetch = unstable_cache(
+export async function getScheduleByRace(raceId: number, raceDate?: string, raceSlug?: string): Promise<ScheduleDay[]> {
+  // A timetable in code (src/data/timetables-2026.ts) wins over stored entries.
+  const timetable = raceSlug ? timetableFor(raceSlug) : undefined;
+  const fetch = timetable ? async () => [] : unstable_cache(
     async () => {
       const db = await getDb();
       return db
@@ -44,7 +47,17 @@ export async function getScheduleByRace(raceId: number, raceDate?: string): Prom
     { revalidate: CACHE_TTL, tags: ['schedule', `schedule:race:${raceId}`] }
   );
 
-  const rows = await fetch();
+  const rows = timetable
+    ? timetable.map((e, i) => ({
+        day_of_week: e.day,
+        series: e.series,
+        series_key: e.seriesKey,
+        title: e.name,
+        start_time: e.start,
+        end_time: e.end,
+        sort_order: i,
+      }))
+    : await fetch();
 
   // Compute day dates — dynamically from raceDate when provided
   const DAY_DATES = raceDate
