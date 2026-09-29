@@ -158,10 +158,6 @@
             <span>Total URLs: <strong><xsl:value-of select="count(sm:urlset/sm:url)"/></strong></span>
           </div>
           <div class="stat">
-            <span class="stat-icon">&#x1F4C5;</span>
-            <span>Last Updated: <strong><xsl:value-of select="sm:urlset/sm:url[1]/sm:lastmod"/></strong></span>
-          </div>
-          <div class="stat">
             <span class="stat-icon">&#x1F30F;</span>
             <span>Site: <strong>f1weekend.co</strong></span>
           </div>
@@ -173,7 +169,6 @@
               <tr>
                 <th class="num">#</th>
                 <th>URL</th>
-                <th>LAST MODIFIED</th>
               </tr>
             </thead>
             <tbody>
@@ -185,7 +180,6 @@
                       <xsl:value-of select="sm:loc"/>
                     </a>
                   </td>
-                  <td class="date"><xsl:value-of select="sm:lastmod"/></td>
                 </tr>
               </xsl:for-each>
             </tbody>

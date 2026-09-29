@@ -70,7 +70,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       ...(exp.seoKeywords ?? []),
     ],
     alternates: { canonical },
-    robots: { index: true, follow: true },
+    // Text is the provider's own copy (duplicated on GetYourGuide and resellers):
+    // keep it out of the index until a page has original, race-specific content.
+    robots: { index: false, follow: true },
     openGraph: {
       title,
       description,

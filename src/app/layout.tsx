@@ -31,6 +31,10 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const dynamic = 'force-dynamic';
 
+// Staging and local visits must not show up in production analytics.
+const isProduction = process.env.VERCEL_ENV === 'production';
+const gaId = isProduction ? process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID : undefined;
+
 export const metadata: Metadata = {
   metadataBase: new URL('https://f1weekend.co'),
   title: {
@@ -38,7 +42,7 @@ export const metadata: Metadata = {
     template: '%s | F1 Weekend',
   },
   description:
-    'Plan your F1 race weekend with curated local experiences, AI-powered itineraries, and bookable activities. Starting with the 2026 Australian Grand Prix in Melbourne.',
+    'Plan your F1 race weekend: session times, how to get to the circuit, and things to do in the race city between sessions.',
   openGraph: {
     siteName: 'F1 Weekend',
     type: 'website',
@@ -76,15 +80,17 @@ export default async function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://cdn.getyourguide.com" />
         {/* Ahrefs Web Analytics (project "F1weekend"); the data key is public by design */}
-        <Script
-          src="https://analytics.ahrefs.com/analytics.js"
-          data-key={process.env.NEXT_PUBLIC_AHREFS_ANALYTICS_KEY ?? 'D7ZeRUINVlprh/1l3P26ow'}
-          strategy="afterInteractive"
-        />
-        {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID && (
+        {isProduction && (
+          <Script
+            src="https://analytics.ahrefs.com/analytics.js"
+            data-key={process.env.NEXT_PUBLIC_AHREFS_ANALYTICS_KEY ?? 'D7ZeRUINVlprh/1l3P26ow'}
+            strategy="afterInteractive"
+          />
+        )}
+        {gaId && (
           <>
             <Script
-              src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}`}
+              src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
               strategy="afterInteractive"
             />
             <Script id="google-analytics" strategy="afterInteractive">
@@ -92,7 +98,7 @@ export default async function RootLayout({
                 window.dataLayer = window.dataLayer || [];
                 function gtag(){dataLayer.push(arguments);}
                 gtag('js', new Date());
-                gtag('config', '${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}');
+                gtag('config', '${gaId}');
               `}
             </Script>
           </>
