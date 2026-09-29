@@ -1,12 +1,19 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useSyncExternalStore } from 'react';
 import GoogleSpotsMap, { type MapSpot } from '@/components/experiences/GoogleSpotsMap';
 import { TIER_STYLE } from '@/lib/constants/nearby-styles';
 import { providerName } from '@/lib/providers/meta';
 import { openFeedBooking, trackEvent } from '@/lib/analytics';
 import { FEED_CATEGORY_LABELS, byNearest, displayTitle, type FeedCard, type FeedCategory } from '@/lib/providers/nearby-feed';
 import { haversineKm, type NearbyTier } from '@/lib/nearby';
+
+const WIDE = '(min-width: 768px)';
+function subscribeWide(onChange: () => void) {
+  const mq = window.matchMedia(WIDE);
+  mq.addEventListener('change', onChange);
+  return () => mq.removeEventListener('change', onChange);
+}
 
 /** Experiences closer together than this share one pin (pins would overlap at map scale). */
 const CLUSTER_KM = 2;
@@ -28,6 +35,10 @@ interface Props {
   lazyMap?: boolean;
   /** Editorial picks shown above everything else. */
   picks?: FeedCard[];
+  /** Hide the map (home page: the picks and list do the work; the map is on the experiences page). */
+  showMap?: boolean;
+  /** Cards already shown elsewhere on the page (e.g. picks rendered separately). */
+  excludeKeys?: string[];
 }
 
 type TierFilter = 'all' | NearbyTier;
@@ -74,11 +85,17 @@ function pointName(p: MapPoint): string {
   return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? p.cards[0].title;
 }
 
-export default function NearbyFeed({ cards, raceSlug, circuit, pageSize = 24, compact = false, moreHref, mapsApiKey, cities = [], lazyMap = false, picks = [] }: Props) {
+export default function NearbyFeed({ cards, raceSlug, circuit, pageSize = 24, compact = false, moreHref, mapsApiKey, cities = [], lazyMap = false, picks = [], showMap = true, excludeKeys = [] }: Props) {
   const [tier, setTier] = useState<TierFilter>('all');
   const [category, setCategory] = useState<FeedCategory | 'all'>('all');
   const [sort, setSort] = useState<'recommended' | 'nearest' | 'price' | 'rating'>('recommended');
-  const [mapOpen, setMapOpen] = useState(!lazyMap);
+  // Phones never auto-load the map (it would fill the screen before the
+  // filters, and each load counts against the Maps quota); tablets and up do
+  // unless the page asks for lazy loading.
+  const isWide = useSyncExternalStore(subscribeWide, () => window.matchMedia(WIDE).matches, () => false);
+  const [mapRequested, setMapRequested] = useState(false);
+  const mapOpen = mapRequested || (!lazyMap && isWide);
+  const setMapOpen = setMapRequested;
   const [pointId, setPointId] = useState<number | null>(null);
   const [shown, setShown] = useState(pageSize);
 
@@ -129,7 +146,7 @@ export default function NearbyFeed({ cards, raceSlug, circuit, pageSize = 24, co
         ? [...matches].sort((a, b) => score(b) - score(a))
         : matches;
   // In the default view the picks are already shown above; don't repeat them.
-  const pickKeys = new Set(picks.map((p) => p.key));
+  const pickKeys = new Set([...picks.map((p) => p.key), ...excludeKeys]);
   const isDefaultView = tier === 'all' && category === 'all' && sort === 'recommended' && pointId === null;
   const listed = isDefaultView ? filtered.filter((c) => !pickKeys.has(c.key)) : filtered;
   const visible = listed.slice(0, compact ? pageSize : shown);
@@ -151,20 +168,11 @@ export default function NearbyFeed({ cards, raceSlug, circuit, pageSize = 24, co
   return (
     <div>
       {picks.length > 0 && (
-        <section className="mb-8" aria-labelledby="picks-heading">
-          <h2 id="picks-heading" className="font-display font-bold text-lg text-[var(--text-primary)] mb-1">Our picks for race weekend</h2>
-          <p className="text-sm text-[var(--text-secondary)] mb-4">Well reviewed, different from each other, and each one fits a gap in the F1 schedule.</p>
-          <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-3 sm:overflow-visible">
-            {picks.map((c) => (
-              <div key={c.key} className="snap-start shrink-0 w-[80%] sm:w-auto">
-                <FeedCardView card={c} raceSlug={raceSlug} cities={cities} onPin={() => { const id = pointOfCard.get(c.key); if (id !== undefined) selectPoint(id); }} />
-              </div>
-            ))}
-          </div>
-        </section>
+        <FeedPicks picks={picks} raceSlug={raceSlug} cities={cities} className="mb-8"
+          onPin={(c) => { const id = pointOfCard.get(c.key); if (id !== undefined) selectPoint(id); }} />
       )}
-      <div className={compact ? 'grid lg:grid-cols-[minmax(0,420px)_1fr] gap-6 items-start' : ''}>
-        <div className={compact ? '' : 'mb-8'}>
+      <div className={compact && showMap ? 'grid lg:grid-cols-[minmax(0,420px)_1fr] gap-6 items-start' : ''}>
+        {showMap && <div className={compact ? '' : 'mb-4 md:mb-8'}>
           {mapOpen ? <GoogleSpotsMap
             apiKey={mapsApiKey}
             raceSlug={raceSlug}
@@ -182,7 +190,7 @@ export default function NearbyFeed({ cards, raceSlug, circuit, pageSize = 24, co
               onOpen={() => { trackEvent('map_open', { race: raceSlug }); setMapOpen(true); }}
             />
           )}
-        </div>
+        </div>}
 
         <div>
           {!compact && (
@@ -252,7 +260,7 @@ export default function NearbyFeed({ cards, raceSlug, circuit, pageSize = 24, co
 
           <div
             id="nearby-grid"
-            className={`grid gap-4 scroll-mt-24 ${compact ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'}`}
+            className={`grid gap-4 scroll-mt-24 ${compact && showMap ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'}`}
           >
             {visible.map((c) => (
               <FeedCardView key={c.key} card={c} raceSlug={raceSlug} cities={cities} onPin={() => { const id = pointOfCard.get(c.key); if (id !== undefined) selectPoint(id); }} />
@@ -286,14 +294,50 @@ export default function NearbyFeed({ cards, raceSlug, circuit, pageSize = 24, co
 }
 
 /**
+ * "Our picks for race weekend": a swipeable row on phones, three columns
+ * from tablet up. Exported so the home page can show it right under the hero.
+ */
+export function FeedPicks({ picks, raceSlug, cities = [], className = '', onPin }: {
+  picks: FeedCard[];
+  raceSlug: string;
+  cities?: string[];
+  className?: string;
+  onPin?: (card: FeedCard) => void;
+}) {
+  if (picks.length === 0) return null;
+  return (
+    <section className={className} aria-labelledby="picks-heading">
+      <h2 id="picks-heading" className="font-display font-bold text-lg text-[var(--text-primary)] mb-1">Our picks for race weekend</h2>
+      <p className="text-sm text-[var(--text-secondary)] mb-4">Well reviewed, different from each other, and each one fits a gap in the F1 schedule.</p>
+      <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-3 sm:overflow-visible">
+        {picks.map((c) => (
+          <div key={c.key} className="snap-start shrink-0 w-[80%] sm:w-auto">
+            <FeedCardView card={c} raceSlug={raceSlug} cities={cities} onPin={() => onPin?.(c)} />
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/**
  * Stand-in for the map until the visitor asks for it: Google Maps is billed
  * per load and the daily quota is fixed, so pages that aren't mainly about
  * the map load it on demand.
  */
 function MapPlaceholder({ height, counts, circuitName, onOpen }: { height: string; counts: Record<NearbyTier, number>; circuitName: string; onOpen: () => void }) {
   return (
+    <>
+    {/* Phones: a slim bar, so the filters and cards come first. */}
+    <button
+      onClick={onOpen}
+      className="md:hidden w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] text-sm"
+    >
+      <span className="text-[var(--text-primary)] font-medium">🗺️ Map around {circuitName}</span>
+      <span className="font-semibold text-[var(--accent-red)]">Show map</span>
+    </button>
     <div
-      className="w-full rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] flex flex-col items-center justify-center gap-4 px-6 text-center"
+      className="hidden md:flex w-full rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] flex-col items-center justify-center gap-4 px-6 text-center"
       style={{ height, backgroundImage: 'radial-gradient(circle at 50% 45%, var(--bg-tertiary) 0, transparent 60%)' }}
     >
       <span className="text-4xl" aria-hidden>🗺️</span>
@@ -307,6 +351,7 @@ function MapPlaceholder({ height, counts, circuitName, onOpen }: { height: strin
         Show map
       </button>
     </div>
+    </>
   );
 }
 
