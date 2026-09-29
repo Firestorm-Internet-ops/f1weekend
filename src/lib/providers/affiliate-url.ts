@@ -22,8 +22,11 @@ export function stripGygTracking(trackedUrl: string): string {
 }
 
 function gyg(baseUrl: string, ctx: AffiliateContext): string {
+  // Keep the partner ID GetYourGuide's API already put on the URL when ours isn't configured.
+  const existing = new URL(baseUrl).searchParams.get('partner_id');
   const url = new URL(stripGygTracking(baseUrl));
-  url.searchParams.set('partner_id', process.env.GYG_PARTNER_ID ?? 'PLACEHOLDER');
+  const partnerId = process.env.GYG_PARTNER_ID || (existing && existing !== 'PLACEHOLDER' ? existing : null);
+  if (partnerId) url.searchParams.set('partner_id', partnerId);
   url.searchParams.set('utm_medium', 'online_publisher');
   url.searchParams.set('utm_source', 'pitlane');
   url.searchParams.set('utm_content', ctx.source);

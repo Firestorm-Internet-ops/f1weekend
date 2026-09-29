@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   ]);
   if (!race) return {};
   return {
-    title: raceContent?.pageTitle ?? `${race.name} Travel Guide | F1 Weekend`,
+    title: { absolute: raceContent?.pageTitle ?? `${race.name} Travel Guide | F1 Weekend` },
     description: raceContent?.pageDescription ?? `Your complete travel companion for the ${race.name} at ${race.circuitName}, ${race.city}. Schedule, experiences, and transport guide.`,
     alternates: { canonical: `https://f1weekend.co/races/${raceSlug}` },
     ...(raceContent?.pageKeywords?.length && { keywords: raceContent.pageKeywords }),

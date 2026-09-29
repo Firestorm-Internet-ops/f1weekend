@@ -53,7 +53,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!tipsContent || !tipsContent.meta) {
     return {
-      title: `${race.city} F1 Travel Tips & FAQ | F1 Weekend`,
+      title: { absolute: `${race.city} F1 Travel Tips & FAQ | F1 Weekend` },
       description: `Everything you need to know for your ${race.city} F1 race weekend. Local tips, FAQ, and transport guides.`,
       alternates: { canonical },
     };

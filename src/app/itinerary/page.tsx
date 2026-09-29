@@ -6,7 +6,7 @@ import type { Race, Session } from '@/types/race';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-    title: 'Build Itinerary | F1 Weekend',
+    title: { absolute: 'Build Itinerary | F1 Weekend' },
     description: 'Pick your F1 sessions and we\'ll fill the gaps with the best race city experiences.',
     robots: { index: false, follow: true },
 };

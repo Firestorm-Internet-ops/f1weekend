@@ -67,6 +67,8 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
   const experiencesHref = `/races/${displayRaceSlug}/experiences`;
   const gettingThereHref = `/races/${displayRaceSlug}/getting-there`;
   const tipsHref = `/races/${displayRaceSlug}/tips`;
+  // Races without tips content have no tips page (404): don't link to it.
+  const showTips = displayRace?.hasTips !== false;
 
   return (
     <>
@@ -231,7 +233,7 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
               >
                 Getting There
               </Link>
-              <Link
+              {showTips && <Link
                 href={tipsHref}
                 className={`text-sm font-medium whitespace-nowrap transition-colors ${
                   isTipsActive
@@ -240,7 +242,7 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
                 }`}
               >
                 Tips
-              </Link>
+              </Link>}
               <Link
                 href="/f1-2026"
                 className={`text-sm font-medium whitespace-nowrap transition-colors ${
@@ -310,7 +312,7 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
             >
               Getting There
             </Link>
-            <Link
+            {showTips && <Link
               href={tipsHref}
               onClick={() => setIsOpen(false)}
               className={`text-sm font-medium py-2 transition-colors ${
@@ -320,7 +322,7 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
               }`}
             >
               Tips
-            </Link>
+            </Link>}
             <Link
               href="/f1-2026"
               onClick={() => setIsOpen(false)}

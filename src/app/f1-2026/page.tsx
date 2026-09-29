@@ -6,7 +6,7 @@ import { formatRaceDates } from '@/lib/utils';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'F1 2026 Season Travel Guide — All 23 Races, Cities & Dates | F1 Weekend',
+  title: { absolute: 'F1 2026 Season Travel Guide — All 23 Races, Cities & Dates | F1 Weekend' },
   description:
     'Complete F1 2026 calendar with travel guides, city breakdowns, and race dates for all 23 grands prix. Plan your Formula 1 travel for Melbourne, Shanghai, Monaco, Silverstone and more.',
   alternates: { canonical: 'https://f1weekend.co/f1-2026' },

@@ -6,7 +6,7 @@ import { eq, count } from 'drizzle-orm';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'About | F1 Weekend',
+  title: { absolute: 'About | F1 Weekend' },
   description:
     'F1 Weekend is an F1 travel companion for the 2026 Australian Grand Prix, built by Firestorm Internet.',
   alternates: { canonical: 'https://f1weekend.co/about' },
