@@ -148,8 +148,22 @@ export function recommendedScore(c: { rating: number | null; reviewCount: number
 /** Travel services, not things to do. */
 const NOT_AN_EXPERIENCE = /\b(airport|lounge|e-?sim|sim card|pocket wi-?fi|spa van)\b|^private transfer|\btransfers? (from|to|between)\b/i;
 
+/**
+ * Getting to and from the airport or circuit (Getting There page): the ride
+ * is the product — "Airport Private Transfer", "Shuttle to Sepang", "KLIA
+ * Ekspres". Not a ticket that includes one ("Sunway Lagoon with Round-Trip
+ * Transfer"): that stays an experience.
+ */
+const TRANSFER_PRODUCT = /(\b(private|shared|airport|hotel|one-?way|round-?trip|door to door)\b[^,:]{0,30}\btransfers?\b|\btransfers? (from|to|between)\b|\bshuttle\b|\bklia ekspres\b|\bairport (train|express|bus)\b)/i;
+const WITH_TRANSFER = /(\bwith|\+|\band|\bincl\.?|\bincluding)\s+(a\s+)?(round-?trip |roundtrip |return |private |hotel )?transfers?\b/i;
+const NOT_TRANSFER = /\b(lounge|e-?sim|sim card|wi-?fi|fast track|luggage storage|day trip|sightseeing)\b/i;
+
+export function isTransfer(o: Pick<NormalizedOffer, 'title'>): boolean {
+  return TRANSFER_PRODUCT.test(o.title) && !WITH_TRANSFER.test(o.title) && !NOT_TRANSFER.test(o.title);
+}
+
 export function isExperience(o: Pick<NormalizedOffer, 'title'>): boolean {
-  return !NOT_AN_EXPERIENCE.test(o.title);
+  return !NOT_AN_EXPERIENCE.test(o.title) && !isTransfer(o);
 }
 
 const TIER_ORDER: Record<NearbyTier, number> = { near: 0, city: 1, unknown: 2, daytrip: 3, 'too-far': 4 };
@@ -188,11 +202,12 @@ export function groupSameProducts(offers: NormalizedOffer[], placeWords: string[
   return groups;
 }
 
-export function buildNearbyFeed(offers: NormalizedOffer[], race: FeedRace): FeedCard[] {
+export function buildNearbyFeed(offers: NormalizedOffer[], race: FeedRace, kind: 'experiences' | 'transfers' = 'experiences'): FeedCard[] {
   const circuit = { lat: race.lat, lng: race.lng };
   const places = race.places ?? [];
+  const keep = kind === 'transfers' ? isTransfer : isExperience;
   const groups = groupSameProducts(
-    offers.filter((o) => o.url && isExperience(o)).map((o) => relocateByTitle(o, places)),
+    offers.filter((o) => o.url && keep(o)).map((o) => relocateByTitle(o, places)),
     race.placeWords
   );
 

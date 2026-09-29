@@ -19,6 +19,8 @@ const CURRENCY_BY_COUNTRY: Record<string, string> = {
 
 export interface NearbyFeed {
   cards: FeedCard[];
+  /** Airport and circuit transfers (Getting There page), best first. */
+  transfers: FeedCard[];
   currency: string;
   fetchedAt: string;
   /** Providers that failed this time (the feed still shows the others). */
@@ -63,17 +65,19 @@ export async function getNearbyFeed(race: Race): Promise<NearbyFeed> {
   return unstable_cache(
     async (): Promise<NearbyFeed> => {
       const { offers, currency, failed } = await fetchNearbyOffers(race);
-      const cards = buildNearbyFeed(offers, {
+      const feedRace = {
         slug: race.slug,
         lat: race.circuitLat,
         lng: race.circuitLng,
         placeWords: [race.city, race.country],
         city: race.city,
         places: RACE_BASES[raceKey(race.slug)] ?? [],
-      });
-      return { cards, currency, fetchedAt: new Date().toISOString(), failed };
+      };
+      const cards = buildNearbyFeed(offers, feedRace);
+      const transfers = buildNearbyFeed(offers, feedRace, 'transfers').slice(0, 8);
+      return { cards, transfers, currency, fetchedAt: new Date().toISOString(), failed };
     },
-    [`nearby-feed:${race.slug}:${race.circuitLat},${race.circuitLng}:v5`],
+    [`nearby-feed:${race.slug}:${race.circuitLat},${race.circuitLng}:v7`],
     { revalidate: FEED_TTL, tags: ['nearby-feed', `nearby-feed:${race.slug}`] }
   )();
 }

@@ -2,7 +2,7 @@ import { getTimezoneAbbr } from '@/lib/utils';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getItinerary } from '@/services/itinerary.service';
-import { getRaceBySlug, getRaceById, getActiveRace } from '@/services/race.service';
+import { getRaceById, getActiveRace } from '@/services/race.service';
 import { getExperiencesByRace } from '@/services/experience.service';
 import ItineraryView from '@/components/itinerary/ItineraryView';
 import ItineraryActions from '@/components/itinerary/ItineraryActions';

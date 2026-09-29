@@ -10,6 +10,12 @@ import { getRaceBySlug, getSessionsByRace, getAvailableRaces, getRaceContent } f
 import { getTimezoneAbbr } from '@/lib/utils';
 import { raceKey } from '@/lib/race-url';
 import { resolveRaceSlug } from '@/services/race.service';
+import PageByline from '@/components/race/PageByline';
+import Icon from '@/components/ui/Icon';
+import { FeedPicks } from '@/components/experiences/NearbyFeed';
+import { raceEventLd, webPageLd } from '@/lib/structured-data';
+import { hasLiveExperiences } from '@/data/calendar-2026';
+import { getNearbyFeed } from '@/services/nearby-feed.service';
 
 export const revalidate = 604800; // 1 week
 
@@ -53,6 +59,8 @@ export default async function GettingTherePage({ params }: Props) {
 
   // Venues without a stored guide for this year's circuit (Bahrain GP → Sepang) use the one in code.
   const guide = race.venueMoved ? venueGuide(raceSlug) : undefined;
+  // Transfers come with the live feed (cached); database-list races have none.
+  const transfers = hasLiveExperiences(race.slug) ? (await getNearbyFeed(race)).transfers ?? [] : [];
   const transport = raceContent?.transportGuide?.options ?? guide?.options ?? [];
   const mapsUrl = raceContent?.transportGuide?.mapsUrl ?? `https://www.google.com/maps/dir/?api=1&destination=${race.circuitLat},${race.circuitLng}&travelmode=transit`;
   const tzLabel = getTimezoneAbbr(race.timezone, new Date(race.raceDate));
@@ -104,6 +112,8 @@ export default async function GettingTherePage({ params }: Props) {
   return (
     <>
       {howToSchema && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(howToSchema) }} />}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(raceEventLd(race)) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(webPageLd(`/races/${raceKey(raceSlug)}/getting-there`, `Getting to ${race.circuitName}`)) }} />
       <div className="min-h-screen pt-24 pb-24 px-4">
         <div className="max-w-3xl mx-auto">
           <div className="mb-10">
@@ -119,11 +129,19 @@ export default async function GettingTherePage({ params }: Props) {
               <RaceSwitcher currentRace={race} availableRaces={availableRaces} pageType="getting-there" />
             </div>
             <h1 className="font-display font-black text-4xl sm:text-5xl text-[var(--text-primary)] uppercase-heading leading-none mb-4">
-              GETTING<br />THERE
+              Getting there
             </h1>
             <p className="text-[var(--text-secondary)] text-lg leading-relaxed">
               {race.circuitName}, {race.city}
             </p>
+            <PageByline
+              className="mt-3"
+              sources={[
+                ...(guide?.note && race.venueMoved && raceKey(race.slug) === 'bahrain' ? [{ label: 'Sepang International Circuit', url: 'https://www.sepangcircuit.com' }] : []),
+                { label: 'Formula 1 timetable (gate times estimated from it)', url: 'https://api.jolpi.ca/ergast/f1/' },
+                ...(transfers.length > 0 ? [{ label: 'GetYourGuide, Viator and Tiqets listings' }] : []),
+              ]}
+            />
             {raceContent?.howItWorksText ? (
               <p className="text-[var(--text-secondary)] text-base leading-relaxed max-w-2xl mt-4">
                 {raceContent.howItWorksText}
@@ -192,15 +210,25 @@ export default async function GettingTherePage({ params }: Props) {
 
           {mapsUrl && (
             <section className="mb-12">
+              {/* Book the ride itself: the highest-intent moment on the site. */}
+              <FeedPicks
+                picks={transfers.slice(0, 3)}
+                raceSlug={race.slug}
+                cities={[race.city]}
+                id="transfers-heading"
+                heading="Book an airport or circuit transfer"
+                description="Private and shared rides from GetYourGuide, Viator and Tiqets; the price shown is the cheapest site for each."
+                className="mb-8"
+              />
               <a
                 href={mapsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-3 w-full py-4 rounded-xl border border-[var(--accent-strong)] bg-[var(--accent-strong-muted)] text-[var(--accent-strong)] font-display font-bold text-lg hover:bg-[var(--accent-strong)]/20 transition-colors"
+                className="flex items-center justify-center gap-3 w-full py-4 rounded-xl bg-[var(--accent-red)] hover:bg-[var(--accent-red-hover)] text-white font-display font-bold text-lg transition-colors"
               >
-                <span>📍</span>
-                Get Directions in Google Maps
-                <span className="text-sm font-normal opacity-70">↗</span>
+                <Icon name="pin" size={20} />
+                Get directions in Google Maps
+                <span className="text-sm font-normal opacity-80" aria-hidden>↗</span>
               </a>
             </section>
           )}
