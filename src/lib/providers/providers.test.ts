@@ -9,7 +9,7 @@ import { normalizeViator, cleanViatorUrl } from './viator';
 import { normalizeTiqets } from './tiqets';
 import type { NormalizedOffer, Offer } from './types';
 
-const ctx = { experienceId: 42, source: 'feed' as const };
+const ctx = { experienceId: 42, source: 'feed' as const, campaign: 'f1-monaco-experiences' };
 const PLACE = ['Monaco', 'monte carlo', 'riviera', 'french'];
 
 function offer(p: Partial<NormalizedOffer>): NormalizedOffer {
@@ -33,6 +33,7 @@ test('GYG link replaces stale tracking params with ours', () => {
   if (saved === undefined) delete process.env.GYG_PARTNER_ID; else process.env.GYG_PARTNER_ID = saved;
   assert.equal(url.searchParams.get('utm_term'), '42');
   assert.equal(url.searchParams.get('utm_content'), 'feed');
+  assert.equal(url.searchParams.get('cmp'), 'f1-monaco-experiences');
   assert.equal(url.pathname, '/monaco-l273/t123/');
 });
 
@@ -54,13 +55,13 @@ test('Viator link keeps the account pid/mcid and adds a campaign sub-ID', () => 
   const url = new URL(buildAffiliateUrl('viator', 'https://www.viator.com/tours/Monaco/x/d948-197141P1?mcid=42383&pid=P00038490&medium=api', ctx));
   assert.equal(url.searchParams.get('pid'), 'P00038490');
   assert.equal(url.searchParams.get('mcid'), '42383');
-  assert.equal(url.searchParams.get('campaign'), 'f1w-42-feed');
+  assert.equal(url.searchParams.get('campaign'), 'f1-monaco-experiences');
 });
 
 test('Tiqets link keeps the partner param and adds tq_campaign', () => {
-  const url = new URL(buildAffiliateUrl('tiqets', 'https://www.tiqets.com/en/monaco-attractions-c73505/p1014117/?partner=acct', { experienceId: 7, source: 'guide' }));
+  const url = new URL(buildAffiliateUrl('tiqets', 'https://www.tiqets.com/en/monaco-attractions-c73505/p1014117/?partner=acct', { experienceId: 7, source: 'guide', campaign: 'f1-monaco-experience' }));
   assert.equal(url.searchParams.get('partner'), 'acct');
-  assert.equal(url.searchParams.get('tq_campaign'), 'f1w-7-guide');
+  assert.equal(url.searchParams.get('tq_campaign'), 'f1-monaco-experience');
 });
 
 // ── provider names ─────────────────────────────────────────────────────────

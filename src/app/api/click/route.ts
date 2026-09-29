@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { logClick } from '@/lib/click-log';
 import { getExperienceById } from '@/services/experience.service';
 import { getOffersForExperience } from '@/services/offer.service';
-import { buildAffiliateUrl, type ClickSource } from '@/lib/providers';
+import { buildAffiliateUrl, campaignId, resolveCampaignPage, type ClickSource } from '@/lib/providers';
+import { getRaceById } from '@/services/race.service';
 
 const VALID_SOURCES = ['feed', 'itinerary', 'featured', 'map', 'guide'] as const;
 type Source = ClickSource;
@@ -22,6 +23,12 @@ async function resolveOffer(experienceId: number, offerId: number | null) {
   return offer ? { experience, offer } : null;
 }
 
+/** "f1-{race}-{page}" for an experience's link: its own race, the page the click came from. */
+async function campaignFor(experience: { raceId: number }, pageParam: string | null, referer: string | null, source: string): Promise<string> {
+  const race = experience.raceId ? await getRaceById(experience.raceId) : null;
+  return campaignId(race?.slug ?? null, resolveCampaignPage(pageParam, referer, source));
+}
+
 /**
  * GET /api/click?id=123&offer=456&source=feed&sid=abc&itinerary=xyz
  * Logs the click, then redirects to the offer's tracked partner URL.
@@ -39,7 +46,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL('/experiences', req.url), 302);
   }
 
-  const affiliateUrl = buildAffiliateUrl(resolved.offer.provider, resolved.offer.url, { experienceId, source });
+  const campaign = await campaignFor(resolved.experience, params.get('page'), req.headers.get('referer'), source);
+  const affiliateUrl = buildAffiliateUrl(resolved.offer.provider, resolved.offer.url, { experienceId, source, campaign });
   await logClick(req, {
     experienceId,
     provider: resolved.offer.provider,
@@ -91,7 +99,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Experience not found' }, { status: 404 });
   }
 
-  const affiliateUrl = buildAffiliateUrl(resolved.offer.provider, resolved.offer.url, { experienceId, source: validSource });
+  const campaign = await campaignFor(resolved.experience, (body as { page?: string }).page ?? null, req.headers.get('referer'), validSource);
+  const affiliateUrl = buildAffiliateUrl(resolved.offer.provider, resolved.offer.url, { experienceId, source: validSource, campaign });
   await logClick(req, {
     experienceId,
     provider: resolved.offer.provider,
