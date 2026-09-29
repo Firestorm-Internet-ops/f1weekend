@@ -1,6 +1,7 @@
 import { notFound, permanentRedirect } from 'next/navigation';
 import { getExperienceBySlug } from '@/services/experience.service';
 import { getRaceById } from '@/services/race.service';
+import { raceKey } from '@/lib/race-url';
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -17,5 +18,5 @@ export default async function LegacyExperienceRedirect({ params }: Props) {
   if (!exp) notFound();
   const race = await getRaceById(exp.raceId);
   if (!race) notFound();
-  permanentRedirect(`/races/${race.slug}/experiences/${exp.slug}`);
+  permanentRedirect(`/races/${raceKey(race.slug)}/experiences/${exp.slug}`);
 }

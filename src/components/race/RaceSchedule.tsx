@@ -277,7 +277,7 @@ export default function RaceSchedule({ sessions, windows, windowData, basePath =
       <div className="mt-6 pt-4 border-t border-[var(--border-subtle)]">
         <Link
           href={schedulePath}
-          className="text-sm font-medium text-[var(--accent-teal)] hover:text-[var(--text-primary)] transition-colors flex items-center gap-1"
+          className="text-sm font-medium text-[var(--accent-strong)] hover:text-[var(--text-primary)] transition-colors flex items-center gap-1"
         >
           View full schedule →
         </Link>

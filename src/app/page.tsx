@@ -3,12 +3,10 @@ import Link from 'next/link';
 import { getRaceBySlug, getSessionsByRace, getWindowsByRace, getRaceContent, getAvailableRaces } from '@/services/race.service';
 import { CATEGORY_COLORS } from '@/lib/constants/categories';
 import { getExperiencesByWindow, getFeaturedExperiences, getMostPopularExperiences, getTopRatedExperiences } from '@/services/experience.service';
-import RaceSchedule from '@/components/race/RaceSchedule';
 import RaceCountdown from '@/components/race/RaceCountdown';
 import CircuitMap from '@/components/race/CircuitMap';
 import { getActiveRaceSlug } from '@/lib/activeRace';
 import { formatRaceDates } from '@/lib/utils';
-import BookButton from '@/components/experiences/BookButton';
 import type { Experience } from '@/types/experience';
 import HomepageExploreSection, { type ExploreDayData } from '@/components/homepage/HomepageExploreSection';
 import NearbyFeed, { FeedPicks } from '@/components/experiences/NearbyFeed';
@@ -19,9 +17,10 @@ import RaceStrip from '@/components/race/RaceStrip';
 import TrackOutline from '@/components/race/TrackOutline';
 import { getTrackSvg } from '@/services/track.service';
 import { getWeekendFeed } from '@/services/nearby-feed.service';
-import { calendarEntry, hasLiveExperiences } from '@/data/calendar-2026';
+import { hasLiveExperiences, isRaceOver } from '@/data/calendar-2026';
 import fs from 'node:fs';
 import path from 'node:path';
+import { raceKey } from '@/lib/race-url';
 
 /** A /public image path if the file is actually there (added by hand); https URLs are used as they are. */
 function existingPublicFile(src: string | undefined): string | undefined {
@@ -43,7 +42,7 @@ export async function generateMetadata(): Promise<Metadata> {
     getRaceContent(activeRaceSlug),
   ]);
   // Written for the old venue when the race has moved (Bahrain GP → Sepang).
-  const raceContent = calendarEntry(activeRaceSlug)?.venue ? null : storedContent;
+  const raceContent = race?.venueMoved ? null : storedContent;
 
   if (!race) {
     return {
@@ -125,20 +124,20 @@ function FeaturedCard({ exp, badge, activeRaceSlug }: { exp: Experience, badge?:
   const color = CATEGORY_COLORS[exp.category] ?? '#6E6E82';
   return (
     <Link
-      href={`/races/${activeRaceSlug}/experiences/${exp.slug}`}
-      className="group shrink-0 w-56 lg:w-auto p-5 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)] hover:border-[var(--accent-teal)]/50 transition-all flex flex-col"
+      href={`/races/${raceKey(activeRaceSlug)}/experiences/${exp.slug}`}
+      className="group shrink-0 w-56 lg:w-auto p-5 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)] hover:border-[var(--accent-strong)]/50 transition-all flex flex-col"
     >
       {badge && (
         <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider w-fit mb-3 ${
           badge === 'Most Popular' ? 'bg-[var(--accent-red)] text-white' :
-          badge === 'Top Rated' ? 'bg-[var(--accent-teal)]/20 text-[var(--accent-teal)]' :
+          badge === 'Top Rated' ? 'bg-[var(--accent-strong)]/20 text-[var(--accent-strong)]' :
           'bg-[var(--accent-red)]/20 text-[var(--accent-red)]'
         }`}>
           {badge}
         </span>
       )}
       <span className="text-3xl mb-3">{exp.imageEmoji}</span>
-      <h3 className="font-display font-bold text-[var(--text-primary)] group-hover:text-[var(--accent-teal)] transition-colors mb-2 line-clamp-2 min-h-[2.5rem]">
+      <h3 className="font-display font-bold text-[var(--text-primary)] group-hover:text-[var(--accent-strong)] transition-colors mb-2 line-clamp-2 min-h-[2.5rem]">
         {exp.title}
       </h3>
       <div className="flex items-center gap-2 mb-2">
@@ -167,11 +166,13 @@ export default async function HomePage() {
   ]);
   // When a race has moved (Bahrain GP → Sepang), its stored copy, circuit
   // image, sessions and gap windows describe the old venue: don't show them.
-  const venueMoved = !!calendarEntry(activeRaceSlug)?.venue;
+  const venueMoved = !!race?.venueMoved;
   const raceContent = venueMoved ? null : storedContent;
   const live = hasLiveExperiences(activeRaceSlug);
+  // Between seasons, until F1 publishes the next calendar, the last race stays active.
+  const seasonOver = isRaceOver(race ?? { slug: activeRaceSlug, raceDate: '9999-12-31' }, new Date());
   // Track image: stored for the race, or the new venue's (Sepang) once added to /public/tracks.
-  const trackImage = raceContent?.circuitMapSrc ?? existingPublicFile(calendarEntry(activeRaceSlug)?.venue?.trackImage);
+  const trackImage = raceContent?.circuitMapSrc ?? existingPublicFile(race?.trackImage);
   // No image file: draw the layout from OpenStreetMap (cached 30 days).
   const trackSvg = !trackImage && race ? await getTrackSvg(race) : null;
 
@@ -262,12 +263,11 @@ export default async function HomePage() {
   }
 
   const heroDateRange = formatRaceDates(race.raceDate, sessions.some(s => s.dayOfWeek === 'Thursday'));
-  const expBasePath = `/races/${activeRaceSlug}/experiences`;
+  const expBasePath = `/races/${raceKey(activeRaceSlug)}/experiences`;
   // "02 – 04 OCT": first to last day of the weekend (calendar dates when known).
   const stripDates = (() => {
-    const cal = calendarEntry(activeRaceSlug);
     const end = new Date(`${race.raceDate}T00:00:00Z`);
-    const start = cal ? new Date(`${cal.startDate}T00:00:00Z`) : new Date(end.getTime() - 2 * 86_400_000);
+    const start = race.startDate ? new Date(`${race.startDate}T00:00:00Z`) : new Date(end.getTime() - 2 * 86_400_000);
     const dd = (d: Date) => String(d.getUTCDate()).padStart(2, '0');
     const mon = (d: Date) => d.toLocaleDateString('en-GB', { month: 'short', timeZone: 'UTC' }).toUpperCase();
     return start.getUTCMonth() === end.getUTCMonth()
@@ -317,7 +317,7 @@ export default async function HomePage() {
   }));
 
   // Stored FAQs, or the ones written in code for a moved venue (Sepang).
-  const HOME_FAQ = raceContent?.faqItems ?? codeFaqs(race.slug) ?? [];
+  const HOME_FAQ = raceContent?.faqItems ?? (race.rolledFrom ? null : codeFaqs(race.slug)) ?? [];
 
   // Structured Data
   const websiteLd = {
@@ -370,14 +370,14 @@ export default async function HomePage() {
             raceName={race.name}
             note={race.venueNote}
             renderedAt={new Date().toISOString()}
-            href={`/races/${activeRaceSlug}/schedule`}
+            href={`/races/${raceKey(activeRaceSlug)}/schedule`}
             timezone={race.timezone}
           />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 items-center md:min-h-[420px]">
             <div className="flex flex-col justify-center pt-8 pb-2 md:py-8">
               <div className="flex flex-col gap-1.5 mb-5">
                 <span className="px-2 py-0.5 rounded-full bg-[var(--accent-red)] text-white text-[10px] font-bold tracking-wider w-fit">
-                  NEXT RACE
+                  {seasonOver ? `${race.season} SEASON COMPLETE` : 'NEXT RACE'}
                 </span>
               </div>
 
@@ -401,7 +401,7 @@ export default async function HomePage() {
               <div className="flex flex-wrap gap-3 mb-8 mt-6">
                 {/* The planner is the one thing built around the session times: lead with it. */}
                 <Link
-                  href={`/itinerary?race=${activeRaceSlug}`}
+                  href={`/itinerary?race=${raceKey(activeRaceSlug)}`}
                   className="px-5 py-2.5 bg-[var(--accent-red)] hover:bg-[var(--accent-red-hover)] text-white font-semibold text-sm rounded-full transition-colors whitespace-nowrap"
                 >
                   Plan my race weekend →
@@ -414,12 +414,18 @@ export default async function HomePage() {
                 </Link>
               </div>
 
-              <div>
-                <p className="text-xs font-medium uppercase-label text-[var(--text-secondary)] mb-3 tracking-widest">
-                  LIGHTS OUT IN
+              {seasonOver ? (
+                <p className="text-sm text-[var(--text-secondary)] max-w-sm rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] px-4 py-3">
+                  The {race.season} season is over. The {race.season + 1} calendar appears here as soon as F1 publishes it, with every race page moving on to its new dates.
                 </p>
-                <RaceCountdown targetDate={fp1IsoString} />
-              </div>
+              ) : (
+                <div>
+                  <p className="text-xs font-medium uppercase-label text-[var(--text-secondary)] mb-3 tracking-widest">
+                    LIGHTS OUT IN
+                  </p>
+                  <RaceCountdown targetDate={fp1IsoString} />
+                </div>
+              )}
             </div>
 
             <div className="flex flex-col gap-4">
@@ -440,7 +446,7 @@ export default async function HomePage() {
                 circuitName={race.circuitName}
                 tzLabel={tzLabel}
                 timezone={race.timezone}
-                scheduleHref={`/races/${activeRaceSlug}/schedule`}
+                scheduleHref={`/races/${raceKey(activeRaceSlug)}/schedule`}
               />
             </div>
           </div>
@@ -491,7 +497,7 @@ export default async function HomePage() {
                 : `Curated for the ${race.city} Grand Prix weekend — activities matched to every session gap.`)}
             </p>
           </div>
-          <Link href={expBasePath} className="text-sm font-medium text-[var(--accent-teal)] hover:text-[var(--text-primary)] transition-colors shrink-0 mt-1">
+          <Link href={expBasePath} className="text-sm font-medium text-[var(--accent-strong)] hover:text-[var(--text-primary)] transition-colors shrink-0 mt-1">
             View all →
           </Link>
         </div>
@@ -500,8 +506,9 @@ export default async function HomePage() {
           <NearbyFeed
             compact
             pageSize={6}
-            cards={feed.cards}
-            excludeKeys={feed.picks.map((p) => p.key)}
+            // Only what the home list shows (picks are skipped): keeps the page light.
+            cards={feed.cards.filter((c) => !feed.picks.some((p) => p.key === c.key)).slice(0, 6)}
+            totalCount={feed.cards.length}
             showMap={false}
             raceSlug={activeRaceSlug}
             circuit={{ lat: race.circuitLat, lng: race.circuitLng, name: race.circuitName }}
@@ -531,7 +538,7 @@ export default async function HomePage() {
           <p className="text-xs font-medium uppercase-label text-[var(--text-secondary)] tracking-widest">
             {race.season} SEASON · {racesLeft} {racesLeft === 1 ? 'RACE' : 'RACES'} TO GO
           </p>
-          <Link href="/f1-2026" className="text-xs font-medium text-[var(--accent-teal)] hover:text-[var(--text-primary)] transition-colors">
+          <Link href="/f1-2026" className="text-xs font-medium text-[var(--accent-strong)] hover:text-[var(--text-primary)] transition-colors">
             Full calendar →
           </Link>
         </div>
@@ -541,7 +548,7 @@ export default async function HomePage() {
               r.active ? 'border-[var(--accent-red)]/60 bg-[var(--accent-red)]/8' : 'border-[var(--border-subtle)]'
             }`;
             return (
-              <Link key={r.slug} href={`/races/${r.slug}`} className={tileClass}>
+              <Link key={r.slug} href={`/races/${raceKey(r.slug)}`} className={tileClass}>
                 <span className="text-lg leading-none">{r.flag}</span>
                 <span className={`text-[10px] font-bold uppercase-label tracking-wider ${r.active ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}>
                   {r.short}
@@ -574,7 +581,7 @@ export default async function HomePage() {
           days={exploreDays}
           expBasePath={expBasePath}
           tzLabel={tzLabel}
-          scheduleHref={`/races/${activeRaceSlug}/schedule`}
+          scheduleHref={`/races/${raceKey(activeRaceSlug)}/schedule`}
         />
       )}
 

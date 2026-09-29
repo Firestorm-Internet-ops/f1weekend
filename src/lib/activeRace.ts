@@ -1,5 +1,5 @@
-import { getActiveRace, getAllRaces } from '@/services/race.service';
-import { calendarEntry, isRaceOver } from '@/data/calendar-2026';
+import { getActiveRace, getAllRaces, getRaceBySlug, resolveRaceSlug } from '@/services/race.service';
+import { isRaceOver } from '@/data/calendar-2026';
 
 // ── Active Race Override ──────────────────────────────────────────────────────
 // To pin the site to a specific race (e.g. for a launch or preview), set
@@ -18,9 +18,9 @@ export async function getActiveRaceSlug(): Promise<string> {
   // 1. Environment override — only while that race is still to come, so a
   //    forgotten pin can't hold the site on a finished race.
   const pinned = process.env.ACTIVE_RACE_SLUG;
-  const pinnedCal = pinned ? calendarEntry(pinned) : undefined;
-  if (pinned && !(pinnedCal && isRaceOver(pinnedCal, new Date()))) {
-    return pinned;
+  if (pinned) {
+    const pinnedRace = await getRaceBySlug((await resolveRaceSlug(pinned)) ?? pinned);
+    if (pinnedRace && !isRaceOver(pinnedRace, new Date())) return pinnedRace.slug;
   }
 
   // 2. DB query for active/closest upcoming

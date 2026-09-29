@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getAllRaces } from '@/services/race.service';
 import { formatRaceDates } from '@/lib/utils';
+import { raceKey } from '@/lib/race-url';
 
 export const dynamic = 'force-dynamic';
 
@@ -99,7 +100,7 @@ export default async function F12026Page() {
       '@type': 'ListItem',
       position: i + 1,
       name: race.name,
-      item: race.slug ? `https://f1weekend.co/races/${race.slug}` : `https://f1weekend.co/f1-2026`,
+      item: race.slug ? `https://f1weekend.co/races/${raceKey(race.slug)}` : `https://f1weekend.co/f1-2026`,
     })),
   };
 
@@ -134,7 +135,7 @@ export default async function F12026Page() {
             </p>
             <h1 className="font-display font-black text-4xl sm:text-5xl text-[var(--text-primary)] uppercase-heading leading-none mb-4">
               The 2026 F1 Season<br />
-              <span className="text-[var(--accent-teal)]">Travel Guide</span>
+              <span className="text-[var(--accent-strong)]">Travel Guide</span>
             </h1>
             <p className="text-[var(--text-secondary)] text-lg max-w-xl">
               23 races. 23 cities. One insane year. Your complete guide to following Formula 1 around the world.
@@ -168,18 +169,18 @@ export default async function F12026Page() {
               {guideRaces.map((race) => (
                 <Link
                   key={race.slug}
-                  href={`/races/${race.slug}`}
-                  className="group p-5 rounded-xl border border-[var(--accent-teal)]/30 bg-[var(--bg-secondary)] hover:border-[var(--accent-teal)]/70 hover:bg-[var(--bg-surface)] transition-all"
+                  href={`/races/${raceKey(race.slug)}`}
+                  className="group p-5 rounded-xl border border-[var(--accent-strong)]/30 bg-[var(--bg-secondary)] hover:border-[var(--accent-strong)]/70 hover:bg-[var(--bg-surface)] transition-all"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-2xl">{race.flag}</span>
-                        <span className="text-xs font-bold uppercase-label text-[var(--accent-teal)]">
+                        <span className="text-xs font-bold uppercase-label text-[var(--accent-strong)]">
                           Round {race.round}
                         </span>
                       </div>
-                      <h3 className="font-display font-bold text-[var(--text-primary)] group-hover:text-[var(--accent-teal)] transition-colors">
+                      <h3 className="font-display font-bold text-[var(--text-primary)] group-hover:text-[var(--accent-strong)] transition-colors">
                         {race.name}
                       </h3>
                       <p className="text-sm text-[var(--text-secondary)] mt-0.5">
@@ -189,7 +190,7 @@ export default async function F12026Page() {
                         {race.dates}, 2026
                       </p>
                     </div>
-                    <span className="text-xs font-bold px-3 py-1 rounded-full bg-[var(--accent-teal)]/15 text-[var(--accent-teal)] whitespace-nowrap mt-1">
+                    <span className="text-xs font-bold px-3 py-1 rounded-full bg-[var(--accent-strong)]/15 text-[var(--accent-strong)] whitespace-nowrap mt-1">
                       Full Guide →
                     </span>
                   </div>
@@ -221,8 +222,8 @@ export default async function F12026Page() {
                   </div>
                   {race.hasGuide && race.slug ? (
                     <Link
-                      href={`/races/${race.slug}`}
-                      className="shrink-0 text-xs font-bold px-3 py-1.5 rounded-full bg-[var(--accent-teal)]/15 text-[var(--accent-teal)] hover:bg-[var(--accent-teal)]/25 transition-colors whitespace-nowrap"
+                      href={`/races/${raceKey(race.slug)}`}
+                      className="shrink-0 text-xs font-bold px-3 py-1.5 rounded-full bg-[var(--accent-strong)]/15 text-[var(--accent-strong)] hover:bg-[var(--accent-strong)]/25 transition-colors whitespace-nowrap"
                     >
                       Guide →
                     </Link>
@@ -251,7 +252,7 @@ export default async function F12026Page() {
                   key={q}
                   className="group rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] overflow-hidden"
                 >
-                  <summary className="px-5 py-4 cursor-pointer font-medium text-[var(--text-primary)] list-none flex items-center justify-between gap-3 hover:text-[var(--accent-teal)] transition-colors">
+                  <summary className="px-5 py-4 cursor-pointer font-medium text-[var(--text-primary)] list-none flex items-center justify-between gap-3 hover:text-[var(--accent-strong)] transition-colors">
                     <span>{q}</span>
                     <span className="text-[var(--text-secondary)] group-open:rotate-180 transition-transform shrink-0">▾</span>
                   </summary>
@@ -272,7 +273,7 @@ export default async function F12026Page() {
               {F1_2026.filter(r => r.isAvailable && r.raceEnd && new Date(r.raceEnd) >= today).slice(0, 3).map(race => (
                 <Link
                   key={race.slug}
-                  href={`/itinerary?race=${race.slug}`}
+                  href={`/itinerary?race=${raceKey(race.slug)}`}
                   className="px-6 py-3 rounded-xl bg-[var(--accent-red)] hover:bg-[var(--accent-red-hover)] text-white font-display font-bold transition-colors"
                 >
                   {race.flag} Plan {race.city}

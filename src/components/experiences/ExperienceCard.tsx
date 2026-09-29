@@ -5,6 +5,7 @@ import Image from 'next/image';
 import type { Experience } from '@/types/experience';
 import { CATEGORY_COLORS, CATEGORY_LABELS } from '@/lib/constants/categories';
 import { formatPrice } from '@/lib/utils';
+import Icon from '@/components/ui/Icon';
 
 interface Props {
   experience: Experience;
@@ -100,7 +101,7 @@ export default function ExperienceCard({ experience, onBook, loading, index = 0,
       <div className="p-5 pt-3">
         {/* Title (links to detail page) */}
         <Link href={href}>
-          <h3 className="font-display font-bold text-[var(--text-primary)] text-xl leading-snug mb-2 hover:text-[var(--accent-teal)] transition-colors">
+          <h3 className="font-display font-bold text-[var(--text-primary)] text-xl leading-snug mb-2 hover:text-[var(--accent-strong)] transition-colors">
             {experience.title}
           </h3>
         </Link>
@@ -112,7 +113,7 @@ export default function ExperienceCard({ experience, onBook, loading, index = 0,
 
         {/* Meta */}
         <div className="flex items-center gap-4 text-base text-[var(--text-secondary)] mb-1">
-          <span className="mono-data">⏱ {experience.durationLabel}</span>
+          <span className="mono-data"><Icon name="clock" size={14} className="inline -mt-0.5 mr-1" />{experience.durationLabel}</span>
           <span className="mono-data">
             ★ {experience.rating.toFixed(1)}{' '}
             <span className="text-sm">({experience.reviewCount.toLocaleString()})</span>

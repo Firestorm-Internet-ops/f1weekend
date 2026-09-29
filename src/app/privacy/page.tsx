@@ -64,7 +64,7 @@ export default function PrivacyPage() {
 
         {/* Hero */}
         <div className="mb-10">
-          <p className="text-xs font-medium uppercase-label text-[var(--accent-teal)] tracking-widest mb-3">
+          <p className="text-xs font-medium uppercase-label text-[var(--accent-strong)] tracking-widest mb-3">
             LEGAL
           </p>
           <h1 className="font-display font-black text-4xl sm:text-5xl text-[var(--text-primary)] uppercase-heading leading-none mb-4">
@@ -91,7 +91,7 @@ export default function PrivacyPage() {
               <ul className="space-y-3">
                 {section.content.map((item, j) => (
                   <li key={j} className="flex gap-3 text-[var(--text-secondary)] leading-relaxed">
-                    <span className="text-[var(--accent-teal)] mt-1 shrink-0">—</span>
+                    <span className="text-[var(--accent-strong)] mt-1 shrink-0">—</span>
                     <span>{item}</span>
                   </li>
                 ))}
@@ -111,14 +111,14 @@ export default function PrivacyPage() {
               Privacy questions or data deletion requests:{' '}
               <a
                 href="mailto:help@firestorm-internet.com"
-                className="text-[var(--text-primary)] hover:text-[var(--accent-teal)] transition-colors underline underline-offset-2"
+                className="text-[var(--text-primary)] hover:text-[var(--accent-strong)] transition-colors underline underline-offset-2"
               >
                 help@firestorm-internet.com
               </a>
               {' '}or visit our{' '}
               <Link
                 href="/contact"
-                className="text-[var(--text-primary)] hover:text-[var(--accent-teal)] transition-colors underline underline-offset-2"
+                className="text-[var(--text-primary)] hover:text-[var(--accent-strong)] transition-colors underline underline-offset-2"
               >
                 Contact page
               </Link>.

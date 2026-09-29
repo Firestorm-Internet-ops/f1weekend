@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
 import type { Race } from '@/types/race';
+import { raceKey } from '@/lib/race-url';
+import Icon from '@/components/ui/Icon';
 
 function extractRaceSlug(pathname: string): string | null {
   const match = pathname.match(/^\/races\/([^/]+)/);
@@ -26,13 +28,15 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
   }, []);
 
   // Unknown slugs (a 404 page) fall back to the current race, so nav links still work.
+  // URLs carry the race key ("bahrain"); old ones the full slug. Either picks the race.
   const urlSlug = extractRaceSlug(pathname);
-  const raceSlug = urlSlug && races.some((r) => r.slug === urlSlug) ? urlSlug : null;
+  const urlRace = urlSlug ? races.find((r) => r.slug === urlSlug || raceKey(r.slug) === urlSlug) : undefined;
+  const raceSlug = urlRace?.slug ?? null;
   const displayRaceSlug = raceSlug ?? defaultRaceSlug;
   const displayRace = races.find(r => r.slug === displayRaceSlug) ?? races[0] ?? null;
 
   // Raw sub-route (everything after /races/[slug])
-  const rawSubRoute = raceSlug ? pathname.slice(`/races/${raceSlug}`.length) : '';
+  const rawSubRoute = raceSlug ? pathname.slice(`/races/${raceKey(raceSlug)}`.length) : '';
   // When on an experience detail page (/experiences/[slug]), collapse to /experiences
   // so switching races lands on the list, not a non-existent slug on the new race.
   // Exception: /experiences/map is a shared page that should be preserved.
@@ -54,21 +58,21 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
   // Active detection: matches both old flat routes and new /races/[slug]/ routes
   const isScheduleActive =
     pathname === '/schedule' ||
-    (!!raceSlug && pathname.startsWith(`/races/${raceSlug}/schedule`));
+    (!!raceSlug && pathname.startsWith(`/races/${raceKey(raceSlug)}/schedule`));
   const isExperiencesActive =
     pathname.startsWith('/experiences') ||
-    (!!raceSlug && pathname.startsWith(`/races/${raceSlug}/experiences`));
+    (!!raceSlug && pathname.startsWith(`/races/${raceKey(raceSlug)}/experiences`));
   const isGettingThereActive =
     pathname === '/getting-there' ||
-    (!!raceSlug && pathname.startsWith(`/races/${raceSlug}/getting-there`));
+    (!!raceSlug && pathname.startsWith(`/races/${raceKey(raceSlug)}/getting-there`));
   const isTipsActive =
-    !!raceSlug && pathname.startsWith(`/races/${raceSlug}/tips`);
+    !!raceSlug && pathname.startsWith(`/races/${raceKey(raceSlug)}/tips`);
 
   // Nav link targets — keep users in their current race context
-  const scheduleHref = `/races/${displayRaceSlug}/schedule`;
-  const experiencesHref = `/races/${displayRaceSlug}/experiences`;
-  const gettingThereHref = `/races/${displayRaceSlug}/getting-there`;
-  const tipsHref = `/races/${displayRaceSlug}/tips`;
+  const scheduleHref = `/races/${raceKey(displayRaceSlug)}/schedule`;
+  const experiencesHref = `/races/${raceKey(displayRaceSlug)}/experiences`;
+  const gettingThereHref = `/races/${raceKey(displayRaceSlug)}/getting-there`;
+  const tipsHref = `/races/${raceKey(displayRaceSlug)}/tips`;
   // Races without tips content have no tips page (404): don't link to it.
   const showTips = displayRace?.hasTips !== false;
 
@@ -150,7 +154,7 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
                     return (
                       <Link
                         key={race.slug}
-                        href={scrolled && subRoute ? `/races/${race.slug}${subRoute}` : `/races/${race.slug}`}
+                        href={scrolled && subRoute ? `/races/${raceKey(race.slug)}${subRoute}` : `/races/${raceKey(race.slug)}`}
                         onClick={() => setRaceDropdownOpen(false)}
                         className={`flex items-center gap-3 px-4 py-2.5 hover:bg-[var(--bg-secondary)] transition-colors ${
                           race.slug === displayRaceSlug ? 'bg-[var(--bg-secondary)]' : ''
@@ -162,7 +166,7 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
                           <p className="text-xs text-[var(--text-secondary)]">{race.city} · {datesStr}</p>
                         </div>
                         {race.slug === displayRaceSlug && (
-                          <span className="text-xs text-[var(--accent-teal)] font-bold">✓</span>
+                          <span className="text-xs text-[var(--accent-strong)] font-bold">✓</span>
                         )}
                       </Link>
                     );
@@ -174,7 +178,7 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
                       onClick={() => setRaceDropdownOpen(false)}
                       className="flex items-center gap-3 px-4 py-2.5 hover:bg-[var(--bg-secondary)] transition-colors"
                     >
-                      <span className="text-lg">📅</span>
+                      <Icon name="calendar" size={18} className="text-[var(--text-secondary)]" />
                       <p className="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
                         View Full 2026 Calendar →
                       </p>
@@ -209,7 +213,7 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
                 href={scheduleHref}
                 className={`text-sm font-medium whitespace-nowrap transition-colors ${
                   isScheduleActive
-                    ? 'text-[var(--accent-teal)]'
+                    ? 'text-[var(--accent-strong)]'
                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                 }`}
               >
@@ -219,7 +223,7 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
                 href={experiencesHref}
                 className={`text-sm font-medium whitespace-nowrap transition-colors ${
                   isExperiencesActive
-                    ? 'text-[var(--accent-teal)]'
+                    ? 'text-[var(--accent-strong)]'
                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                 }`}
               >
@@ -229,7 +233,7 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
                 href={gettingThereHref}
                 className={`text-sm font-medium whitespace-nowrap transition-colors ${
                   isGettingThereActive
-                    ? 'text-[var(--accent-teal)]'
+                    ? 'text-[var(--accent-strong)]'
                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                 }`}
               >
@@ -239,7 +243,7 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
                 href={tipsHref}
                 className={`text-sm font-medium whitespace-nowrap transition-colors ${
                   isTipsActive
-                    ? 'text-[var(--accent-teal)]'
+                    ? 'text-[var(--accent-strong)]'
                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                 }`}
               >
@@ -249,7 +253,7 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
                 href="/f1-2026"
                 className={`text-sm font-medium whitespace-nowrap transition-colors ${
                   pathname === '/f1-2026'
-                    ? 'text-[var(--accent-teal)]'
+                    ? 'text-[var(--accent-strong)]'
                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                 }`}
               >
@@ -259,7 +263,7 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
 
             {/* Itinerary — desktop only (moved to hamburger on mobile) */}
             <Link
-              href={`/itinerary?race=${displayRaceSlug}`}
+              href={`/itinerary?race=${raceKey(displayRaceSlug)}`}
               className="hidden lg:flex text-sm font-medium px-4 py-1.5 bg-[var(--accent-red)] hover:bg-[var(--accent-red-hover)] text-white rounded-full transition-colors whitespace-nowrap"
             >
               Plan my weekend
@@ -286,7 +290,7 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
               onClick={() => setIsOpen(false)}
               className={`text-sm font-medium py-2 transition-colors ${
                 isScheduleActive
-                  ? 'text-[var(--accent-teal)]'
+                  ? 'text-[var(--accent-strong)]'
                   : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}
             >
@@ -297,7 +301,7 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
               onClick={() => setIsOpen(false)}
               className={`text-sm font-medium py-2 transition-colors ${
                 isExperiencesActive
-                  ? 'text-[var(--accent-teal)]'
+                  ? 'text-[var(--accent-strong)]'
                   : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}
             >
@@ -308,7 +312,7 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
               onClick={() => setIsOpen(false)}
               className={`text-sm font-medium py-2 transition-colors ${
                 isGettingThereActive
-                  ? 'text-[var(--accent-teal)]'
+                  ? 'text-[var(--accent-strong)]'
                   : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}
             >
@@ -319,7 +323,7 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
               onClick={() => setIsOpen(false)}
               className={`text-sm font-medium py-2 transition-colors ${
                 isTipsActive
-                  ? 'text-[var(--accent-teal)]'
+                  ? 'text-[var(--accent-strong)]'
                   : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}
             >
@@ -330,11 +334,11 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
               onClick={() => setIsOpen(false)}
               className="text-sm font-medium py-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
             >
-              📅 2026 Calendar
+              <Icon name="calendar" size={16} className="inline -mt-0.5 mr-1.5" />2026 Calendar
             </Link>
             <div className="pt-2 mt-1 border-t border-[var(--border-subtle)]">
               <Link
-                href={`/itinerary?race=${displayRaceSlug}`}
+                href={`/itinerary?race=${raceKey(displayRaceSlug)}`}
                 onClick={() => setIsOpen(false)}
                 className="block text-sm font-medium py-2.5 px-4 bg-[var(--accent-red)] hover:bg-[var(--accent-red-hover)] text-white rounded-lg transition-colors text-center"
               >

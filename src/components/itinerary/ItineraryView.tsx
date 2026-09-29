@@ -138,8 +138,8 @@ export default function ItineraryView({ itinerary, experiences, tzLabel }: Props
                             <span className="block font-display font-bold text-[var(--text-primary)] text-xl">All {allFeedSuggestions.length} suggestions</span>
                             <span className="block text-sm text-[var(--text-secondary)] mt-1">Every idea from this plan in one list — pick the ones you like</span>
                         </span>
-                        <span className="text-sm text-[var(--accent-teal)] group-open:hidden">Show ▾</span>
-                        <span className="text-sm text-[var(--accent-teal)] hidden group-open:inline">Hide ▴</span>
+                        <span className="text-sm text-[var(--accent-strong)] group-open:hidden">Show ▾</span>
+                        <span className="text-sm text-[var(--accent-strong)] hidden group-open:inline">Hide ▴</span>
                     </summary>
                     <div className="space-y-3 mt-5">
                         {allFeedSuggestions.map(fs => (
@@ -212,7 +212,7 @@ function GapBlock({ slot, expMap, raceSlug }: { slot: GapSlot; expMap: Record<nu
 
     return (
         <div>
-            <p className="text-sm text-[var(--accent-teal)] font-medium mb-2">
+            <p className="text-sm text-[var(--accent-strong)] font-medium mb-2">
                 ✦ Free Window
             </p>
             <p className="text-base text-[var(--text-secondary)] mb-3">{slot.windowLabel}</p>
@@ -242,7 +242,7 @@ function FeedSuggestionCard({ s, raceSlug }: { s: FeedSuggestion; raceSlug: stri
         <div className="flex gap-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-secondary)] p-3">
             {s.imageUrl && (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={s.imageUrl} alt="" loading="lazy" className="w-20 h-20 rounded-md object-cover shrink-0 bg-[var(--bg-tertiary)]" />
+                <img src={s.imageUrl} alt={s.title} loading="lazy" className="w-20 h-20 rounded-md object-cover shrink-0 bg-[var(--bg-tertiary)]" />
             )}
             <div className="min-w-0 flex-1">
                 <p className="font-semibold text-[var(--text-primary)] text-sm leading-snug line-clamp-2">{s.title}</p>
@@ -267,7 +267,7 @@ function ExperienceCard({ exp }: { exp: Experience }) {
                     {exp.imageEmoji} {exp.title}
                 </p>
                 {exp.distanceKm != null && (
-                    <span className="text-sm mono-data text-[var(--accent-teal)] bg-[var(--accent-teal-muted)] px-2 py-0.5 rounded-full shrink-0">
+                    <span className="text-sm mono-data text-[var(--accent-strong)] bg-[var(--accent-strong-muted)] px-2 py-0.5 rounded-full shrink-0">
                         {exp.distanceKm < 10
                             ? `${exp.distanceKm.toFixed(1)} km`
                             : `${Math.round(exp.distanceKm)} km`

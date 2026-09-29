@@ -7,6 +7,11 @@ import RaceSwitcher from '@/components/race/RaceSwitcher';
 import { getRaceBySlug, getSessionsByRace, getRaceContent, getAvailableRaces, getWindowsByRace } from '@/services/race.service';
 import { getScheduleByRace, scheduleFromSessions } from '@/services/schedule.service';
 import { getTimezoneAbbr } from '@/lib/utils';
+import { raceKey } from '@/lib/race-url';
+import { resolveRaceSlug } from '@/services/race.service';
+import PageByline from '@/components/race/PageByline';
+import { raceEventLd, webPageLd } from '@/lib/structured-data';
+import { timetableFor } from '@/data/timetables-2026';
 
 export const revalidate = 3600; // 1 hour
 
@@ -22,13 +27,14 @@ function offsetDate(raceDateStr: string, days: number): string {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { raceSlug } = await params;
+  const { raceSlug: raceParam } = await params;
+  const raceSlug = (await resolveRaceSlug(raceParam)) ?? raceParam;
   const race = await getRaceBySlug(raceSlug);
   if (!race) return {};
 
   const title = `${race.name} Schedule | F1 Weekend`;
   const description = `Full ${race.season} ${race.name} weekend schedule — all sessions, support races and events at ${race.circuitName}.`;
-  const canonical = `https://f1weekend.co/races/${raceSlug}/schedule`;
+  const canonical = `https://f1weekend.co/races/${raceKey(raceSlug)}/schedule`;
 
   return {
     title: { absolute: title },
@@ -55,7 +61,8 @@ function scheduleIntro(race: { season: number; name: string; circuitName: string
 }
 
 export default async function SchedulePage({ params }: Props) {
-  const { raceSlug } = await params;
+  const { raceSlug: raceParam } = await params;
+  const raceSlug = (await resolveRaceSlug(raceParam)) ?? raceParam;
   const [race, raceContent, availableRaces] = await Promise.all([
     getRaceBySlug(raceSlug),
     getRaceContent(raceSlug),
@@ -64,16 +71,13 @@ export default async function SchedulePage({ params }: Props) {
   if (!race) notFound();
 
   const [storedSchedule, sessions, windows] = await Promise.all([
-    getScheduleByRace(race.id, race.raceDate, race.slug),
+    // Stored timetables (support races, events) are for the stored season; next season shows F1's sessions.
+    race.rolledFrom ? Promise.resolve([]) : getScheduleByRace(race.id, race.raceDate, race.slug),
     getSessionsByRace(race.id),
     getWindowsByRace(race.id),
   ]);
   const schedule = scheduleFromSessions(storedSchedule, sessions);
 
-  const hasThursdayFreeDay = raceContent?.hasThursdayFreeDay ?? false;
-  const firstDayOffset = hasThursdayFreeDay ? -3 : -2;
-  const firstDate = offsetDate(race.raceDate, firstDayOffset);
-  const sunDate = race.raceDate;
 
   // Map IANA timezone to UTC offset string for schema
   function tzToOffset(tz: string): string {
@@ -90,38 +94,28 @@ export default async function SchedulePage({ params }: Props) {
   }
   const tzOffset = tzToOffset(race.timezone);
 
-  const scheduleLd = {
-    '@context': 'https://schema.org',
-    '@type': 'SportsEvent',
-    name: race.name,
-    startDate: `${firstDate}T10:00:00${tzOffset}`,
-    endDate: `${sunDate}T17:00:00${tzOffset}`,
-    location: {
-      '@type': 'Place',
-      name: race.circuitName,
-      address: { '@type': 'PostalAddress', addressLocality: race.city, addressCountry: race.countryCode },
-    },
-    subEvent: sessions
-      .filter(s => ['practice', 'qualifying', 'sprint', 'race'].includes(s.sessionType))
-      .map(s => {
-        const OFFSETS: Record<string, number> = { Thursday: -3, Friday: -2, Saturday: -1, Sunday: 0 };
-        const dayDate = offsetDate(race.raceDate, OFFSETS[s.dayOfWeek] ?? 0);
-        return {
-          '@type': 'SportsEvent',
-          name: s.name,
-          startDate: `${dayDate}T${s.startTime.slice(0, 5)}:00${tzOffset}`,
-          endDate: `${dayDate}T${s.endTime.slice(0, 5)}:00${tzOffset}`,
-        };
-      }),
-  };
+  // The weekend as one SportsEvent, each F1 session a sub-event (track time).
+  const scheduleLd = raceEventLd(race, sessions
+    .filter(s => ['practice', 'qualifying', 'sprint', 'race'].includes(s.sessionType))
+    .map(s => {
+      const OFFSETS: Record<string, number> = { Thursday: -3, Friday: -2, Saturday: -1, Sunday: 0 };
+      const dayDate = offsetDate(race.raceDate, OFFSETS[s.dayOfWeek] ?? 0);
+      return {
+        '@type': 'SportsEvent',
+        name: `${race.name} ${s.name}`,
+        startDate: `${dayDate}T${s.startTime.slice(0, 5)}:00${tzOffset}`,
+        endDate: `${dayDate}T${s.endTime.slice(0, 5)}:00${tzOffset}`,
+      };
+    }));
 
   return (
     <div className="min-h-screen">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(scheduleLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(webPageLd(`/races/${raceKey(raceSlug)}/schedule`, `${race.name} ${race.season} schedule`)) }} />
       <section className="max-w-3xl mx-auto px-4 pt-24 pb-16">
         <Breadcrumb items={[
           { label: 'Home', href: '/' },
-          { label: race.city, href: `/races/${raceSlug}` },
+          { label: race.city, href: `/races/${raceKey(raceSlug)}` },
           { label: 'Schedule' },
         ]} />
         <p className="text-xs uppercase-label text-[var(--accent-red)] mb-3 tracking-widest">
@@ -133,9 +127,17 @@ export default async function SchedulePage({ params }: Props) {
         <h1 className="font-display font-black text-4xl md:text-5xl text-[var(--text-primary)] uppercase-heading mb-2">
           Weekend Schedule
         </h1>
-        <p className="text-[var(--text-secondary)] text-sm mb-8">
+        <p className="text-[var(--text-secondary)] text-sm mb-2">
           All times local ({race.timezone}) · Subject to change
         </p>
+        <PageByline
+          className="mb-8"
+          sources={[
+            timetableFor(race.slug) && !race.rolledFrom
+              ? { label: 'Official F1 event timetable', url: 'https://www.formula1.com/en/racing' }
+              : { label: 'Formula 1 timetable (Jolpica F1 API), checked every 12 hours', url: 'https://api.jolpi.ca/ergast/f1/' },
+          ]}
+        />
         {raceContent?.scheduleIntro ? (
           <p className="text-[var(--text-secondary)] text-base leading-relaxed max-w-2xl mb-8">
             {raceContent.scheduleIntro}
@@ -164,7 +166,7 @@ export default async function SchedulePage({ params }: Props) {
             <div className="space-y-6">
               {raceContent.sessionGapCopy.map((gap) => (
                 <div key={gap.windowSlug} className="p-6 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
-                  <p className="text-xs font-medium uppercase-label text-[var(--accent-teal)] mb-2">
+                  <p className="text-xs font-medium uppercase-label text-[var(--accent-strong)] mb-2">
                     {windows.find(w => w.slug === gap.windowSlug)?.label ?? 'GAP'}
                   </p>
                   <h3 className="font-display font-bold text-[var(--text-primary)] text-lg mb-2">{gap.heading}</h3>
@@ -172,7 +174,7 @@ export default async function SchedulePage({ params }: Props) {
                     {gap.copy}
                   </p>
                   <div className="flex flex-wrap gap-3">
-                    <Link href={`/races/${raceSlug}/experiences?window=${gap.windowSlug}`} className="text-xs font-medium text-[var(--accent-teal)] hover:text-[var(--text-primary)] transition-colors">
+                    <Link href={`/races/${raceKey(raceSlug)}/experiences?window=${gap.windowSlug}`} className="text-xs font-medium text-[var(--accent-strong)] hover:text-[var(--text-primary)] transition-colors">
                       Browse experiences for this gap →
                     </Link>
                   </div>
@@ -180,8 +182,8 @@ export default async function SchedulePage({ params }: Props) {
               ))}
             </div>
             <Link
-              href={`/races/${raceSlug}/experiences`}
-              className="inline-block mt-6 text-sm font-medium text-[var(--accent-teal)] hover:text-[var(--text-primary)] transition-colors"
+              href={`/races/${raceKey(raceSlug)}/experiences`}
+              className="inline-block mt-6 text-sm font-medium text-[var(--accent-strong)] hover:text-[var(--text-primary)] transition-colors"
             >
               Browse all {race.city} experiences →
             </Link>

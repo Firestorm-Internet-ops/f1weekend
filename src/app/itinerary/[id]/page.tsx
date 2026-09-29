@@ -2,10 +2,11 @@ import { getTimezoneAbbr } from '@/lib/utils';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getItinerary } from '@/services/itinerary.service';
-import { getRaceBySlug, getRaceById, getActiveRace } from '@/services/race.service';
+import { getRaceById, getActiveRace } from '@/services/race.service';
 import { getExperiencesByRace } from '@/services/experience.service';
 import ItineraryView from '@/components/itinerary/ItineraryView';
 import ItineraryActions from '@/components/itinerary/ItineraryActions';
+import { raceKey } from '@/lib/race-url';
 
 export const dynamic = 'force-dynamic';
 
@@ -58,7 +59,7 @@ export default async function ItineraryDetailPage({ params }: Props) {
       <div className="max-w-2xl mx-auto">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <Link
-            href={itinerary.raceSlug ? `/itinerary?race=${itinerary.raceSlug}` : '/itinerary'}
+            href={itinerary.raceSlug ? `/itinerary?race=${raceKey(itinerary.raceSlug)}` : '/itinerary'}
             className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
           >
             ← Start a new plan

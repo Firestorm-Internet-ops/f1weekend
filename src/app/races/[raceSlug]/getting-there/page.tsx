@@ -8,6 +8,14 @@ import { venueGuide } from '@/data/venue-guides-2026';
 import { timetableFor } from '@/data/timetables-2026';
 import { getRaceBySlug, getSessionsByRace, getAvailableRaces, getRaceContent } from '@/services/race.service';
 import { getTimezoneAbbr } from '@/lib/utils';
+import { raceKey } from '@/lib/race-url';
+import { resolveRaceSlug } from '@/services/race.service';
+import PageByline from '@/components/race/PageByline';
+import Icon from '@/components/ui/Icon';
+import { FeedPicks } from '@/components/experiences/NearbyFeed';
+import { raceEventLd, webPageLd } from '@/lib/structured-data';
+import { hasLiveExperiences } from '@/data/calendar-2026';
+import { getNearbyFeed } from '@/services/nearby-feed.service';
 
 export const revalidate = 604800; // 1 week
 
@@ -16,13 +24,14 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { raceSlug } = await params;
+  const { raceSlug: raceParam } = await params;
+  const raceSlug = (await resolveRaceSlug(raceParam)) ?? raceParam;
   const race = await getRaceBySlug(raceSlug);
   if (!race) return {};
 
   const title = `Getting to ${race.circuitName} — ${race.name} | F1 Weekend`;
   const description = `Transport options, parking tips, and gate times for the ${race.name} at ${race.circuitName}, ${race.city}.`;
-  const canonical = `https://f1weekend.co/races/${raceSlug}/getting-there`;
+  const canonical = `https://f1weekend.co/races/${raceKey(raceSlug)}/getting-there`;
 
   return {
     title: { absolute: title },
@@ -39,7 +48,8 @@ function formatGateTime(time: string, h: number, tzLabel: string): string {
 }
 
 export default async function GettingTherePage({ params }: Props) {
-  const { raceSlug } = await params;
+  const { raceSlug: raceParam } = await params;
+  const raceSlug = (await resolveRaceSlug(raceParam)) ?? raceParam;
   const [race, raceContent, availableRaces] = await Promise.all([
     getRaceBySlug(raceSlug),
     getRaceContent(raceSlug),
@@ -48,7 +58,9 @@ export default async function GettingTherePage({ params }: Props) {
   if (!race) notFound();
 
   // Venues without a stored guide for this year's circuit (Bahrain GP → Sepang) use the one in code.
-  const guide = venueGuide(raceSlug);
+  const guide = race.venueMoved ? venueGuide(raceSlug) : undefined;
+  // Transfers come with the live feed (cached); database-list races have none.
+  const transfers = hasLiveExperiences(race.slug) ? (await getNearbyFeed(race)).transfers ?? [] : [];
   const transport = raceContent?.transportGuide?.options ?? guide?.options ?? [];
   const mapsUrl = raceContent?.transportGuide?.mapsUrl ?? `https://www.google.com/maps/dir/?api=1&destination=${race.circuitLat},${race.circuitLng}&travelmode=transit`;
   const tzLabel = getTimezoneAbbr(race.timezone, new Date(race.raceDate));
@@ -68,7 +80,7 @@ export default async function GettingTherePage({ params }: Props) {
   // First track action each day: the full timetable (support races included)
   // when we have one, otherwise the stored sessions.
   const allSessions = await getSessionsByRace(race.id);
-  const timetable = timetableFor(raceSlug);
+  const timetable = race.rolledFrom ? undefined : timetableFor(raceSlug);
   // Timetable names already carry the series ("Formula Trophy Malaysia · Race 2"): never prefix it twice.
   const label = (series: string, name: string) =>
     series === 'Formula 1' || name.startsWith(series) ? name : `${series} · ${name}`;
@@ -100,26 +112,36 @@ export default async function GettingTherePage({ params }: Props) {
   return (
     <>
       {howToSchema && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(howToSchema) }} />}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(raceEventLd(race)) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(webPageLd(`/races/${raceKey(raceSlug)}/getting-there`, `Getting to ${race.circuitName}`)) }} />
       <div className="min-h-screen pt-24 pb-24 px-4">
         <div className="max-w-3xl mx-auto">
           <div className="mb-10">
             <Breadcrumb items={[
               { label: 'Home', href: '/' },
-              { label: race.city, href: `/races/${raceSlug}` },
+              { label: race.city, href: `/races/${raceKey(raceSlug)}` },
               { label: 'Getting There' },
             ]} />
-            <p className="text-xs font-medium uppercase-label text-[var(--accent-teal)] tracking-widest mb-3">
+            <p className="text-xs font-medium uppercase-label text-[var(--accent-strong)] tracking-widest mb-3">
               VENUE GUIDE
             </p>
             <div className="mb-4">
               <RaceSwitcher currentRace={race} availableRaces={availableRaces} pageType="getting-there" />
             </div>
             <h1 className="font-display font-black text-4xl sm:text-5xl text-[var(--text-primary)] uppercase-heading leading-none mb-4">
-              GETTING<br />THERE
+              Getting there
             </h1>
             <p className="text-[var(--text-secondary)] text-lg leading-relaxed">
               {race.circuitName}, {race.city}
             </p>
+            <PageByline
+              className="mt-3"
+              sources={[
+                ...(guide?.note && race.venueMoved && raceKey(race.slug) === 'bahrain' ? [{ label: 'Sepang International Circuit', url: 'https://www.sepangcircuit.com' }] : []),
+                { label: 'Formula 1 timetable (gate times estimated from it)', url: 'https://api.jolpi.ca/ergast/f1/' },
+                ...(transfers.length > 0 ? [{ label: 'GetYourGuide, Viator and Tiqets listings' }] : []),
+              ]}
+            />
             {raceContent?.howItWorksText ? (
               <p className="text-[var(--text-secondary)] text-base leading-relaxed max-w-2xl mt-4">
                 {raceContent.howItWorksText}
@@ -148,7 +170,7 @@ export default async function GettingTherePage({ params }: Props) {
           {transport.length > 0 && (
             <section className="mb-12">
               <h2 className="font-display font-bold text-xl text-[var(--text-primary)] uppercase-heading mb-6">
-                HOW TO GET THERE
+                How to get there
               </h2>
               <div className="space-y-4">
                 {transport.map((t) => (
@@ -165,7 +187,7 @@ export default async function GettingTherePage({ params }: Props) {
                             <span
                               className="text-[10px] px-2 py-0.5 rounded-full font-medium uppercase tracking-wider"
                               style={{
-                                color: t.bestFor.toLowerCase().includes('recommend') ? 'var(--accent-teal)' : 'var(--accent-red)',
+                                color: t.bestFor.toLowerCase().includes('recommend') ? 'var(--accent-strong)' : 'var(--accent-red)',
                                 backgroundColor: t.bestFor.toLowerCase().includes('recommend') ? 'rgba(45, 212, 191, 0.1)' : 'rgba(255, 59, 48, 0.1)',
                                 border: `1px solid ${t.bestFor.toLowerCase().includes('recommend') ? 'rgba(45, 212, 191, 0.2)' : 'rgba(255, 59, 48, 0.2)'}`,
                               }}
@@ -188,22 +210,32 @@ export default async function GettingTherePage({ params }: Props) {
 
           {mapsUrl && (
             <section className="mb-12">
+              {/* Book the ride itself: the highest-intent moment on the site. */}
+              <FeedPicks
+                picks={transfers.slice(0, 3)}
+                raceSlug={race.slug}
+                cities={[race.city]}
+                id="transfers-heading"
+                heading="Book an airport or circuit transfer"
+                description="Private and shared rides from GetYourGuide, Viator and Tiqets; the price shown is the cheapest site for each."
+                className="mb-8"
+              />
               <a
                 href={mapsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-3 w-full py-4 rounded-xl border border-[var(--accent-teal)] bg-[var(--accent-teal-muted)] text-[var(--accent-teal)] font-display font-bold text-lg hover:bg-[var(--accent-teal)]/20 transition-colors"
+                className="flex items-center justify-center gap-3 w-full py-4 rounded-xl bg-[var(--accent-red)] hover:bg-[var(--accent-red-hover)] text-white font-display font-bold text-lg transition-colors"
               >
-                <span>📍</span>
-                Get Directions in Google Maps
-                <span className="text-sm font-normal opacity-70">↗</span>
+                <Icon name="pin" size={20} />
+                Get directions in Google Maps
+                <span className="text-sm font-normal opacity-80" aria-hidden>↗</span>
               </a>
             </section>
           )}
 
           <section>
             <h2 className="font-display font-bold text-xl text-[var(--text-primary)] uppercase-heading mb-6">
-              ESTIMATED GATE TIMES
+              Estimated gate times
             </h2>
             <p className="text-sm text-[var(--text-secondary)] mb-4">
               Estimated: about 2 hours before the first track action each day. Check your ticket for the official gate times.
@@ -240,8 +272,8 @@ export default async function GettingTherePage({ params }: Props) {
                 : `Curated activities in ${race.city} matched to every F1 session gap in the race weekend schedule.`}
             </p>
             <Link
-              href={`/races/${raceSlug}/experiences`}
-              className="inline-block text-sm font-medium text-[var(--accent-teal)] hover:text-[var(--text-primary)] transition-colors"
+              href={`/races/${raceKey(raceSlug)}/experiences`}
+              className="inline-block text-sm font-medium text-[var(--accent-strong)] hover:text-[var(--text-primary)] transition-colors"
             >
               Browse {race.city} experiences →
             </Link>

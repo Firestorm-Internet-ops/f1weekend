@@ -53,7 +53,7 @@ export default function WeekendGlance({ sessions, raceDate, circuitName, tzLabel
         </div>
         <div className="mt-5 pt-4 border-t border-[var(--border-subtle)] flex items-center justify-between text-xs text-[var(--text-muted)]">
           <span>Track time ({tzLabel})</span>
-          <Link href={scheduleHref} className="font-medium text-[var(--accent-teal)] hover:underline">Full schedule →</Link>
+          <Link href={scheduleHref} className="font-medium text-[var(--accent-strong)] hover:underline">Full schedule →</Link>
         </div>
       </div>
     </div>

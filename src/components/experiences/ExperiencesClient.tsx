@@ -7,6 +7,7 @@ import ExperienceCard from './ExperienceCard';
 import SortSelector, { type SortOption } from './SortSelector';
 import { CATEGORY_LABELS, CATEGORY_COLORS } from '@/lib/constants/categories';
 import { openBooking } from '@/lib/analytics';
+import { raceKey } from '@/lib/race-url';
 
 
 const WINDOW_LABELS: Record<string, string> = {
@@ -102,27 +103,32 @@ export default function ExperiencesClient({
       if (win) params.set('window', win);
       if (newCat) params.set('category', newCat);
       if (newSort !== 'popular') params.set('sort', newSort);
-      const base = `/races/${raceSlug}/experiences`;
+      const base = `/races/${raceKey(raceSlug)}/experiences`;
       return `${base}${params.size ? `?${params.toString()}` : ''}`;
     },
     [raceSlug]
   );
 
+  // Loading starts in the handlers (the effect below only fetches).
   const handleCategoryChange = (cat: string) => {
+    setLoading(true);
     setCategory(cat);
     router.replace(buildUrl(cat, sort, windowSlug), { scroll: false });
   };
 
   const handleSortChange = (s: SortOption) => {
+    setLoading(true);
     setSort(s);
     router.replace(buildUrl(category, s, windowSlug), { scroll: false });
   };
 
   const handleWindowChange = (win: string) => {
+    setLoading(true);
     router.replace(buildUrl(category, sort, win), { scroll: false });
   };
 
   const clearWindow = () => {
+    setLoading(true);
     router.replace(buildUrl(category, sort, ''), { scroll: false });
   };
 
@@ -134,7 +140,6 @@ export default function ExperiencesClient({
     }
     isFirstRender.current = false;
 
-    setLoading(true);
     const params = new URLSearchParams({ race: raceSlug });
     if (windowSlug) params.set('window', windowSlug);
     if (category) params.set('category', category);
@@ -212,7 +217,7 @@ export default function ExperiencesClient({
                   onClick={() => isActive ? clearWindow() : handleWindowChange(w.slug)}
                   className={`flex-shrink-0 px-3 py-1 rounded-full text-xs font-medium transition-all duration-150 border whitespace-nowrap ${
                     isActive
-                      ? 'border-[var(--accent-teal)]/50 bg-[var(--accent-teal-muted)] text-[var(--accent-teal)]'
+                      ? 'border-[var(--accent-strong)]/50 bg-[var(--accent-strong-muted)] text-[var(--accent-strong)]'
                       : 'border-[var(--border-subtle)] text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] hover:border-[var(--border-medium)]'
                   }`}
                 >
@@ -229,7 +234,7 @@ export default function ExperiencesClient({
       {windowSlug && !loading && (
         <p className="text-sm text-[var(--text-secondary)] mb-4">
           {experiences.length} experience{experiences.length !== 1 ? 's' : ''} during{' '}
-          <span className="text-[var(--accent-teal)]">{WINDOW_LABELS[windowSlug] ?? windowSlug}</span>
+          <span className="text-[var(--accent-strong)]">{WINDOW_LABELS[windowSlug] ?? windowSlug}</span>
         </p>
       )}
 
@@ -268,7 +273,7 @@ export default function ExperiencesClient({
               experience={exp}
               onBook={handleBook}
               index={i}
-              detailHref={`/races/${raceSlug}/experiences/${exp.slug}`}
+              detailHref={`/races/${raceKey(raceSlug)}/experiences/${exp.slug}`}
             />
           ))}
         </div>
