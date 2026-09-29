@@ -393,17 +393,18 @@ export default async function HomePage() {
               </p>
 
               <div className="flex flex-wrap gap-3 mb-8 mt-6">
+                {/* The planner is the one thing built around the session times: lead with it. */}
                 <Link
-                  href={expBasePath}
+                  href={`/itinerary?race=${activeRaceSlug}`}
                   className="px-5 py-2.5 bg-[var(--accent-red)] hover:bg-[var(--accent-red-hover)] text-white font-semibold text-sm rounded-full transition-colors whitespace-nowrap"
                 >
-                  Explore {race.city}
+                  Plan my race weekend →
                 </Link>
                 <Link
-                  href="/itinerary"
+                  href={expBasePath}
                   className="px-5 py-2.5 border border-[var(--border-medium)] hover:border-[var(--text-tertiary)] text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] font-semibold text-sm rounded-full transition-colors whitespace-nowrap"
                 >
-                  Build Itinerary
+                  Explore {race.city}
                 </Link>
               </div>
 

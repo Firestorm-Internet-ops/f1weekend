@@ -259,10 +259,10 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
 
             {/* Itinerary — desktop only (moved to hamburger on mobile) */}
             <Link
-              href="/itinerary"
+              href={`/itinerary?race=${displayRaceSlug}`}
               className="hidden lg:flex text-sm font-medium px-4 py-1.5 bg-[var(--accent-red)] hover:bg-[var(--accent-red-hover)] text-white rounded-full transition-colors whitespace-nowrap"
             >
-              Build Itinerary
+              Plan my weekend
             </Link>
 
             {/* Hamburger — mobile only */}
@@ -334,11 +334,11 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
             </Link>
             <div className="pt-2 mt-1 border-t border-[var(--border-subtle)]">
               <Link
-                href="/itinerary"
+                href={`/itinerary?race=${displayRaceSlug}`}
                 onClick={() => setIsOpen(false)}
                 className="block text-sm font-medium py-2.5 px-4 bg-[var(--accent-red)] hover:bg-[var(--accent-red-hover)] text-white rounded-lg transition-colors text-center"
               >
-                Build Itinerary
+                Plan my weekend
               </Link>
             </div>
           </div>

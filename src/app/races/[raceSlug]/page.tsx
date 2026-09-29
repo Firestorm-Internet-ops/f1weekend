@@ -43,6 +43,8 @@ const NAV_ITEMS: { href: string; label: string; icon: string; desc: string }[] =
   { href: 'experiences', label: 'Experiences', icon: '🗺', desc: 'Curated activities for every session gap' },
   { href: 'getting-there', label: 'Getting There', icon: '🚃', desc: 'Transport, parking & gate times' },
   { href: 'tips', label: 'Tips & FAQ', icon: '💡', desc: 'Weather, budget, tips & FAQ' },
+  // Absolute: the planner lives at /itinerary, for this race.
+  { href: '/itinerary', label: 'Plan my weekend', icon: '🧭', desc: 'Your sessions + things to do around them' },
 ];
 
 export default async function RaceLandingPage({ params }: Props) {
@@ -134,7 +136,7 @@ export default async function RaceLandingPage({ params }: Props) {
           {NAV_ITEMS.filter(item => item.href !== 'tips' || !!raceContent?.tipsContent).map(({ href, label, icon, desc }) => (
             <Link
               key={href}
-              href={`/races/${raceSlug}/${href}`}
+              href={href.startsWith('/') ? `${href}?race=${raceSlug}` : `/races/${raceSlug}/${href}`}
               className="group p-5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] hover:border-[var(--accent-teal)]/50 hover:bg-[var(--bg-surface)] transition-all"
             >
               <span className="text-2xl block mb-3">{icon}</span>

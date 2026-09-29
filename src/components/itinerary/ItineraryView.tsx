@@ -34,7 +34,6 @@ function FeedBookButton({ raceSlug, s, className }: { raceSlug: string; s: FeedS
 
 export default function ItineraryView({ itinerary, experiences, tzLabel }: Props) {
     const [activeDay, setActiveDay] = useState(0);
-    const [copied, setCopied] = useState(false);
     const expMap = Object.fromEntries(experiences.map(e => [e.id, e]));
     const day: ItineraryDay | undefined = itinerary.days[activeDay];
 
@@ -56,16 +55,6 @@ export default function ItineraryView({ itinerary, experiences, tzLabel }: Props
         .flatMap(s => s.feedSuggestions ?? []);
     const raceSlug = itinerary.raceSlug ?? '';
 
-    const handleShare = async () => {
-        try {
-            await navigator.clipboard.writeText(window.location.href);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-        } catch {
-            // clipboard API not available
-        }
-    };
-
     return (
         <div>
             {/* Header */}
@@ -76,12 +65,6 @@ export default function ItineraryView({ itinerary, experiences, tzLabel }: Props
                 {itinerary.summary && (
                     <p className="text-[var(--text-secondary)] leading-relaxed">{itinerary.summary}</p>
                 )}
-                <button
-                    onClick={handleShare}
-                    className="mt-4 text-sm px-4 py-1.5 rounded-full border border-[var(--border-medium)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
-                >
-                    {copied ? '✓ Copied!' : 'Share Itinerary ↗'}
-                </button>
             </div>
 
             {/* Day tabs */}
