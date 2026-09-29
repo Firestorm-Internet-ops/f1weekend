@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import RaceFaq from '@/components/race/RaceFaq';
+import { codeFaqs, type Faq } from '@/data/faqs-2026';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { hasLiveExperiences, calendarEntry } from '@/data/calendar-2026';
@@ -63,7 +65,13 @@ export default async function RaceLandingPage({ params }: Props) {
   const firstDateStr = firstDate.toLocaleDateString('en-AU', { month: 'short', day: 'numeric', timeZone: 'UTC' });
   const sunStr = raceDay.toLocaleDateString('en-AU', { month: 'short', day: 'numeric', timeZone: 'UTC' });
 
-  const faqLd = raceContent?.faqLd ?? null;
+  // One FAQ list, shown on the page and described by the same schema: stored
+  // FAQs (or the stored FAQ schema's questions), else the ones in code (Sepang).
+  const storedLd = raceContent?.faqLd as { mainEntity?: { name?: string; acceptedAnswer?: { text?: string } }[] } | null | undefined;
+  const faqs: Faq[] =
+    raceContent?.faqItems?.length ? raceContent.faqItems
+    : storedLd?.mainEntity?.length ? storedLd.mainEntity.filter((m) => m.name && m.acceptedAnswer?.text).map((m) => ({ q: m.name!, a: m.acceptedAnswer!.text! }))
+    : codeFaqs(race.slug) ?? [];
 
   const breadcrumbLd = {
     '@context': 'https://schema.org',
@@ -92,7 +100,6 @@ export default async function RaceLandingPage({ params }: Props) {
 
   return (
     <div className="min-h-screen pt-24 pb-24 px-4">
-      {faqLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }} />}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
       <div className={live ? 'max-w-5xl mx-auto' : 'max-w-3xl mx-auto'}>
         <Breadcrumb items={[
@@ -343,6 +350,8 @@ export default async function RaceLandingPage({ params }: Props) {
             />
           </div>
         )}
+
+        <RaceFaq items={faqs} heading={`${race.name} ${race.season}: FAQ`} className="mt-12 pt-8 border-t border-[var(--border-subtle)]" />
       </div>
     </div>
   );

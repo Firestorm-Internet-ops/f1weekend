@@ -84,7 +84,6 @@ export default async function ExperiencesPage({ params, searchParams }: Props) {
     await Promise.all(windows.map(async (w) => [w.slug, (await getExperiencesByWindow(w.slug, race.id)).length] as const))
   );
 
-  const expFaqLd = raceContent?.faqLd as any;
 
   const breadcrumbLd = {
     '@context': 'https://schema.org',
@@ -117,7 +116,8 @@ export default async function ExperiencesPage({ params, searchParams }: Props) {
   };
 
   // Consolidate all page schemas into single JSON-LD script tag
-  const allSchemas = [breadcrumbLd, itemListLd, ...(expFaqLd ? [expFaqLd] : [])];
+  // The race FAQ (and its schema) lives on the race page, where it is shown.
+  const allSchemas = [breadcrumbLd, itemListLd];
 
   return (
     <div className="min-h-screen pt-24 pb-24 px-4">

@@ -13,6 +13,8 @@ import type { Experience } from '@/types/experience';
 import HomepageExploreSection, { type ExploreDayData } from '@/components/homepage/HomepageExploreSection';
 import NearbyFeed from '@/components/experiences/NearbyFeed';
 import WeekendGlance from '@/components/race/WeekendGlance';
+import RaceFaq from '@/components/race/RaceFaq';
+import { codeFaqs } from '@/data/faqs-2026';
 import RaceStrip from '@/components/race/RaceStrip';
 import TrackOutline from '@/components/race/TrackOutline';
 import { getTrackSvg } from '@/services/track.service';
@@ -51,7 +53,9 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 
   const venue = race.venueNote ? ` at ${race.circuitName.replace(/ International Circuit$/, '')}, ${race.country}` : '';
-  const title = raceContent?.pageTitle ?? `${race.name} ${race.season}${venue}: ${race.city} F1 Weekend Guide | F1 Weekend`;
+  // "Singapore Grand Prix 2026: F1 Weekend Guide" — no second "Singapore" when the name already has the city.
+  const cityPart = race.name.includes(race.city) ? '' : `${race.city} `;
+  const title = raceContent?.pageTitle ?? `${race.name} ${race.season}${venue}: ${cityPart}F1 Weekend Guide | F1 Weekend`;
   // Absolute: the layout template would append "| F1 Weekend" a second time.
   const description = raceContent?.pageDescription ?? `Plan your perfect ${race.name} weekend in ${race.city}. Curated experiences matched to session gaps, full schedule, and transport guide.`;
 
@@ -309,7 +313,8 @@ export default async function HomePage() {
     active: r.slug === activeRaceSlug
   }));
 
-  const HOME_FAQ = raceContent?.faqItems ?? [];
+  // Stored FAQs, or the ones written in code for a moved venue (Sepang).
+  const HOME_FAQ = raceContent?.faqItems ?? codeFaqs(race.slug) ?? [];
 
   // Structured Data
   const websiteLd = {
@@ -555,24 +560,7 @@ export default async function HomePage() {
       )}
 
       {/* ── FAQ ── */}
-      {HOME_FAQ.length > 0 && <section className="max-w-3xl mx-auto px-4 pb-24">
-        <h2 className="font-display font-black text-2xl text-[var(--text-primary)] uppercase-heading mb-8">
-          Frequently Asked Questions
-        </h2>
-        <div className="space-y-4">
-          {HOME_FAQ.map(({ q, a }) => (
-            <details key={q} className="group rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] overflow-hidden">
-              <summary className="px-6 py-4 cursor-pointer font-bold text-[var(--text-primary)] list-none flex items-center justify-between gap-4 hover:bg-[var(--bg-surface)] transition-colors">
-                <span>{q}</span>
-                <span className="text-[var(--text-secondary)] group-open:rotate-180 transition-transform">▾</span>
-              </summary>
-              <div className="px-6 pb-5 pt-2 text-[var(--text-secondary)] text-sm leading-relaxed border-t border-[var(--border-subtle)]">
-                {a}
-              </div>
-            </details>
-          ))}
-        </div>
-      </section>}
+      <RaceFaq items={HOME_FAQ} className="max-w-3xl mx-auto px-4 pb-24" />
     </div>
   );
 }

@@ -105,9 +105,36 @@ export function hasLiveExperiences(slug: string): boolean {
  * whose weekend hasn't finished, restricted to slugs in `candidates`
  * (races that exist on the site). After the season, the last race.
  */
-export function nextCalendarRace(today: string, candidates?: Set<string>): CalendarRace | undefined {
+/** Track time zone per race: a race stays "next" until race day has ended there. */
+export const TRACK_TIMEZONES: Record<string, string> = {
+  'melbourne-2026': 'Australia/Melbourne', 'shanghai-2026': 'Asia/Shanghai', 'japan-2026': 'Asia/Tokyo',
+  'miami-2026': 'America/New_York', 'canada-2026': 'America/Toronto', 'monaco-2026': 'Europe/Monaco',
+  'barcelona-2026': 'Europe/Madrid', 'austria-2026': 'Europe/Vienna', 'britain-2026': 'Europe/London',
+  'belgium-2026': 'Europe/Brussels', 'hungary-2026': 'Europe/Budapest', 'netherlands-2026': 'Europe/Amsterdam',
+  'italy-2026': 'Europe/Rome', 'madrid-2026': 'Europe/Madrid', 'azerbaijan-2026': 'Asia/Baku',
+  'bahrain-2026': 'Asia/Kuala_Lumpur', 'singapore-2026': 'Asia/Singapore', 'usa-2026': 'America/Chicago',
+  'mexico-2026': 'America/Mexico_City', 'brazil-2026': 'America/Sao_Paulo', 'las-vegas-2026': 'America/Los_Angeles',
+  'qatar-2026': 'Asia/Qatar', 'abu-dhabi-2026': 'Asia/Dubai',
+};
+
+/** YYYY-MM-DD of `now` in a time zone (UTC when unknown). */
+export function localDate(now: Date, timezone = 'UTC'): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
+}
+
+/** True once race day is over at the track (e.g. Las Vegas's Saturday-night race counts until midnight in Las Vegas). */
+export function isRaceOver(race: Pick<CalendarRace, 'slug' | 'raceDate'>, now: Date | string): boolean {
+  const today = typeof now === 'string' ? now : localDate(now, TRACK_TIMEZONES[race.slug]);
+  return today > race.raceDate;
+}
+
+/**
+ * The race the site leads with: the first one on the calendar whose race day
+ * isn't over yet at the track. `now` may be a date string (YYYY-MM-DD) for tests.
+ */
+export function nextCalendarRace(now: Date | string, candidates?: Set<string>): CalendarRace | undefined {
   const pool = candidates ? CALENDAR_2026.filter((r) => candidates.has(r.slug)) : CALENDAR_2026;
-  return pool.find((r) => r.raceDate >= today) ?? pool[pool.length - 1];
+  return pool.find((r) => !isRaceOver(r, now)) ?? pool[pool.length - 1];
 }
 
 /** Calendar order for any list of races; unknown slugs go last, off-calendar ones are removed. */
