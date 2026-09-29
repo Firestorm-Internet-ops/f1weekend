@@ -167,7 +167,7 @@ export default async function ExperiencesPage({ params, searchParams }: Props) {
           <section className="mb-10 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] p-5">
             <div className="flex items-baseline justify-between gap-4 mb-4">
               <h2 className="font-display font-bold text-lg text-[var(--text-primary)]">How far is everything from the circuit?</h2>
-              <Link href={`/races/${raceKey(raceSlug)}/experiences/map`} className="text-sm text-[var(--accent-teal,#00D2BE)] hover:underline whitespace-nowrap">
+              <Link href={`/races/${raceKey(raceSlug)}/experiences/map`} className="text-sm text-[var(--accent-strong,#00D2BE)] hover:underline whitespace-nowrap">
                 Open full map →
               </Link>
             </div>

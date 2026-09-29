@@ -22,7 +22,7 @@ export default function Image() {
         EXPERIENCE MAP
       </div>
       <div style={{ fontSize: 28, color: '#9a9aaf', maxWidth: 700 }}>
-        Explore Melbourne's F1 activities on the map
+        Explore Melbourne&apos;s F1 activities on the map
       </div>
     </div>,
     { width: 1200, height: 630 }

@@ -21,6 +21,7 @@ import { CATEGORY_COLORS, CATEGORY_LABELS } from '@/lib/constants/categories';
 import { formatPrice } from '@/lib/utils';
 import { raceKey } from '@/lib/race-url';
 import { resolveRaceSlug } from '@/services/race.service';
+import Icon from '@/components/ui/Icon';
 
 export const revalidate = 86400; // 24 hours
 export const dynamicParams = true; // SSR fallback for new races not yet in generateStaticParams
@@ -348,7 +349,7 @@ export default async function ExperienceDetailPage({ params }: Props) {
               </h1>
 
               <div className="flex items-center gap-5 text-sm text-[var(--text-secondary)] mb-6 flex-wrap">
-                {exp.durationLabel && <span className="mono-data">⏱ {exp.durationLabel}</span>}
+                {exp.durationLabel && <span className="mono-data"><Icon name="clock" size={14} className="inline -mt-0.5 mr-1" />{exp.durationLabel}</span>}
                 <span className="mono-data">
                   ★ {exp.rating.toFixed(1)}{' '}
                   <span className="text-[var(--text-secondary)]">({exp.reviewCount.toLocaleString()} reviews)</span>
@@ -438,7 +439,7 @@ export default async function ExperienceDetailPage({ params }: Props) {
                   <ul className="space-y-2">
                     {exp.highlights.map((h, i) => (
                       <li key={i} className="flex items-start gap-3 text-[var(--text-secondary)]">
-                        <span className="text-[var(--accent-teal)] mt-0.5 flex-shrink-0">✓</span>
+                        <span className="text-[var(--accent-strong)] mt-0.5 flex-shrink-0">✓</span>
                         <span className="leading-relaxed">{h}</span>
                       </li>
                     ))}
@@ -498,7 +499,7 @@ export default async function ExperienceDetailPage({ params }: Props) {
                     }
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-sm text-[var(--accent-teal)] hover:underline"
+                    className="inline-flex items-center gap-1.5 text-sm text-[var(--accent-strong)] hover:underline"
                   >
                     View on Google Maps →
                   </a>
@@ -517,7 +518,7 @@ export default async function ExperienceDetailPage({ params }: Props) {
                       experience={exp}
                       source="guide"
                       label={`Read all reviews on ${partnerName} →`}
-                      className="text-sm text-[var(--accent-teal)] hover:underline bg-transparent p-0 font-normal"
+                      className="text-sm text-[var(--accent-strong)] hover:underline bg-transparent p-0 font-normal"
                     />
                   </div>
                   <div className="space-y-4">

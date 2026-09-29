@@ -25,9 +25,9 @@ export default function GapCard({
 }: Props) {
   return (
     <Link href={`${basePath}?window=${slug}`}>
-      <div className="group p-4 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-secondary)] hover:border-[var(--accent-teal)]/50 hover:bg-[var(--bg-surface)] transition-all cursor-pointer">
+      <div className="group p-4 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-secondary)] hover:border-[var(--accent-strong)]/50 hover:bg-[var(--bg-surface)] transition-all cursor-pointer">
         {/* Header */}
-        <h3 className="font-display font-bold text-[var(--text-primary)] group-hover:text-[var(--accent-teal)] transition-colors uppercase-heading leading-tight">
+        <h3 className="font-display font-bold text-[var(--text-primary)] group-hover:text-[var(--accent-strong)] transition-colors uppercase-heading leading-tight">
           {label}
         </h3>
 
@@ -57,7 +57,7 @@ export default function GapCard({
         ))}
 
         {/* Footer */}
-        <p className="text-xs font-medium text-[var(--accent-teal)] mt-3">
+        <p className="text-xs font-medium text-[var(--accent-strong)] mt-3">
           View all {count} {count === 1 ? 'experience' : 'experiences'} →
         </p>
       </div>

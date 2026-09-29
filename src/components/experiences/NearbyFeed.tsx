@@ -7,6 +7,7 @@ import { providerName } from '@/lib/providers/meta';
 import { openFeedBooking, trackEvent } from '@/lib/analytics';
 import { FEED_CATEGORY_LABELS, byNearest, displayTitle, type FeedCard, type FeedCategory } from '@/lib/providers/nearby-feed';
 import { haversineKm, type NearbyTier } from '@/lib/nearby';
+import Icon from '@/components/ui/Icon';
 
 const WIDE = '(min-width: 768px)';
 function subscribeWide(onChange: () => void) {
@@ -39,6 +40,10 @@ interface Props {
   showMap?: boolean;
   /** Cards already shown elsewhere on the page (e.g. picks rendered separately). */
   excludeKeys?: string[];
+  /** Full feed size when `cards` is only the first few (compact views send less HTML). */
+  totalCount?: number;
+  /** Per-tier counts of the full feed, for the map card when `cards` is a subset. */
+  tierTotals?: Record<NearbyTier, number>;
 }
 
 type TierFilter = 'all' | NearbyTier;
@@ -85,7 +90,7 @@ function pointName(p: MapPoint): string {
   return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? p.cards[0].title;
 }
 
-export default function NearbyFeed({ cards, raceSlug, circuit, pageSize = 24, compact = false, moreHref, mapsApiKey, cities = [], lazyMap = false, picks = [], showMap = true, excludeKeys = [] }: Props) {
+export default function NearbyFeed({ cards, raceSlug, circuit, pageSize = 24, compact = false, moreHref, mapsApiKey, cities = [], lazyMap = false, picks = [], showMap = true, excludeKeys = [], totalCount, tierTotals }: Props) {
   const [tier, setTier] = useState<TierFilter>('all');
   const [category, setCategory] = useState<FeedCategory | 'all'>('all');
   const [sort, setSort] = useState<'recommended' | 'nearest' | 'price' | 'rating'>('recommended');
@@ -185,7 +190,7 @@ export default function NearbyFeed({ cards, raceSlug, circuit, pageSize = 24, co
           /> : (
             <MapPlaceholder
               height={compact ? '420px' : '520px'}
-              counts={tierCounts}
+              counts={tierTotals ?? tierCounts}
               circuitName={circuit.name}
               onOpen={() => { trackEvent('map_open', { race: raceSlug }); setMapOpen(true); }}
             />
@@ -254,7 +259,7 @@ export default function NearbyFeed({ cards, raceSlug, circuit, pageSize = 24, co
               <span className="text-[var(--text-primary)]">
                 📍 {pointName(selectedPoint)} · {selectedPoint.cards.length} experience{selectedPoint.cards.length === 1 ? '' : 's'}
               </span>
-              <button onClick={() => setPointId(null)} className="text-[var(--accent-teal,#00D2BE)] hover:underline">Show all</button>
+              <button onClick={() => setPointId(null)} className="text-[var(--accent-strong,#00D2BE)] hover:underline">Show all</button>
             </div>
           )}
 
@@ -271,8 +276,8 @@ export default function NearbyFeed({ cards, raceSlug, circuit, pageSize = 24, co
 
           {compact ? (
             moreHref && (
-              <a href={moreHref} className="inline-flex items-center min-h-11 mt-3 text-sm font-medium text-[var(--accent-teal)] hover:underline">
-                See all {cards.length} experiences, nearest first →
+              <a href={moreHref} className="inline-flex items-center min-h-11 mt-3 text-sm font-medium text-[var(--accent-strong)] hover:underline">
+                See all {totalCount ?? cards.length} experiences, nearest first →
               </a>
             )
           ) : (
@@ -333,14 +338,14 @@ function MapPlaceholder({ height, counts, circuitName, onOpen }: { height: strin
       onClick={onOpen}
       className="md:hidden w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] text-sm"
     >
-      <span className="text-[var(--text-primary)] font-medium">🗺️ Map around {circuitName}</span>
+      <span className="text-[var(--text-primary)] font-medium inline-flex items-center gap-2"><Icon name="map" size={18} /> Map around {circuitName}</span>
       <span className="font-semibold text-[var(--accent-red)]">Show map</span>
     </button>
     <div
       className="hidden md:flex w-full rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] flex-col items-center justify-center gap-4 px-6 text-center"
       style={{ height, backgroundImage: 'radial-gradient(circle at 50% 45%, var(--bg-tertiary) 0, transparent 60%)' }}
     >
-      <span className="text-4xl" aria-hidden>🗺️</span>
+      <Icon name="map" size={40} className="text-[var(--text-secondary)]" />
       <div>
         <p className="font-semibold text-[var(--text-primary)]">Everything on a map around {circuitName}</p>
         <p className="text-sm text-[var(--text-secondary)] mt-1">
@@ -391,7 +396,7 @@ function FeedCardView({ card, raceSlug, cities, onPin }: { card: FeedCard; raceS
         )}
         {card.fitsLabel && (
           <p className="text-sm font-medium text-[var(--accent-red)] mt-1.5 flex items-center gap-1.5">
-            <span aria-hidden>⏱</span>{card.fitsLabel}
+            <Icon name="clock" size={16} className="shrink-0" />{card.fitsLabel}
           </p>
         )}
         {card.rating && card.reviewCount > 0 ? (

@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
 import type { Race } from '@/types/race';
 import { raceKey } from '@/lib/race-url';
+import Icon from '@/components/ui/Icon';
 
 function extractRaceSlug(pathname: string): string | null {
   const match = pathname.match(/^\/races\/([^/]+)/);
@@ -165,7 +166,7 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
                           <p className="text-xs text-[var(--text-secondary)]">{race.city} · {datesStr}</p>
                         </div>
                         {race.slug === displayRaceSlug && (
-                          <span className="text-xs text-[var(--accent-teal)] font-bold">✓</span>
+                          <span className="text-xs text-[var(--accent-strong)] font-bold">✓</span>
                         )}
                       </Link>
                     );
@@ -177,7 +178,7 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
                       onClick={() => setRaceDropdownOpen(false)}
                       className="flex items-center gap-3 px-4 py-2.5 hover:bg-[var(--bg-secondary)] transition-colors"
                     >
-                      <span className="text-lg">📅</span>
+                      <Icon name="calendar" size={18} className="text-[var(--text-secondary)]" />
                       <p className="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
                         View Full 2026 Calendar →
                       </p>
@@ -212,7 +213,7 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
                 href={scheduleHref}
                 className={`text-sm font-medium whitespace-nowrap transition-colors ${
                   isScheduleActive
-                    ? 'text-[var(--accent-teal)]'
+                    ? 'text-[var(--accent-strong)]'
                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                 }`}
               >
@@ -222,7 +223,7 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
                 href={experiencesHref}
                 className={`text-sm font-medium whitespace-nowrap transition-colors ${
                   isExperiencesActive
-                    ? 'text-[var(--accent-teal)]'
+                    ? 'text-[var(--accent-strong)]'
                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                 }`}
               >
@@ -232,7 +233,7 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
                 href={gettingThereHref}
                 className={`text-sm font-medium whitespace-nowrap transition-colors ${
                   isGettingThereActive
-                    ? 'text-[var(--accent-teal)]'
+                    ? 'text-[var(--accent-strong)]'
                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                 }`}
               >
@@ -242,7 +243,7 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
                 href={tipsHref}
                 className={`text-sm font-medium whitespace-nowrap transition-colors ${
                   isTipsActive
-                    ? 'text-[var(--accent-teal)]'
+                    ? 'text-[var(--accent-strong)]'
                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                 }`}
               >
@@ -252,7 +253,7 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
                 href="/f1-2026"
                 className={`text-sm font-medium whitespace-nowrap transition-colors ${
                   pathname === '/f1-2026'
-                    ? 'text-[var(--accent-teal)]'
+                    ? 'text-[var(--accent-strong)]'
                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                 }`}
               >
@@ -289,7 +290,7 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
               onClick={() => setIsOpen(false)}
               className={`text-sm font-medium py-2 transition-colors ${
                 isScheduleActive
-                  ? 'text-[var(--accent-teal)]'
+                  ? 'text-[var(--accent-strong)]'
                   : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}
             >
@@ -300,7 +301,7 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
               onClick={() => setIsOpen(false)}
               className={`text-sm font-medium py-2 transition-colors ${
                 isExperiencesActive
-                  ? 'text-[var(--accent-teal)]'
+                  ? 'text-[var(--accent-strong)]'
                   : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}
             >
@@ -311,7 +312,7 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
               onClick={() => setIsOpen(false)}
               className={`text-sm font-medium py-2 transition-colors ${
                 isGettingThereActive
-                  ? 'text-[var(--accent-teal)]'
+                  ? 'text-[var(--accent-strong)]'
                   : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}
             >
@@ -322,7 +323,7 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
               onClick={() => setIsOpen(false)}
               className={`text-sm font-medium py-2 transition-colors ${
                 isTipsActive
-                  ? 'text-[var(--accent-teal)]'
+                  ? 'text-[var(--accent-strong)]'
                   : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}
             >
@@ -333,7 +334,7 @@ export default function Nav({ defaultRaceSlug, races }: { defaultRaceSlug: strin
               onClick={() => setIsOpen(false)}
               className="text-sm font-medium py-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
             >
-              📅 2026 Calendar
+              <Icon name="calendar" size={16} className="inline -mt-0.5 mr-1.5" />2026 Calendar
             </Link>
             <div className="pt-2 mt-1 border-t border-[var(--border-subtle)]">
               <Link

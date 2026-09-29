@@ -169,7 +169,7 @@ export default async function SchedulePage({ params }: Props) {
             <div className="space-y-6">
               {raceContent.sessionGapCopy.map((gap) => (
                 <div key={gap.windowSlug} className="p-6 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
-                  <p className="text-xs font-medium uppercase-label text-[var(--accent-teal)] mb-2">
+                  <p className="text-xs font-medium uppercase-label text-[var(--accent-strong)] mb-2">
                     {windows.find(w => w.slug === gap.windowSlug)?.label ?? 'GAP'}
                   </p>
                   <h3 className="font-display font-bold text-[var(--text-primary)] text-lg mb-2">{gap.heading}</h3>
@@ -177,7 +177,7 @@ export default async function SchedulePage({ params }: Props) {
                     {gap.copy}
                   </p>
                   <div className="flex flex-wrap gap-3">
-                    <Link href={`/races/${raceKey(raceSlug)}/experiences?window=${gap.windowSlug}`} className="text-xs font-medium text-[var(--accent-teal)] hover:text-[var(--text-primary)] transition-colors">
+                    <Link href={`/races/${raceKey(raceSlug)}/experiences?window=${gap.windowSlug}`} className="text-xs font-medium text-[var(--accent-strong)] hover:text-[var(--text-primary)] transition-colors">
                       Browse experiences for this gap →
                     </Link>
                   </div>
@@ -186,7 +186,7 @@ export default async function SchedulePage({ params }: Props) {
             </div>
             <Link
               href={`/races/${raceKey(raceSlug)}/experiences`}
-              className="inline-block mt-6 text-sm font-medium text-[var(--accent-teal)] hover:text-[var(--text-primary)] transition-colors"
+              className="inline-block mt-6 text-sm font-medium text-[var(--accent-strong)] hover:text-[var(--text-primary)] transition-colors"
             >
               Browse all {race.city} experiences →
             </Link>

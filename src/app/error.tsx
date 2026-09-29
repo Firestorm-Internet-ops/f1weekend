@@ -12,7 +12,7 @@ export default function GlobalError({
     <div className="min-h-screen flex flex-col items-center justify-center px-4 text-center">
       <p className="text-xs font-bold uppercase-label text-[var(--accent-red)] tracking-widest mb-4">Error</p>
       <h1 className="font-display font-black text-5xl sm:text-6xl text-[var(--text-primary)] uppercase-heading leading-none mb-4">
-        Something<br /><span className="text-[var(--accent-teal)]">Went Wrong</span>
+        Something<br /><span className="text-[var(--accent-strong)]">Went Wrong</span>
       </h1>
       <p className="text-[var(--text-secondary)] text-lg max-w-sm mb-8">
         An unexpected error occurred. Try again or head back home.

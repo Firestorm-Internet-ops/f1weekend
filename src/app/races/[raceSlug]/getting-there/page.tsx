@@ -112,7 +112,7 @@ export default async function GettingTherePage({ params }: Props) {
               { label: race.city, href: `/races/${raceKey(raceSlug)}` },
               { label: 'Getting There' },
             ]} />
-            <p className="text-xs font-medium uppercase-label text-[var(--accent-teal)] tracking-widest mb-3">
+            <p className="text-xs font-medium uppercase-label text-[var(--accent-strong)] tracking-widest mb-3">
               VENUE GUIDE
             </p>
             <div className="mb-4">
@@ -152,7 +152,7 @@ export default async function GettingTherePage({ params }: Props) {
           {transport.length > 0 && (
             <section className="mb-12">
               <h2 className="font-display font-bold text-xl text-[var(--text-primary)] uppercase-heading mb-6">
-                HOW TO GET THERE
+                How to get there
               </h2>
               <div className="space-y-4">
                 {transport.map((t) => (
@@ -169,7 +169,7 @@ export default async function GettingTherePage({ params }: Props) {
                             <span
                               className="text-[10px] px-2 py-0.5 rounded-full font-medium uppercase tracking-wider"
                               style={{
-                                color: t.bestFor.toLowerCase().includes('recommend') ? 'var(--accent-teal)' : 'var(--accent-red)',
+                                color: t.bestFor.toLowerCase().includes('recommend') ? 'var(--accent-strong)' : 'var(--accent-red)',
                                 backgroundColor: t.bestFor.toLowerCase().includes('recommend') ? 'rgba(45, 212, 191, 0.1)' : 'rgba(255, 59, 48, 0.1)',
                                 border: `1px solid ${t.bestFor.toLowerCase().includes('recommend') ? 'rgba(45, 212, 191, 0.2)' : 'rgba(255, 59, 48, 0.2)'}`,
                               }}
@@ -196,7 +196,7 @@ export default async function GettingTherePage({ params }: Props) {
                 href={mapsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-3 w-full py-4 rounded-xl border border-[var(--accent-teal)] bg-[var(--accent-teal-muted)] text-[var(--accent-teal)] font-display font-bold text-lg hover:bg-[var(--accent-teal)]/20 transition-colors"
+                className="flex items-center justify-center gap-3 w-full py-4 rounded-xl border border-[var(--accent-strong)] bg-[var(--accent-strong-muted)] text-[var(--accent-strong)] font-display font-bold text-lg hover:bg-[var(--accent-strong)]/20 transition-colors"
               >
                 <span>📍</span>
                 Get Directions in Google Maps
@@ -207,7 +207,7 @@ export default async function GettingTherePage({ params }: Props) {
 
           <section>
             <h2 className="font-display font-bold text-xl text-[var(--text-primary)] uppercase-heading mb-6">
-              ESTIMATED GATE TIMES
+              Estimated gate times
             </h2>
             <p className="text-sm text-[var(--text-secondary)] mb-4">
               Estimated: about 2 hours before the first track action each day. Check your ticket for the official gate times.
@@ -245,7 +245,7 @@ export default async function GettingTherePage({ params }: Props) {
             </p>
             <Link
               href={`/races/${raceKey(raceSlug)}/experiences`}
-              className="inline-block text-sm font-medium text-[var(--accent-teal)] hover:text-[var(--text-primary)] transition-colors"
+              className="inline-block text-sm font-medium text-[var(--accent-strong)] hover:text-[var(--text-primary)] transition-colors"
             >
               Browse {race.city} experiences →
             </Link>

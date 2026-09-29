@@ -18,7 +18,7 @@ export default function ReviewQuotes({ reviews }: Props) {
       {topReviews.map((review, i) => (
         <blockquote
           key={i}
-          className="p-4 rounded-xl border border-[var(--accent-teal)]/20 bg-[var(--accent-teal)]/5"
+          className="p-4 rounded-xl border border-[var(--accent-strong)]/20 bg-[var(--accent-strong)]/5"
         >
           <p className="text-sm text-[var(--text-primary)] leading-relaxed italic mb-2">
             &ldquo;{review.text}&rdquo;

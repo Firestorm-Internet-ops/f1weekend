@@ -53,7 +53,7 @@ export default function ContactPage() {
 
         {/* Section 1 — Hero */}
         <div className="mb-16">
-          <p className="text-xs font-medium uppercase-label text-[var(--accent-teal)] tracking-widest mb-3">
+          <p className="text-xs font-medium uppercase-label text-[var(--accent-strong)] tracking-widest mb-3">
             GET IN TOUCH
           </p>
           <h1 className="font-display font-black text-4xl sm:text-5xl text-[var(--text-primary)] uppercase-heading leading-none mb-6">
@@ -83,7 +83,7 @@ export default function ContactPage() {
             href="mailto:help@firestorm-internet.com"
             className="inline-flex items-center gap-3 px-6 py-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-medium)] transition-colors text-lg font-medium"
           >
-            <span className="text-[var(--accent-teal)]">✉</span>
+            <span className="text-[var(--accent-strong)]">✉</span>
             help@firestorm-internet.com
           </a>
         </div>
@@ -126,7 +126,7 @@ export default function ContactPage() {
                 className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] p-5"
               >
                 <div className="flex items-start gap-3">
-                  <span className="text-xl text-[var(--accent-teal)] mt-0.5 shrink-0">
+                  <span className="text-xl text-[var(--accent-strong)] mt-0.5 shrink-0">
                     {item.icon}
                   </span>
                   <div>

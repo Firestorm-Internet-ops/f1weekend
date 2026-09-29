@@ -142,7 +142,7 @@ export default function HomepageExploreSection({ city, days, expBasePath, tzLabe
                   <div className="px-5 py-3 border-t border-[var(--border-subtle)]">
                     <Link
                       href={`${expBasePath}?window=${w.slug}`}
-                      className="text-sm font-medium text-[var(--accent-teal)] hover:underline"
+                      className="text-sm font-medium text-[var(--accent-strong)] hover:underline"
                     >
                       View all {w.count} experiences →
                     </Link>

@@ -127,7 +127,7 @@ export default async function TipsPage({ params }: Props) {
         </p>
         <h1 className="font-display font-black text-4xl sm:text-5xl text-[var(--text-primary)] uppercase-heading leading-none mb-3">
           {race.city} F1<br />
-          <span className="text-[var(--accent-teal)]">Tips &amp; FAQ</span>
+          <span className="text-[var(--accent-strong)]">Tips &amp; FAQ</span>
         </h1>
         <p className="text-[var(--text-secondary)] text-lg mb-10">
           {tipsContent.heroSubtitle ?? `Everything you need to know for your ${race.city} F1 race weekend.`}
@@ -148,7 +148,7 @@ export default async function TipsPage({ params }: Props) {
                   <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-3">
                     {description}
                   </p>
-                  <Link href={linkHref} className="text-sm font-medium text-[var(--accent-teal)] hover:text-[var(--text-primary)] transition-colors">
+                  <Link href={linkHref} className="text-sm font-medium text-[var(--accent-strong)] hover:text-[var(--text-primary)] transition-colors">
                     {linkLabel}
                   </Link>
                 </div>
@@ -197,7 +197,7 @@ export default async function TipsPage({ params }: Props) {
             {tipsContent.gettingThere.fullGuideHref && (
               <Link
                 href={tipsContent.gettingThere.fullGuideHref}
-                className="text-sm font-medium text-[var(--accent-teal)] hover:text-[var(--text-primary)] transition-colors"
+                className="text-sm font-medium text-[var(--accent-strong)] hover:text-[var(--text-primary)] transition-colors"
               >
                 Full transport guide →
               </Link>

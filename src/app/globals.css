@@ -26,7 +26,7 @@
   --color-pit-text: #15151E;
   --color-pit-text-secondary: #4A4A57;
   --color-pit-text-tertiary: #62626F;
-  --color-pit-text-muted: #80808C;
+  --color-pit-text-muted: #6B6B76;
 
   /* Borders */
   --color-pit-border: #E3E1DB;
@@ -124,15 +124,16 @@
   --accent-red-hover: #C40500;
   --accent-red-muted: #E1060014;
   /* "Teal" is the historical name: actions and links are F1 red site-wide. */
-  --accent-teal: #C40500;
-  --accent-teal-hover: #A00400;
-  --accent-teal-muted: #E1060012;
+  /* Darker red for text links and small accents (was misnamed --accent-teal). */
+  --accent-strong: #C40500;
+  --accent-strong-hover: #A00400;
+  --accent-strong-muted: #E1060012;
 
   /* Text */
   --text-primary: #15151E;
   --text-secondary: #4A4A57;
   --text-tertiary: #62626F;
-  --text-muted: #80808C;
+  --text-muted: #6B6B76; /* 5:1 on the page background (was #80808C, 3.6:1) */
 
   /* Borders */
   --border-subtle: #E3E1DB;
@@ -280,10 +281,10 @@ button:disabled,
 .guide-article ul li { list-style-type: disc; }
 .guide-article ol li { list-style-type: decimal; }
 .guide-article blockquote {
-  border-left: 3px solid var(--accent-teal);
+  border-left: 3px solid var(--accent-strong);
   padding: 0.75rem 1rem;
   margin: 1.5rem 0;
-  background: var(--accent-teal-muted);
+  background: var(--accent-strong-muted);
   border-radius: 0 0.5rem 0.5rem 0;
 }
 .guide-article blockquote p {
@@ -293,11 +294,11 @@ button:disabled,
 }
 .guide-article strong { color: var(--text-primary); font-weight: 600; }
 .guide-article a {
-  color: var(--accent-teal);
+  color: var(--accent-strong);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
-.guide-article a:hover { color: var(--accent-teal-hover); }
+.guide-article a:hover { color: var(--accent-strong-hover); }
 .guide-article hr {
   border: none;
   border-top: 1px solid var(--border-subtle);
@@ -330,8 +331,8 @@ button:disabled,
   white-space: nowrap;
 }
 .guide-fact--f1 {
-  border-color: var(--accent-teal);
-  color: var(--accent-teal);
+  border-color: var(--accent-strong);
+  color: var(--accent-strong);
 }
 
 /* Stronger H2 section breaks in guide */
@@ -356,7 +357,7 @@ button:disabled,
   content: '→';
   position: absolute;
   left: -1.25rem;
-  color: var(--accent-teal);
+  color: var(--accent-strong);
   font-weight: 600;
 }
 
@@ -368,3 +369,11 @@ button:disabled,
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Keyboard focus: always visible (mouse clicks don't show it). */
+:focus-visible {
+  outline: 2px solid var(--accent-red);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+:focus:not(:focus-visible) { outline: none; }

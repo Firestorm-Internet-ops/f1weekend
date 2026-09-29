@@ -127,19 +127,19 @@ function FeaturedCard({ exp, badge, activeRaceSlug }: { exp: Experience, badge?:
   return (
     <Link
       href={`/races/${raceKey(activeRaceSlug)}/experiences/${exp.slug}`}
-      className="group shrink-0 w-56 lg:w-auto p-5 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)] hover:border-[var(--accent-teal)]/50 transition-all flex flex-col"
+      className="group shrink-0 w-56 lg:w-auto p-5 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)] hover:border-[var(--accent-strong)]/50 transition-all flex flex-col"
     >
       {badge && (
         <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider w-fit mb-3 ${
           badge === 'Most Popular' ? 'bg-[var(--accent-red)] text-white' :
-          badge === 'Top Rated' ? 'bg-[var(--accent-teal)]/20 text-[var(--accent-teal)]' :
+          badge === 'Top Rated' ? 'bg-[var(--accent-strong)]/20 text-[var(--accent-strong)]' :
           'bg-[var(--accent-red)]/20 text-[var(--accent-red)]'
         }`}>
           {badge}
         </span>
       )}
       <span className="text-3xl mb-3">{exp.imageEmoji}</span>
-      <h3 className="font-display font-bold text-[var(--text-primary)] group-hover:text-[var(--accent-teal)] transition-colors mb-2 line-clamp-2 min-h-[2.5rem]">
+      <h3 className="font-display font-bold text-[var(--text-primary)] group-hover:text-[var(--accent-strong)] transition-colors mb-2 line-clamp-2 min-h-[2.5rem]">
         {exp.title}
       </h3>
       <div className="flex items-center gap-2 mb-2">
@@ -499,7 +499,7 @@ export default async function HomePage() {
                 : `Curated for the ${race.city} Grand Prix weekend — activities matched to every session gap.`)}
             </p>
           </div>
-          <Link href={expBasePath} className="text-sm font-medium text-[var(--accent-teal)] hover:text-[var(--text-primary)] transition-colors shrink-0 mt-1">
+          <Link href={expBasePath} className="text-sm font-medium text-[var(--accent-strong)] hover:text-[var(--text-primary)] transition-colors shrink-0 mt-1">
             View all →
           </Link>
         </div>
@@ -508,8 +508,9 @@ export default async function HomePage() {
           <NearbyFeed
             compact
             pageSize={6}
-            cards={feed.cards}
-            excludeKeys={feed.picks.map((p) => p.key)}
+            // Only what the home list shows (picks are skipped): keeps the page light.
+            cards={feed.cards.filter((c) => !feed.picks.some((p) => p.key === c.key)).slice(0, 6)}
+            totalCount={feed.cards.length}
             showMap={false}
             raceSlug={activeRaceSlug}
             circuit={{ lat: race.circuitLat, lng: race.circuitLng, name: race.circuitName }}
@@ -539,7 +540,7 @@ export default async function HomePage() {
           <p className="text-xs font-medium uppercase-label text-[var(--text-secondary)] tracking-widest">
             {race.season} SEASON · {racesLeft} {racesLeft === 1 ? 'RACE' : 'RACES'} TO GO
           </p>
-          <Link href="/f1-2026" className="text-xs font-medium text-[var(--accent-teal)] hover:text-[var(--text-primary)] transition-colors">
+          <Link href="/f1-2026" className="text-xs font-medium text-[var(--accent-strong)] hover:text-[var(--text-primary)] transition-colors">
             Full calendar →
           </Link>
         </div>
