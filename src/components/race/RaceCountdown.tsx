@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useSyncExternalStore } from 'react';
 
 interface TimeLeft {
   d: number;
@@ -9,34 +9,32 @@ interface TimeLeft {
   s: number;
 }
 
-export default function RaceCountdown({ targetDate }: { targetDate: string }) {
-  const target = useMemo(() => new Date(targetDate), [targetDate]);
-  const [time, setTime] = useState<TimeLeft | null>(null);
-  const [completed, setCompleted] = useState(false);
+function subscribeSecond(onChange: () => void) {
+  const id = setInterval(onChange, 1000);
+  return () => clearInterval(id);
+}
 
-  useEffect(() => {
-    function getTimeLeft(): TimeLeft | null {
-      const diff = target.getTime() - Date.now();
-      if (diff <= 0) {
-        setCompleted(true);
-        return null;
-      }
-      return {
-        d: Math.floor(diff / 86_400_000),
-        h: Math.floor((diff % 86_400_000) / 3_600_000),
-        m: Math.floor((diff % 3_600_000) / 60_000),
-        s: Math.floor((diff % 60_000) / 1_000),
-      };
-    }
-    setTime(getTimeLeft());
-    const id = setInterval(() => setTime(getTimeLeft()), 1000);
-    return () => clearInterval(id);
-  }, [target]);
+export default function RaceCountdown({ targetDate }: { targetDate: string }) {
+  const targetMs = new Date(targetDate).getTime();
+  // Whole seconds left: a number, so it only re-renders when it changes.
+  // Null on the server (the visitor's clock decides), so nothing mismatches on hydration.
+  const secondsLeft = useSyncExternalStore(
+    subscribeSecond,
+    () => Math.max(0, Math.floor((targetMs - Date.now()) / 1000)),
+    () => null,
+  );
+  const completed = secondsLeft === 0;
+  const time: TimeLeft | null = secondsLeft == null ? null : {
+    d: Math.floor(secondsLeft / 86_400),
+    h: Math.floor((secondsLeft % 86_400) / 3_600),
+    m: Math.floor((secondsLeft % 3_600) / 60),
+    s: secondsLeft % 60,
+  };
 
   if (completed) {
     return (
       <p className="font-display font-black text-2xl text-[var(--accent-red)] uppercase-heading tracking-widest">
-        LIGHTS OUT 🏁
+        LIGHTS OUT
       </p>
     );
   }

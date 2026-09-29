@@ -20,6 +20,7 @@ import RaceSwitcher from '@/components/race/RaceSwitcher';
 import { getAvailableRaces } from '@/services/race.service';
 import { raceKey } from '@/lib/race-url';
 import { resolveRaceSlug } from '@/services/race.service';
+import Icon, { type IconName } from '@/components/ui/Icon';
 
 interface Props {
   params: Promise<{ raceSlug: string }>;
@@ -41,13 +42,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-const NAV_ITEMS: { href: string; label: string; icon: string; desc: string }[] = [
-  { href: 'schedule', label: 'Weekend Schedule', icon: '📅', desc: 'All sessions, times & timetable' },
-  { href: 'experiences', label: 'Experiences', icon: '🗺', desc: 'Curated activities for every session gap' },
-  { href: 'getting-there', label: 'Getting There', icon: '🚃', desc: 'Transport, parking & gate times' },
-  { href: 'tips', label: 'Tips & FAQ', icon: '💡', desc: 'Weather, budget, tips & FAQ' },
+const NAV_ITEMS: { href: string; label: string; icon: IconName; desc: string }[] = [
+  { href: 'schedule', label: 'Weekend Schedule', icon: 'calendar', desc: 'All sessions, times & timetable' },
+  { href: 'experiences', label: 'Experiences', icon: 'map', desc: 'Curated activities for every session gap' },
+  { href: 'getting-there', label: 'Getting There', icon: 'train', desc: 'Transport, parking & gate times' },
+  { href: 'tips', label: 'Tips & FAQ', icon: 'lightbulb', desc: 'Weather, budget, tips & FAQ' },
   // Absolute: the planner lives at /itinerary, for this race.
-  { href: '/itinerary', label: 'Plan my weekend', icon: '🧭', desc: 'Your sessions + things to do around them' },
+  { href: '/itinerary', label: 'Plan my weekend', icon: 'compass', desc: 'Your sessions + things to do around them' },
 ];
 
 export default async function RaceLandingPage({ params }: Props) {
@@ -146,10 +147,10 @@ export default async function RaceLandingPage({ params }: Props) {
             <Link
               key={href}
               href={href.startsWith("/") ? `${href}?race=${raceKey(raceSlug)}` : `/races/${raceKey(raceSlug)}/${href}`}
-              className="group p-5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] hover:border-[var(--accent-teal)]/50 hover:bg-[var(--bg-surface)] transition-all"
+              className="group p-5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] hover:border-[var(--accent-strong)]/50 hover:bg-[var(--bg-surface)] transition-all"
             >
-              <span className="text-2xl block mb-3">{icon}</span>
-              <p className="font-display font-bold text-[var(--text-primary)] group-hover:text-[var(--accent-teal)] transition-colors mb-1">
+              <Icon name={icon} size={26} className="block mb-3 text-[var(--accent-red)]" />
+              <p className="font-display font-bold text-[var(--text-primary)] group-hover:text-[var(--accent-strong)] transition-colors mb-1">
                 {label}
               </p>
               <p className="text-xs text-[var(--text-secondary)]">{desc}</p>
@@ -186,7 +187,10 @@ export default async function RaceLandingPage({ params }: Props) {
                 <NearbyFeed
                   compact
                   pageSize={4}
-                  cards={liveFeed.cards}
+                  // The first 60 cover the list and the map's nearest pins; the full list is on the experiences page.
+                  cards={liveFeed.cards.slice(0, 60)}
+                  totalCount={liveFeed.cards.length}
+                  tierTotals={liveFeed.cards.reduce((t, c) => ({ ...t, [c.nearby.tier]: t[c.nearby.tier] + 1 }), { near: 0, city: 0, daytrip: 0, unknown: 0, 'too-far': 0 })}
                   raceSlug={raceSlug}
                   circuit={{ lat: race.circuitLat, lng: race.circuitLng, name: race.circuitName }}
                   moreHref={`/races/${raceKey(raceSlug)}/experiences`}
@@ -200,7 +204,7 @@ export default async function RaceLandingPage({ params }: Props) {
         ) : (
         <p className="text-[var(--text-secondary)] text-sm leading-relaxed mt-6 mb-2">
             Looking for things to do between sessions?{' '}
-            <Link href={`/races/${raceKey(raceSlug)}/experiences`} className="text-[var(--accent-teal)] hover:underline">
+            <Link href={`/races/${raceKey(raceSlug)}/experiences`} className="text-[var(--accent-strong)] hover:underline">
               Browse {race.city} F1 {race.season} experiences
             </Link>{' '}
             — curated activities matched to every session gap in the weekend.
@@ -266,7 +270,7 @@ export default async function RaceLandingPage({ params }: Props) {
                 {
                   day: 'Thursday',
                   badge: 'FREE DAY',
-                  badgeColor: 'var(--accent-teal)',
+                  badgeColor: 'var(--accent-strong)',
                   desc: `Fan activations at the circuit and ${race.city} city centre. No competitive sessions. Best day for full-day excursions or local tours. Gates open but no timing pressure.`,
                   gap: 'All day — 10+ hours available',
                 },
@@ -303,7 +307,7 @@ export default async function RaceLandingPage({ params }: Props) {
                     </span>
                   </div>
                   <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-2">{desc}</p>
-                  <p className="text-xs font-medium text-[var(--accent-teal)] mono-data">{gap}</p>
+                  <p className="text-xs font-medium text-[var(--accent-strong)] mono-data">{gap}</p>
                 </div>
               ))}
             </div>
@@ -324,14 +328,14 @@ export default async function RaceLandingPage({ params }: Props) {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
                 {thursdayExperiences.slice(0, 3).map((exp) => (
                   <div key={exp.id} className="p-5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
-                    <p className="text-xs font-medium uppercase-label text-[var(--accent-teal)] mb-2">
+                    <p className="text-xs font-medium uppercase-label text-[var(--accent-strong)] mb-2">
                       {exp.durationLabel}
                     </p>
                     <p className="font-display font-bold text-[var(--text-primary)] mb-2">{exp.title}</p>
                     <p className="text-xs text-[var(--text-secondary)] mb-4 line-clamp-3">
                       {exp.abstract ?? exp.shortDescription}
                     </p>
-                    <Link href={`/races/${raceKey(raceSlug)}/experiences/${exp.slug}`} className="text-xs font-medium text-[var(--accent-teal)] hover:text-[var(--text-primary)] transition-colors">
+                    <Link href={`/races/${raceKey(raceSlug)}/experiences/${exp.slug}`} className="text-xs font-medium text-[var(--accent-strong)] hover:text-[var(--text-primary)] transition-colors">
                       See experience →
                     </Link>
                   </div>
@@ -344,7 +348,7 @@ export default async function RaceLandingPage({ params }: Props) {
             )}
             <Link
               href={`/races/${raceKey(raceSlug)}/experiences?window=thursday`}
-              className="inline-block text-sm font-medium text-[var(--accent-teal)] hover:text-[var(--text-primary)] transition-colors"
+              className="inline-block text-sm font-medium text-[var(--accent-strong)] hover:text-[var(--text-primary)] transition-colors"
             >
               Browse all Thursday options →
             </Link>

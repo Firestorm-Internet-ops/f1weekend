@@ -23,6 +23,7 @@ export default function ExperienceMapClient({ raceSlug, circuit, mapsApiKey }: P
   const [loading, setLoading] = useState(true);
 
   const handleCategoryChange = (cat: string) => {
+    setLoading(true); // the effect below fetches the new list
     setCategory(cat);
     const params = new URLSearchParams();
     if (cat) params.set('category', cat);
@@ -31,7 +32,6 @@ export default function ExperienceMapClient({ raceSlug, circuit, mapsApiKey }: P
   };
 
   useEffect(() => {
-    setLoading(true);
     const params = new URLSearchParams({ race: raceSlug });
     if (category) params.set('category', category);
 

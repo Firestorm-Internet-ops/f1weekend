@@ -69,7 +69,7 @@ export default function RaceSwitcher({ currentRace, availableRaces, pageType }: 
                     <p className="text-xs text-[var(--text-secondary)]">{race.city} · {formatRaceDates(race.raceDate, race.hasThursdayFreeDay)}</p>
                   </div>
                   {race.slug === currentRace.slug && (
-                    <span className="text-xs text-[var(--accent-teal)] font-bold">✓</span>
+                    <span className="text-xs text-[var(--accent-strong)] font-bold">✓</span>
                   )}
                 </Link>
               ) : (

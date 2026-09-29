@@ -45,7 +45,7 @@ export default async function AboutPage() {
 
         {/* Section 1 — Hero / Intro */}
         <div className="mb-16">
-          <p className="text-xs font-medium uppercase-label text-[var(--accent-teal)] tracking-widest mb-3">
+          <p className="text-xs font-medium uppercase-label text-[var(--accent-strong)] tracking-widest mb-3">
             ABOUT US
           </p>
           <h1 className="font-display font-black text-4xl sm:text-5xl text-[var(--text-primary)] uppercase-heading leading-none mb-6">
@@ -121,7 +121,7 @@ export default async function AboutPage() {
                 key={stat.label}
                 className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] p-5 text-center"
               >
-                <div className="font-display font-black text-3xl text-[var(--accent-teal)] leading-none mb-2">
+                <div className="font-display font-black text-3xl text-[var(--accent-strong)] leading-none mb-2">
                   {stat.number}
                 </div>
                 <div className="font-display font-bold text-[var(--text-primary)] text-sm mb-1">{stat.label}</div>

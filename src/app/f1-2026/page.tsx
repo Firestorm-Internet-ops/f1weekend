@@ -135,7 +135,7 @@ export default async function F12026Page() {
             </p>
             <h1 className="font-display font-black text-4xl sm:text-5xl text-[var(--text-primary)] uppercase-heading leading-none mb-4">
               The 2026 F1 Season<br />
-              <span className="text-[var(--accent-teal)]">Travel Guide</span>
+              <span className="text-[var(--accent-strong)]">Travel Guide</span>
             </h1>
             <p className="text-[var(--text-secondary)] text-lg max-w-xl">
               23 races. 23 cities. One insane year. Your complete guide to following Formula 1 around the world.
@@ -170,17 +170,17 @@ export default async function F12026Page() {
                 <Link
                   key={race.slug}
                   href={`/races/${raceKey(race.slug)}`}
-                  className="group p-5 rounded-xl border border-[var(--accent-teal)]/30 bg-[var(--bg-secondary)] hover:border-[var(--accent-teal)]/70 hover:bg-[var(--bg-surface)] transition-all"
+                  className="group p-5 rounded-xl border border-[var(--accent-strong)]/30 bg-[var(--bg-secondary)] hover:border-[var(--accent-strong)]/70 hover:bg-[var(--bg-surface)] transition-all"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-2xl">{race.flag}</span>
-                        <span className="text-xs font-bold uppercase-label text-[var(--accent-teal)]">
+                        <span className="text-xs font-bold uppercase-label text-[var(--accent-strong)]">
                           Round {race.round}
                         </span>
                       </div>
-                      <h3 className="font-display font-bold text-[var(--text-primary)] group-hover:text-[var(--accent-teal)] transition-colors">
+                      <h3 className="font-display font-bold text-[var(--text-primary)] group-hover:text-[var(--accent-strong)] transition-colors">
                         {race.name}
                       </h3>
                       <p className="text-sm text-[var(--text-secondary)] mt-0.5">
@@ -190,7 +190,7 @@ export default async function F12026Page() {
                         {race.dates}, 2026
                       </p>
                     </div>
-                    <span className="text-xs font-bold px-3 py-1 rounded-full bg-[var(--accent-teal)]/15 text-[var(--accent-teal)] whitespace-nowrap mt-1">
+                    <span className="text-xs font-bold px-3 py-1 rounded-full bg-[var(--accent-strong)]/15 text-[var(--accent-strong)] whitespace-nowrap mt-1">
                       Full Guide →
                     </span>
                   </div>
@@ -223,7 +223,7 @@ export default async function F12026Page() {
                   {race.hasGuide && race.slug ? (
                     <Link
                       href={`/races/${raceKey(race.slug)}`}
-                      className="shrink-0 text-xs font-bold px-3 py-1.5 rounded-full bg-[var(--accent-teal)]/15 text-[var(--accent-teal)] hover:bg-[var(--accent-teal)]/25 transition-colors whitespace-nowrap"
+                      className="shrink-0 text-xs font-bold px-3 py-1.5 rounded-full bg-[var(--accent-strong)]/15 text-[var(--accent-strong)] hover:bg-[var(--accent-strong)]/25 transition-colors whitespace-nowrap"
                     >
                       Guide →
                     </Link>
@@ -252,7 +252,7 @@ export default async function F12026Page() {
                   key={q}
                   className="group rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] overflow-hidden"
                 >
-                  <summary className="px-5 py-4 cursor-pointer font-medium text-[var(--text-primary)] list-none flex items-center justify-between gap-3 hover:text-[var(--accent-teal)] transition-colors">
+                  <summary className="px-5 py-4 cursor-pointer font-medium text-[var(--text-primary)] list-none flex items-center justify-between gap-3 hover:text-[var(--accent-strong)] transition-colors">
                     <span>{q}</span>
                     <span className="text-[var(--text-secondary)] group-open:rotate-180 transition-transform shrink-0">▾</span>
                   </summary>

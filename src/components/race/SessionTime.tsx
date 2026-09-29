@@ -1,6 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
+
+const noSubscribe = () => () => {};
 import { sessionToUtcDate, formatInTimezone, getTimezoneAbbr } from '@/lib/utils';
 
 interface SessionTimeProps {
@@ -25,13 +27,10 @@ interface SessionTimeProps {
  *   12:30 PM AEDT  ·  9:30 PM EST
  */
 export function SessionTime({ raceDate, time, raceTz, localOnly = false }: SessionTimeProps) {
-  const [userTz, setUserTz] = useState<string | null>(null);
-
-  useEffect(() => {
-    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    // Only set if different from race timezone (no need to show twice)
-    if (tz !== raceTz) setUserTz(tz);
-  }, [raceTz]);
+  // The visitor's zone is only known in the browser (null on the server);
+  // shown only when it differs from the race's.
+  const browserTz = useSyncExternalStore(noSubscribe, () => Intl.DateTimeFormat().resolvedOptions().timeZone, () => null);
+  const userTz = browserTz && browserTz !== raceTz ? browserTz : null;
 
   const utcDate = sessionToUtcDate(raceDate, time, raceTz);
   const raceLocalTime = formatInTimezone(utcDate, raceTz);

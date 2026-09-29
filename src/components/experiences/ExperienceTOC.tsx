@@ -55,7 +55,7 @@ export default function ExperienceTOC({ sections }: Props) {
                 onClick={() => handleClick(s.id)}
                 className={`w-full text-left px-2 py-1.5 rounded text-sm transition-all duration-200 border-l-2 ${
                   isActive
-                    ? 'border-[var(--accent-teal)] text-[var(--accent-teal)] translate-x-1'
+                    ? 'border-[var(--accent-strong)] text-[var(--accent-strong)] translate-x-1'
                     : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                 }`}
                 style={isActive ? { transform: 'translateX(4px)' } : {}}

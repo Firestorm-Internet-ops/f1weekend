@@ -20,7 +20,7 @@ export default function SortSelector({ active, onChange }: Props) {
     <select
       value={active}
       onChange={(e) => onChange(e.target.value as SortOption)}
-      className="text-sm rounded-lg px-3 py-1.5 bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--text-secondary)] focus:outline-none focus:border-[var(--accent-teal)]"
+      className="text-sm rounded-lg px-3 py-1.5 bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--text-secondary)] focus:outline-none focus:border-[var(--accent-strong)]"
     >
       {OPTIONS.map((o) => (
         <option key={o.value} value={o.value}>
