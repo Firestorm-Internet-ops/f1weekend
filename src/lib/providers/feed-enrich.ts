@@ -143,6 +143,33 @@ export function diversify(cards: FeedCard[], top = 24): FeedCard[] {
   return [...lead, ...later];
 }
 
+// ─── A mix of booking sites ───────────────────────────────────────
+
+/** The site a card books on (the cheapest offer, shown as "on GetYourGuide"). */
+const siteOf = (c: FeedCard) => c.offers[0]?.provider ?? c.key.split(':')[0];
+
+/**
+ * GetYourGuide tours carry the most reviews, so ranking by reviews alone
+ * fills the first page with one site. Keeps the order, but never shows more
+ * than `maxRun` cards in a row from the same site: the next card from another
+ * site (within `lookahead` places) moves up instead.
+ */
+export function mixSites(cards: FeedCard[], maxRun = 2, lookahead = 30): FeedCard[] {
+  const rest = [...cards];
+  const out: FeedCard[] = [];
+  while (rest.length > 0) {
+    const run = out.slice(-maxRun).map(siteOf);
+    const blocked = run.length === maxRun && run.every((x) => x === run[0]) ? run[0] : null;
+    let i = 0;
+    if (blocked && siteOf(rest[0]) === blocked) {
+      const j = rest.slice(0, lookahead).findIndex((c) => siteOf(c) !== blocked);
+      if (j > 0) i = j;
+    }
+    out.push(rest.splice(i, 1)[0]);
+  }
+  return out;
+}
+
 // ─── Session gaps ─────────────────────────────────────────────────
 
 type Day = Session['dayOfWeek'];

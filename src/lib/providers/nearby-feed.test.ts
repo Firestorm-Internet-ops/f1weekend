@@ -1,7 +1,7 @@
 // Run: npm run test:providers
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildNearbyFeed, byNearest, displayTitle, groupSameProducts, isExperience, isTransfer, recommendedScore, relocateByTitle } from './nearby-feed';
+import { buildNearbyFeed, byNearest, displayTitle, groupSameProducts, isExperience, isTransfer, placeByLandmark, recommendedScore, relocateByTitle } from './nearby-feed';
 import type { NormalizedOffer } from './types';
 
 const SEPANG = { slug: 'bahrain-2026', lat: 2.7608, lng: 101.7382, placeWords: ['Kuala Lumpur', 'Malaysia'] };
@@ -149,4 +149,54 @@ test('transfers are their own list: airport and circuit rides, not tours or loun
   ];
   assert.deepEqual(buildNearbyFeed(offers, SEPANG, 'transfers').map((c) => c.title), ['KLIA Airport Private Transfer to Kuala Lumpur']);
   assert.deepEqual(buildNearbyFeed(offers, SEPANG).map((c) => c.title), ['Batu Caves Half-Day Tour']);
+});
+
+// ─── Singapore: tours with only a city centre for a location ──────
+const SINGAPORE = { slug: 'singapore-2026', lat: 1.2914, lng: 103.864, placeWords: ['Singapore'], city: 'Singapore' };
+const SG_CENTRE = { lat: 1.29378, lng: 103.853256 };
+
+test('a city-centre location is never "5 min from the circuit": the card says where it really is', () => {
+  const cards = buildNearbyFeed([
+    offer({ title: 'Singapore: Hawker Food Walking Tour', priceCurrency: 'SGD', ...SG_CENTRE, locationName: 'Singapore', approximateLocation: true }),
+    offer({ title: 'Singapore: Evening City Tour with Hotel Pickup', priceCurrency: 'SGD', ...SG_CENTRE, locationName: 'Singapore', approximateLocation: true, raw: { hasPickUp: true } }),
+  ], SINGAPORE);
+  const walk = cards.find((c) => /Hawker/.test(c.title))!;
+  const pickup = cards.find((c) => /Pickup/.test(c.title))!;
+  assert.equal(walk.travelLabel, 'Across Singapore');
+  assert.equal(pickup.travelLabel, 'Hotel pick-up in Singapore');
+  for (const c of [walk, pickup]) {
+    assert.notEqual(c.nearby.tier, 'near');
+    assert.ok(c.circuitMins! >= 30, `allows a cross-town trip, got ${c.circuitMins}`);
+  }
+});
+
+test('a tour naming a landmark moves there and gets a real travel time', () => {
+  const [sentosa] = buildNearbyFeed([
+    offer({ title: 'Singapore: Sentosa Island Cable Car Ticket', priceCurrency: 'SGD', ...SG_CENTRE, locationName: 'Singapore', approximateLocation: true }),
+  ], SINGAPORE);
+  assert.equal(sentosa.locationName, 'Sentosa');
+  assert.equal(sentosa.approximateLocation, false);
+  assert.match(sentosa.travelLabel!, /min from the circuit$/);
+  const zoo = placeByLandmark({ title: 'Night Safari Admission Ticket', lat: SG_CENTRE.lat, lng: SG_CENTRE.lng, locationName: 'Singapore', approximateLocation: true }, 'singapore-2026');
+  assert.match(zoo.locationName!, /Mandai/);
+  // Exact locations (Tiqets venues) are never moved.
+  const exact = placeByLandmark({ title: 'Sentosa ticket', lat: 1.3, lng: 103.8, locationName: 'X', approximateLocation: false }, 'singapore');
+  assert.equal(exact.lat, 1.3);
+  // The first place named wins.
+  const both = placeByLandmark({ title: 'Chinatown and Little India Food Tour', lat: 0, lng: 0, locationName: null, approximateLocation: true }, 'singapore');
+  assert.equal(both.locationName, 'Chinatown');
+});
+
+test('recommended order never shows three cards in a row from the same site', () => {
+  const many = [
+    ...['Hawker Food Walk', 'River Cruise Evening', 'Kayak Mangrove Paddle', 'Cooking Class Peranakan', 'Street Art Cycling', 'Heritage Shophouse Stroll', 'Night Photography Workshop', 'Bumboat Harbour Ride']
+      .map((title, i) => offer({ provider: 'getyourguide', title, reviewCount: 5000 - i, ...SG_CENTRE, approximateLocation: true })),
+    offer({ provider: 'viator', title: 'Viator distinct experience beta', reviewCount: 50, lat: 1.3, lng: 103.85 }),
+    offer({ provider: 'tiqets', title: 'Tiqets distinct attraction gamma', reviewCount: 40, lat: 1.28, lng: 103.86 }),
+  ];
+  const cards = buildNearbyFeed(many, SINGAPORE);
+  // Two GetYourGuide cards, then the next other site moves up, and again; once the
+  // other sites run out, the rest stay in order.
+  assert.deepEqual(cards.map((c) => c.offers[0].provider).slice(0, 6),
+    ['getyourguide', 'getyourguide', 'viator', 'getyourguide', 'getyourguide', 'tiqets']);
 });

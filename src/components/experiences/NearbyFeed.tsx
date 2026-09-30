@@ -7,6 +7,7 @@ import { providerName } from '@/lib/providers/meta';
 import { openFeedBooking, trackEvent } from '@/lib/analytics';
 import { FEED_CATEGORY_LABELS, byNearest, displayTitle, type FeedCard, type FeedCategory } from '@/lib/providers/nearby-feed';
 import { haversineKm, type NearbyTier } from '@/lib/nearby';
+import { mixSites } from '@/lib/providers/feed-enrich';
 import Icon from '@/components/ui/Icon';
 
 const WIDE = '(min-width: 768px)';
@@ -68,15 +69,28 @@ interface MapPoint {
   lat: number;
   lng: number;
   cards: FeedCard[];
+  /** Tours known only by their city (no exact location): one marker for all of them. */
+  across?: string;
 }
 
-/** Greedy clustering: each card joins the first pin within CLUSTER_KM, else starts one. */
+/**
+ * Greedy clustering: each card joins the first pin within CLUSTER_KM, else
+ * starts one. Tours with only a city centre for a location get one "across
+ * the city" marker per city instead of a pile of pins on its centre.
+ */
 function clusterCards(cards: FeedCard[]): MapPoint[] {
   const points: MapPoint[] = [];
   for (const c of cards) {
     if (c.lat == null || c.lng == null) continue;
+    if (c.approximateLocation && !c.destination && c.nearby.tier !== 'daytrip') {
+      const city = c.locationName ?? 'the city';
+      const blob = points.find((p) => p.across === city);
+      if (blob) blob.cards.push(c);
+      else points.push({ id: points.length, lat: c.lat, lng: c.lng, cards: [c], across: city });
+      continue;
+    }
     const here = { lat: c.lat, lng: c.lng };
-    const near = points.find((p) => haversineKm(p, here) <= CLUSTER_KM);
+    const near = points.find((p) => !p.across && haversineKm(p, here) <= CLUSTER_KM);
     if (near) near.cards.push(c);
     else points.push({ id: points.length, lat: c.lat, lng: c.lng, cards: [c] });
   }
@@ -85,6 +99,7 @@ function clusterCards(cards: FeedCard[]): MapPoint[] {
 
 /** The place name most cards at a pin share, e.g. "Kuala Lumpur". */
 function pointName(p: MapPoint): string {
+  if (p.across) return `Across ${p.across}`;
   const counts = new Map<string, number>();
   for (const c of p.cards) if (c.locationName) counts.set(c.locationName, (counts.get(c.locationName) ?? 0) + 1);
   return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? p.cards[0].title;
@@ -112,7 +127,16 @@ export default function NearbyFeed({ cards, raceSlug, circuit, pageSize = 24, co
     return m;
   }, [points]);
 
-  const spots: MapSpot[] = points.map((p) => ({
+  const spots: MapSpot[] = points.map((p) => p.across ? {
+    id: p.id,
+    lat: p.lat,
+    lng: p.lng,
+    tier: 'city',
+    title: `${p.cards.length} tour${p.cards.length === 1 ? '' : 's'} across ${p.across}`,
+    subtitle: 'No exact spot from the booking site: meeting points or hotel pick-up around the city',
+    count: p.cards.length,
+    area: true,
+  } : {
     id: p.id,
     lat: p.lat,
     lng: p.lng,
@@ -120,7 +144,7 @@ export default function NearbyFeed({ cards, raceSlug, circuit, pageSize = 24, co
     title: p.cards.length > 1 ? `${pointName(p)} · ${p.cards.length} experiences` : p.cards[0].title,
     subtitle: p.cards[0].travelLabel ?? p.cards[0].nearbyLabel,
     count: p.cards.length,
-  }));
+  });
 
   const tierCounts = useMemo(() => {
     const c: Record<NearbyTier, number> = { near: 0, city: 0, daytrip: 0, unknown: 0, 'too-far': 0 };
@@ -153,7 +177,9 @@ export default function NearbyFeed({ cards, raceSlug, circuit, pageSize = 24, co
   // In the default view the picks are already shown above; don't repeat them.
   const pickKeys = new Set([...picks.map((p) => p.key), ...excludeKeys]);
   const isDefaultView = tier === 'all' && category === 'all' && sort === 'recommended' && pointId === null;
-  const listed = isDefaultView ? filtered.filter((c) => !pickKeys.has(c.key)) : filtered;
+  const unpicked = isDefaultView ? filtered.filter((c) => !pickKeys.has(c.key)) : filtered;
+  // Recommended order mixes the booking sites (again after picks and filters take cards out).
+  const listed = sort === 'recommended' ? mixSites(unpicked) : unpicked;
   const visible = listed.slice(0, compact ? pageSize : shown);
   const selectedPoint = pointId !== null ? points.find((p) => p.id === pointId) : null;
 
@@ -372,7 +398,8 @@ function FeedCardView({ card, raceSlug, cities, onPin }: { card: FeedCard; raceS
   const instant = card.offers.some((o) => o.instantConfirmation);
   const isTrip = !!card.destination || card.nearby.tier === 'daytrip';
   // Day trips say where they go (the travel line); "In Kuala Lumpur" would be wrong.
-  const where = isTrip ? (card.destination ? null : 'Day trip') : card.locationName ? `${card.approximateLocation ? 'In' : 'At'} ${card.locationName}` : null;
+  // Tours known only by their city already say "Across Singapore" on the photo; don't repeat it.
+  const where = isTrip ? (card.destination ? null : 'Day trip') : card.locationName && !card.approximateLocation ? `At ${card.locationName}` : null;
   return (
     <article className="flex flex-col rounded-xl overflow-hidden border border-[var(--border-subtle)] bg-[var(--bg-secondary)] shadow-[0_1px_2px_rgba(21,21,30,0.04)] hover:shadow-[0_8px_24px_rgba(21,21,30,0.08)] transition-shadow">
       <div className="relative aspect-[16/10] bg-[var(--bg-tertiary)]">
@@ -391,6 +418,14 @@ function FeedCardView({ card, raceSlug, cities, onPin }: { card: FeedCard; raceS
           <span className="inline-block w-2 h-2 rounded-full" style={{ background: style.color }} />
           {card.travelLabel ?? 'Location unknown'}
         </button>
+        {others.length > 0 && (
+          <span
+            className="absolute right-3 top-3 px-2.5 py-1.5 rounded-full text-[11px] font-semibold text-[var(--text-primary)]"
+            style={{ background: 'rgba(255,255,255,0.94)', boxShadow: '0 1px 3px rgba(21,21,30,0.18)' }}
+          >
+            {card.offers.length} sites compared
+          </span>
+        )}
       </div>
 
       <div className="flex flex-col flex-1 p-4">
@@ -431,6 +466,19 @@ function FeedCardView({ card, raceSlug, cities, onPin }: { card: FeedCard; raceS
                 </p>
                 <span className="text-xs text-[var(--text-secondary)]">on {providerName(best.provider)}</span>
               </div>
+              {others.length > 0 && (
+                <p className="text-xs text-[var(--text-secondary)] -mt-1 mb-2">
+                  Also on{' '}
+                  {others.map((o, i) => (
+                    <span key={`${o.provider}:${o.productId}`}>
+                      {i > 0 && ' · '}
+                      <button onClick={() => openFeedBooking(raceSlug, o)} className="underline underline-offset-2 hover:text-[var(--text-primary)]">
+                        {providerName(o.provider)} {price(o.priceAmount, o.priceCurrency)}
+                      </button>
+                    </span>
+                  ))}
+                </p>
+              )}
               <button
                 onClick={() => openFeedBooking(raceSlug, best)}
                 className="w-full px-4 py-2.5 rounded-lg text-sm font-semibold bg-[var(--accent-red)] text-white hover:bg-[var(--accent-red-hover)] transition-colors"
@@ -438,19 +486,6 @@ function FeedCardView({ card, raceSlug, cities, onPin }: { card: FeedCard; raceS
                 Check availability →
               </button>
             </>
-          )}
-          {others.length > 0 && (
-            <p className="text-xs text-[var(--text-secondary)] mt-2">
-              Also on{' '}
-              {others.map((o, i) => (
-                <span key={`${o.provider}:${o.productId}`}>
-                  {i > 0 && ', '}
-                  <button onClick={() => openFeedBooking(raceSlug, o)} className="underline underline-offset-2 hover:text-[var(--text-primary)]">
-                    {providerName(o.provider)} {price(o.priceAmount, o.priceCurrency)}
-                  </button>
-                </span>
-              ))}
-            </p>
           )}
         </div>
       </div>
