@@ -59,10 +59,14 @@ export default async function ClusterTopicPage({ params }: Props) {
   // Bookable products that match the page (e.g. Day of the Dead tours), most reviewed
   // first; the page's looser matches only fill the row when there are too few.
   const feed = page.feed && hasLiveExperiences(race.slug) ? await getWeekendFeed(race) : null;
+  // Well-rated only (4.0+ when rated), best-rated first.
   const matching = (re: RegExp | undefined) => !feed || !re ? [] : feed.cards
-    .filter((c) => c.nearby.tier !== 'too-far' && re.test(c.title))
-    .sort((a, b) => b.reviewCount - a.reviewCount);
-  const picks = [...new Map([...matching(page.feed?.match), ...matching(page.feed?.fill)].map((c) => [c.key, c])).values()].slice(0, 3);
+    .filter((c) => c.nearby.tier !== 'too-far' && re.test(c.title) && (c.rating == null || c.rating >= 4))
+    .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0) || b.reviewCount - a.reviewCount);
+  const picks = [...new Map([...matching(page.feed?.match), ...matching(page.feed?.fill)].map((c) => [c.key, c])).values()]
+    .slice(0, 3)
+    // The session-gap label ("Fits Thursday…") ignores event dates like the 1–2 November vigils.
+    .map((c) => (page.feed?.hideFits ? { ...c, fitsLabel: null } : c));
 
   const label = links.find((l) => l.path === page.topic)?.label ?? page.h1;
   const breadcrumbLd = {
@@ -153,7 +157,7 @@ export default async function ClusterTopicPage({ params }: Props) {
             href={`/races/${key}/experiences`}
             className="inline-block px-5 py-2.5 bg-[var(--accent-red)] hover:bg-[var(--accent-red-hover)] text-white font-semibold text-sm rounded-full transition-colors"
           >
-            Everything to do in {race.city} on race weekend →
+            Everything to do in {race.city} on race&nbsp;weekend&nbsp;→
           </Link>
         </div>
 

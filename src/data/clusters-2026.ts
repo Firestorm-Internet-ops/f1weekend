@@ -43,8 +43,10 @@ export interface ClusterPage {
   /** Live-feed products worth showing on this page. */
   feed?: {
     match: RegExp;
-    /** Looser matches, used only when \`match\` finds fewer than three. */
+    /** Looser matches, used only when `match` finds fewer than three. */
     fill?: RegExp;
+    /** Hide "Fits <session gap>" on these cards (their own dates matter more). */
+    hideFits?: boolean;
     heading: string;
     description: string;
   };
@@ -148,9 +150,11 @@ function mexicoDayOfTheDead({ race, sessions }: ClusterContext): ClusterPage {
       },
     ],
     feed: {
-      match: /day of the dead|d[ií]a de (los )?muertos|catrina|mixquic|ofrenda/i,
+      // Day of the Dead itself; not mural or museum tours that only mention La Catrina.
+      match: /^(?!.*(mural|museum)).*(day of the dead|d[ií]a de (los )?muertos|catrina|mixquic|ofrenda)/i,
       // Tours of the places on this page, but not party boats.
       fill: /^(?!.*(party|drinks|booze)).*(xochimilco|coyoac[aá]n)/i,
+      hideFits: true,
       heading: 'Day of the Dead tours you can book',
       description: 'Tours and tickets from GetYourGuide, Viator and Tiqets; the price shown is the cheapest site for each.',
     },
@@ -214,7 +218,8 @@ function mexicoWhereToStay({ race }: ClusterContext): ClusterPage {
       },
     ],
     feed: {
-      match: /roma|condesa|food tour|taco|street food|walking tour|mezcal|lucha libre/i,
+      // Evening tours near where fans stay; no party or booze tours.
+      match: /^(?!.*(party|drinks|booze|pub crawl)).*(roma|condesa|food tour|taco|street food|walking tour|mezcal|lucha libre)/i,
       heading: 'Evenings in the city: food and walking tours',
       description: 'Well-reviewed tours near where most fans stay, from GetYourGuide, Viator and Tiqets.',
     },
