@@ -77,6 +77,16 @@ test('Day of the Dead tours: festival titles match; places only fill, and never 
   assert.ok(feed!.match.test('Day of the Dead Night Tour in Mixquic'));
   assert.ok(feed!.match.test('CDMX: Día de Muertos Catrina Makeup Experience'));
   assert.ok(!feed!.match.test('Xochimilco Boat Party with Unlimited Drinks'));
+  assert.ok(!feed!.match.test('La Catrina & Muralism: Diego Rivera’s Legacy & Frida Kahlo'));
+  assert.equal(feed!.hideFits, true);
   assert.ok(feed!.fill!.test('Xochimilco, Coyoacán and Frida Kahlo Museum Tour'));
   assert.ok(!feed!.fill!.test('Xochimilco Boat Party with Unlimited Drinks'));
+});
+
+test('where-to-stay tours: food and walking tours, never party tours', () => {
+  const { feed } = clusterPage('mexico', 'where-to-stay', { race, sessions: [] })!;
+  assert.ok(feed!.match.test('Roma & Condesa Street Food Tour'));
+  assert.ok(feed!.match.test('Historic Downtown Walking Tour'));
+  assert.ok(!feed!.match.test('Xochimilco Mezcal Party: Culture, Flavor and Fun'));
+  assert.ok(!feed!.match.test('Condesa Pub Crawl'));
 });

@@ -68,6 +68,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
+/** Where most fans stay, when it isn't simply the race's city (Sepang: the Bahrain GP moved to Malaysia). */
+const STAY_BASES: Record<string, string> = {
+  bahrain: 'Kuala Lumpur or Putrajaya',
+  qatar: 'Doha',
+  'abu-dhabi': 'Abu Dhabi city or on Yas Island',
+};
+
 const NAV_ITEMS: { href: string; label: string; icon: IconName; desc: string }[] = [
   { href: 'schedule', label: 'Weekend Schedule', icon: 'calendar', desc: 'All sessions, times & timetable' },
   { href: 'experiences', label: 'Experiences', icon: 'map', desc: 'Curated activities for every session gap' },
@@ -192,7 +199,8 @@ export default async function RaceLandingPage({ params }: Props) {
         />
 
         {answers && <AnswerFirst answers={answers} className="mb-12" />}
-        {cluster && <ClusterNav links={cluster} raceKey={raceKey(raceSlug)} city={race.city} className="mb-12" />}
+        {/* Getting There already has its own card below. */}
+        {cluster && <ClusterNav links={cluster.filter((l) => l.path !== 'getting-there')} raceKey={raceKey(raceSlug)} city={race.city} className="mb-12" />}
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {NAV_ITEMS.filter(item => item.href !== 'tips' || !!raceContent?.tipsContent).map(({ href, label, icon, desc }) => (
@@ -214,7 +222,8 @@ export default async function RaceLandingPage({ params }: Props) {
           <>
             <p className="text-[var(--text-secondary)] leading-relaxed mt-8">
               {moved && <>For {race.season} the {race.name} is held at {race.circuitName}, next to Kuala Lumpur International Airport, about 45 km south of central {race.city}. </>}
-              Round {race.round} runs {firstDateStr}–{sunStr}. Most fans stay in {race.city} or Putrajaya.
+              Round {race.round} runs {firstDateStr}–{sunStr}. Most fans stay in {STAY_BASES[raceKey(raceSlug)] ?? race.city}
+              {cluster?.some((l) => l.path === 'where-to-stay') ? <>: see <Link href={`/races/${raceKey(raceSlug)}/where-to-stay`} className="text-[var(--accent-red)] hover:underline">where to stay</Link>.</> : '.'}
               {liveFeed && liveFeed.cards.length > 0 && <> We list {liveFeed.cards.length} bookable experiences around the circuit{nearCount > 0 ? `, ${nearCount} of them within 30 minutes` : ''}, sorted by race-weekend travel time.</>}
             </p>
 
