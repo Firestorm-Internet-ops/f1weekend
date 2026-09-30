@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { CLUSTER_TOPICS, clusterHub, clusterLinks, clusterPage, clusterTopics } from './clusters-2026';
+import { CLUSTER_TOPICS, clusterHub, clusterLinks, clusterPage, clusterTopics, NOT_FOR_PICKS } from './clusters-2026';
 import { campaignId, pageFromPath } from '@/lib/providers/campaign';
 import type { Race, Session } from '@/types/race';
 
@@ -80,13 +80,18 @@ test('Day of the Dead tours: festival titles match; places only fill, and never 
   assert.ok(!feed!.match.test('La Catrina & Muralism: Diego Rivera’s Legacy & Frida Kahlo'));
   assert.equal(feed!.hideFits, true);
   assert.ok(feed!.fill!.test('Xochimilco, Coyoacán and Frida Kahlo Museum Tour'));
-  assert.ok(!feed!.fill!.test('Xochimilco Boat Party with Unlimited Drinks'));
+  assert.ok(NOT_FOR_PICKS.test('Xochimilco Boat Party with Unlimited Drinks'));
 });
 
-test('where-to-stay tours: food and walking tours, never party tours', () => {
+test('where-to-stay tours: food and walking tours near the hotels; no drinks tours on any page', () => {
   const { feed } = clusterPage('mexico', 'where-to-stay', { race, sessions: [] })!;
-  assert.ok(feed!.match.test('Roma & Condesa Street Food Tour'));
-  assert.ok(feed!.match.test('Historic Downtown Walking Tour'));
-  assert.ok(!feed!.match.test('Xochimilco Mezcal Party: Culture, Flavor and Fun'));
-  assert.ok(!feed!.match.test('Condesa Pub Crawl'));
+  const picked = (t: string) => feed!.match.test(t) && !feed!.exclude!.test(t) && !NOT_FOR_PICKS.test(t);
+  assert.ok(picked('Roma & Condesa Street Food Tour'));
+  assert.ok(picked('Historic Downtown Walking Tour'));
+  assert.ok(!picked('Xochimilco: Island of the Dolls, tequila and mezcal CDMX'));
+  assert.ok(!picked('Xochimilco Mezcal Party: Culture, Flavor and Fun'));
+  assert.ok(!picked('Condesa Pub Crawl'));
+  for (const t of ['Tequila Tasting in Roma', 'Mezcal Masterclass', 'Cantina Crawl in Centro', 'Open Bar Boat Ride', 'Boat Party with Unlimited Drinks'])
+    assert.ok(NOT_FOR_PICKS.test(t), t);
+  assert.ok(!NOT_FOR_PICKS.test('Day of the Dead Boat Tour and Dinner in Xochimilco'));
 });

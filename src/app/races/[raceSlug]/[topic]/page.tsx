@@ -5,7 +5,7 @@ import Breadcrumb from '@/components/Breadcrumb';
 import PageByline from '@/components/race/PageByline';
 import ClusterNav from '@/components/race/ClusterNav';
 import { FeedPicks } from '@/components/experiences/NearbyFeed';
-import { clusterLinks, clusterPage, type ClusterPage } from '@/data/clusters-2026';
+import { clusterLinks, clusterPage, MIN_PICK_REVIEWS, NOT_FOR_PICKS, type ClusterPage } from '@/data/clusters-2026';
 import { hasLiveExperiences } from '@/data/calendar-2026';
 import { getRaceBySlug, getSessionsByRace, resolveRaceSlug } from '@/services/race.service';
 import { getWeekendFeed } from '@/services/nearby-feed.service';
@@ -59,10 +59,13 @@ export default async function ClusterTopicPage({ params }: Props) {
   // Bookable products that match the page (e.g. Day of the Dead tours), most reviewed
   // first; the page's looser matches only fill the row when there are too few.
   const feed = page.feed && hasLiveExperiences(race.slug) ? await getWeekendFeed(race) : null;
-  // Well-rated only (4.0+ when rated), best-rated first.
+  // Well rated (4.0+) and well reviewed, most reviewed first, like every other tour list on
+  // the site; never party or drinks tours.
   const matching = (re: RegExp | undefined) => !feed || !re ? [] : feed.cards
-    .filter((c) => c.nearby.tier !== 'too-far' && re.test(c.title) && (c.rating == null || c.rating >= 4))
-    .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0) || b.reviewCount - a.reviewCount);
+    .filter((c) => c.nearby.tier !== 'too-far' && re.test(c.title)
+      && !NOT_FOR_PICKS.test(c.title) && !page.feed?.exclude?.test(c.title)
+      && (c.rating == null || c.rating >= 4) && c.reviewCount >= MIN_PICK_REVIEWS)
+    .sort((a, b) => b.reviewCount - a.reviewCount);
   const picks = [...new Map([...matching(page.feed?.match), ...matching(page.feed?.fill)].map((c) => [c.key, c])).values()]
     .slice(0, 3)
     // The session-gap label ("Fits Thursday…") ignores event dates like the 1–2 November vigils.
