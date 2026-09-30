@@ -16,6 +16,9 @@ import { FeedPicks } from '@/components/experiences/NearbyFeed';
 import { raceEventLd, webPageLd } from '@/lib/structured-data';
 import { hasLiveExperiences } from '@/data/calendar-2026';
 import { getNearbyFeed } from '@/services/nearby-feed.service';
+import ClusterNav from '@/components/race/ClusterNav';
+import { clusterLinks } from '@/data/clusters-2026';
+import { seoExperiment } from '@/data/seo-experiments';
 
 export const revalidate = 604800; // 1 week
 
@@ -64,6 +67,8 @@ export default async function GettingTherePage({ params }: Props) {
   const transport = raceContent?.transportGuide?.options ?? guide?.options ?? [];
   const mapsUrl = raceContent?.transportGuide?.mapsUrl ?? `https://www.google.com/maps/dir/?api=1&destination=${race.circuitLat},${race.circuitLng}&travelmode=transit`;
   const tzLabel = getTimezoneAbbr(race.timezone, new Date(race.raceDate));
+  // SEO experiment: in a topic cluster this page links to the race's other focused pages.
+  const cluster = seoExperiment(raceKey(raceSlug))?.variant === 'topic-cluster' && !race.rolledFrom ? clusterLinks(raceKey(raceSlug)) : null;
 
   const howToSchema = raceContent?.transportGuide?.howToSteps?.length ? {
     '@context': 'https://schema.org',
@@ -278,6 +283,10 @@ export default async function GettingTherePage({ params }: Props) {
               Browse {race.city} experiences →
             </Link>
           </section>
+
+          {cluster && (
+            <ClusterNav links={cluster} raceKey={raceKey(raceSlug)} city={race.city} current="getting-there" className="mt-12 pt-8 border-t border-[var(--border-subtle)]" />
+          )}
         </div>
       </div>
     </>

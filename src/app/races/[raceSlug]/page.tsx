@@ -28,6 +28,8 @@ import AnswerFirst from '@/components/race/AnswerFirst';
 import { answersFor } from '@/data/answers-2026';
 import { seoExperiment } from '@/data/seo-experiments';
 import { displayTitle } from '@/lib/providers/nearby-feed';
+import ClusterNav from '@/components/race/ClusterNav';
+import { clusterHub, clusterLinks } from '@/data/clusters-2026';
 
 interface Props {
   params: Promise<{ raceSlug: string }>;
@@ -46,6 +48,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return {
       title: { absolute: `${race.name} ${race.season}: Start Times, Getting to ${race.circuitName.replace(/^Circuit of the Americas$/, 'COTA')} & Things to Do | F1 Weekend` },
       description: `When the ${race.season} ${race.name} starts, where ${race.circuitName} is, how to get there, where to watch and where to stay in ${race.city}: short answers, then everything you can book around the sessions.`,
+      alternates: { canonical: `https://f1weekend.co/races/${raceKey(raceSlug)}` },
+    };
+  }
+  // SEO experiment: the topic-cluster race's title names the schedule and its lead page.
+  const hub = seoExperiment(raceKey(raceSlug))?.variant === 'topic-cluster' && !race.rolledFrom ? clusterHub(raceKey(raceSlug), race) : null;
+  if (hub) {
+    return {
+      title: { absolute: `${hub.title} | F1 Weekend` },
+      description: hub.description,
       alternates: { canonical: `https://f1weekend.co/races/${raceKey(raceSlug)}` },
     };
   }
@@ -124,6 +135,8 @@ export default async function RaceLandingPage({ params }: Props) {
         picks: (liveFeed?.picks ?? []).map((p) => displayTitle(p.title, [race.city])),
       })
     : null;
+  // SEO experiment: topic-cluster races link to their focused pages from the top.
+  const cluster = seoExperiment(raceKey(raceSlug))?.variant === 'topic-cluster' && !race.rolledFrom ? clusterLinks(raceKey(raceSlug)) : null;
   // Moved venue: the calendar's track image (F1's map) if set, else draw it from OpenStreetMap.
   const venueTrackImage = moved ? race.trackImage : undefined;
   const trackImageUrl = venueTrackImage && /^https:\/\//.test(venueTrackImage) ? venueTrackImage : undefined;
@@ -179,6 +192,7 @@ export default async function RaceLandingPage({ params }: Props) {
         />
 
         {answers && <AnswerFirst answers={answers} className="mb-12" />}
+        {cluster && <ClusterNav links={cluster} raceKey={raceKey(raceSlug)} city={race.city} className="mb-12" />}
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {NAV_ITEMS.filter(item => item.href !== 'tips' || !!raceContent?.tipsContent).map(({ href, label, icon, desc }) => (
