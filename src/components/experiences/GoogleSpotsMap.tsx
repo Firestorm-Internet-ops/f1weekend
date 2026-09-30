@@ -6,6 +6,7 @@ import { GoogleMap, InfoWindowF, MarkerF, useJsApiLoader } from '@react-google-m
 import { LIGHT_MAP_STYLE } from '@/lib/map-style';
 import { TIER_STYLE } from '@/lib/constants/nearby-styles';
 import { RACE_BASES, raceKey, type NearbyTier } from '@/lib/nearby';
+import { groupByZoom, type PinGroup } from '@/lib/map-groups';
 
 /** One pin: a single experience, or several at (nearly) the same place. */
 export interface MapSpot {
@@ -20,6 +21,8 @@ export interface MapSpot {
   count?: number;
   /** Link shown in the pin's info window. */
   href?: string;
+  /** No exact spot (placed near its city centre): drawn as a hollow pin. */
+  approx?: boolean;
 }
 
 interface Props {
@@ -29,19 +32,27 @@ interface Props {
   /** Browser Maps key, passed from the server (GOOGLE_MAPS_API_KEY). */
   apiKey: string;
   height?: string;
-  onSelect?: (id: number) => void;
-  selectedId?: number | null;
+  /** A pin (or a group you can't zoom into further) was chosen: the spot ids in it. */
+  onSelect?: (ids: number[]) => void;
+  selectedIds?: number[] | null;
   /** Legend numbers per distance group; defaults to pins per group. */
   legendCounts?: Partial<Record<NearbyTier, number>>;
 }
 
 const LEGEND_TIERS: NearbyTier[] = ['near', 'city', 'daytrip'];
+/** Pins closer than this on screen are drawn as one group; zooming in splits them. */
+const GROUP_PX = 44;
+/** From this zoom a group opens instead of zooming further. */
+const MAX_GROUP_ZOOM = 16;
+
+type Group = PinGroup<MapSpot>;
 
 /** Real Google map of experiences around a circuit, pins coloured by travel time. */
-export default function GoogleSpotsMap({ spots, raceSlug, circuit, apiKey, height = '480px', onSelect, selectedId = null, legendCounts }: Props) {
+export default function GoogleSpotsMap({ spots, raceSlug, circuit, apiKey, height = '480px', onSelect, selectedIds = null, legendCounts }: Props) {
   const { isLoaded, loadError } = useJsApiLoader({ id: 'google-map', googleMapsApiKey: apiKey });
   const [map, setMap] = useState<google.maps.Map | null>(null);
-  const [openId, setOpenId] = useState<number | null>(null);
+  const [openKey, setOpenKey] = useState<string | null>(null);
+  const [zoom, setZoom] = useState(11);
   const bases = useMemo(() => RACE_BASES[raceKey(raceSlug)] ?? [], [raceSlug]);
 
   // Stable initial centre: a new object each render would re-centre the map
@@ -49,6 +60,9 @@ export default function GoogleSpotsMap({ spots, raceSlug, circuit, apiKey, heigh
   const initialCenter = useMemo(() => ({ lat: circuit.lat, lng: circuit.lng }), [circuit.lat, circuit.lng]);
 
   const onLoad = useCallback((m: google.maps.Map) => setMap(m), []);
+  const onZoom = useCallback(() => { if (map) setZoom(map.getZoom() ?? 11); }, [map]);
+  const groups = useMemo(() => groupByZoom(spots, zoom, circuit.lat, GROUP_PX), [spots, zoom, circuit.lat]);
+  const selected = useMemo(() => new Set(selectedIds ?? []), [selectedIds]);
   const onUnmount = useCallback(() => setMap(null), []);
 
   // Fit to the circuit, where fans stay, and everything near / in the city.
@@ -76,8 +90,27 @@ export default function GoogleSpotsMap({ spots, raceSlug, circuit, apiKey, heigh
   }
   if (!isLoaded) return <div className="w-full rounded-2xl shimmer" style={{ height }} />;
 
-  const open = openId !== null ? spots.find((s) => s.id === openId) : null;
+  const openGroup = openKey !== null ? groups.find((g) => g.key === openKey) : null;
+  const open = openGroup
+    ? openGroup.members.length === 1
+      ? openGroup.members[0]
+      : { lat: openGroup.lat, lng: openGroup.lng, title: `${openGroup.count} experiences here`, subtitle: 'Listed below the map', href: undefined }
+    : null;
   const G = window.google.maps;
+
+  /** A group zooms in until its pins separate; a single pin (or a tight group) opens. */
+  const choose = (g: Group) => {
+    if (g.members.length > 1 && map && zoom < MAX_GROUP_ZOOM) {
+      const b = new G.LatLngBounds();
+      g.members.forEach((m) => b.extend({ lat: m.lat, lng: m.lng }));
+      map.fitBounds(b, 64);
+      if ((map.getZoom() ?? 0) <= zoom) map.setZoom(zoom + 2);
+      setOpenKey(null);
+      return;
+    }
+    setOpenKey(g.key);
+    onSelect?.(g.members.map((m) => m.id));
+  };
 
   return (
     <div>
@@ -96,7 +129,8 @@ export default function GoogleSpotsMap({ spots, raceSlug, circuit, apiKey, heigh
           }}
           onLoad={onLoad}
           onUnmount={onUnmount}
-          onClick={() => setOpenId(null)}
+          onZoomChanged={onZoom}
+          onClick={() => setOpenKey(null)}
         >
           <MarkerF
             position={{ lat: circuit.lat, lng: circuit.lng }}
@@ -115,33 +149,33 @@ export default function GoogleSpotsMap({ spots, raceSlug, circuit, apiKey, heigh
               zIndex={900}
             />
           ))}
-          {spots.map((s) => {
-            const n = s.count ?? 1;
-            const selected = s.id === selectedId;
+          {groups.map((g) => {
+            const n = g.count;
+            const isSelected = g.members.some((m) => selected.has(m.id));
+            // A group of only approximate pins is drawn hollow too.
+            const approx = g.members.every((m) => m.approx);
+            const color = TIER_STYLE[g.tier].color;
             return (
               <MarkerF
-                key={s.id}
-                position={{ lat: s.lat, lng: s.lng }}
-                title={s.title}
-                zIndex={selected ? 800 : n}
-                label={n > 1 ? { text: String(n), color: '#FFFFFF', fontSize: '11px', fontWeight: '700' } : undefined}
+                key={g.key}
+                position={{ lat: g.lat, lng: g.lng }}
+                title={g.members.length === 1 ? g.members[0].title : `${n} experiences`}
+                zIndex={isSelected ? 800 : approx ? 1 : n + 1}
+                label={n > 1 ? { text: String(n), color: approx ? color : '#FFFFFF', fontSize: '11px', fontWeight: '700' } : undefined}
                 icon={{
                   path: G.SymbolPath.CIRCLE,
                   scale: n > 1 ? Math.min(20, 10 + Math.log2(n) * 2) : 7,
-                  fillColor: TIER_STYLE[s.tier].color,
+                  fillColor: approx ? '#FFFFFF' : color,
                   fillOpacity: 1,
-                  strokeColor: selected ? '#15151E' : '#FFFFFF',
-                  strokeWeight: selected ? 3 : 2,
+                  strokeColor: isSelected ? '#15151E' : approx ? color : '#FFFFFF',
+                  strokeWeight: isSelected ? 3 : 2,
                 }}
-                onClick={() => {
-                  setOpenId(s.id);
-                  onSelect?.(s.id);
-                }}
+                onClick={() => choose(g)}
               />
             );
           })}
           {open && (
-            <InfoWindowF position={{ lat: open.lat, lng: open.lng }} onCloseClick={() => setOpenId(null)}>
+            <InfoWindowF position={{ lat: open.lat, lng: open.lng }} onCloseClick={() => setOpenKey(null)}>
               <div style={{ color: '#15151e', maxWidth: 220 }}>
                 <div style={{ fontWeight: 600, marginBottom: 2 }}>{open.title}</div>
                 {open.subtitle && <div style={{ fontSize: 12 }}>{open.subtitle}</div>}
@@ -163,6 +197,12 @@ export default function GoogleSpotsMap({ spots, raceSlug, circuit, apiKey, heigh
           </span>
         ))}
         {bases.length > 0 && <span>🏨 Where fans stay</span>}
+        {spots.some((s) => s.approx) && (
+          <span className="inline-flex items-center gap-1.5">
+            <span className="inline-block rounded-full border-2 bg-white" style={{ width: 11, height: 11, borderColor: TIER_STYLE.city.color }} />
+            Approximate (no exact spot from the booking site)
+          </span>
+        )}
       </div>
     </div>
   );

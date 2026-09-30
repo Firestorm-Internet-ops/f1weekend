@@ -5,8 +5,9 @@
  */
 import { applyNearbyRules, estimateTravelMins, haversineKm as haversine, nearbyLabel, RACE_TRAFFIC_FACTOR, type NearbyInfo, type NearbyTier } from '@/lib/nearby';
 import { scorePair, MATCH_THRESHOLDS } from './match';
-import { destinationOf, diversify, zoneFor, zoneLabel } from './feed-enrich';
+import { destinationOf, diversify, mixSites, zoneFor, zoneLabel } from './feed-enrich';
 import type { NormalizedOffer, ProviderId } from './types';
+import { landmarkIn } from '@/data/landmarks';
 
 export interface FeedOffer {
   provider: ProviderId;
@@ -87,6 +88,8 @@ export interface FeedCard {
   /** Every site selling it, cheapest first. */
   offers: FeedOffer[];
   category: FeedCategory;
+  /** Includes a hotel pick-up (so where it's "located" matters less). */
+  pickUp?: boolean;
 }
 
 export interface FeedRace {
@@ -119,7 +122,24 @@ export function relocateByTitle<T extends Pick<NormalizedOffer, 'title' | 'lat' 
   return { ...o, lat: place.lat, lng: place.lng, locationName: place.name };
 }
 
+/** Race-day minutes assumed for a tour known only to be "in the city". */
+const APPROX_CITY_MINS = 30;
+
 const hm = (mins: number) => (mins >= 60 ? `${Math.floor(mins / 60)}h${mins % 60 ? ` ${String(mins % 60).padStart(2, '0')}` : ''}` : `${mins} min`);
+
+/**
+ * Moves a tour with an approximate location (a city centre) to the landmark
+ * its title names, e.g. "Sentosa: …" → Sentosa. Exact locations are kept.
+ */
+export function placeByLandmark<T extends Pick<NormalizedOffer, 'title' | 'lat' | 'lng' | 'locationName' | 'approximateLocation'>>(
+  o: T,
+  raceKeyOrSlug: string
+): T {
+  if (!o.approximateLocation) return o;
+  const place = landmarkIn(o.title, raceKeyOrSlug.replace(/-\d{4}$/, ''));
+  if (!place) return o;
+  return { ...o, lat: place.lat, lng: place.lng, locationName: place.name, approximateLocation: false };
+}
 
 /** Race-day travel from the circuit, rounded to 5 min. */
 export function raceDayMinsFromCircuit(km: number): number {
@@ -207,7 +227,7 @@ export function buildNearbyFeed(offers: NormalizedOffer[], race: FeedRace, kind:
   const places = race.places ?? [];
   const keep = kind === 'transfers' ? isTransfer : isExperience;
   const groups = groupSameProducts(
-    offers.filter((o) => o.url && keep(o)).map((o) => relocateByTitle(o, places)),
+    offers.filter((o) => o.url && keep(o)).map((o) => placeByLandmark(relocateByTitle(o, places), race.slug)),
     race.placeWords
   );
 
@@ -220,8 +240,13 @@ export function buildNearbyFeed(offers: NormalizedOffer[], race: FeedRace, kind:
 
   // Agreed nearby rules: drop > 2 h, keep at most 3 day trips (the most popular ones).
   const { visible } = applyNearbyRules(items, race.slug, circuit);
-  const cards = visible.map(({ item, nearby }) => {
+  const cards = visible.map(({ item, nearby: measured }) => {
     const { group, lead, located } = item;
+    // Only a city centre to go on (GetYourGuide, Viator): the tour could be
+    // anywhere in the city, so it's never "near the circuit" and never "5 min away".
+    const approximate = located.approximateLocation ?? false;
+    const nearby: NearbyInfo = approximate && measured.tier === 'near' ? { ...measured, tier: 'city' } : measured;
+    const pickUp = group.some((o) => (o.raw as { hasPickUp?: boolean } | null)?.hasPickUp === true);
     const reviewTotal = group.reduce((n, o) => n + o.reviewCount, 0);
     const km = located.lat != null && located.lng != null ? haversine(circuit, { lat: located.lat, lng: located.lng }) : null;
     const circuitKm = km == null ? null : Math.round(km);
@@ -234,7 +259,9 @@ export function buildNearbyFeed(offers: NormalizedOffer[], race: FeedRace, kind:
     const isTrip = destination != null || nearby.tier === 'daytrip';
     // Out-of-town circuits: the realistic way in from where fans stay beats a road-speed guess.
     const zone = !isTrip && nearby.tier !== 'near' ? zoneFor(located, race.slug) : null;
-    const circuitMins = zone ? zone.mins : km == null ? null : raceDayMinsFromCircuit(km);
+    // Somewhere in the city: allow a typical cross-town trip rather than the distance to its centre.
+    const circuitMins = zone ? zone.mins : km == null ? null : Math.max(raceDayMinsFromCircuit(km), approximate ? APPROX_CITY_MINS : 0);
+    const cityName = located.locationName ?? race.city ?? 'the city';
     const rated = group.filter((o) => o.rating != null && o.reviewCount > 0);
     const rating = rated.length
       ? Math.round((rated.reduce((n, o) => n + o.rating! * o.reviewCount, 0) / rated.reduce((n, o) => n + o.reviewCount, 0)) * 10) / 10
@@ -259,21 +286,24 @@ export function buildNearbyFeed(offers: NormalizedOffer[], race: FeedRace, kind:
           : `Day trip from ${located.approximateLocation && located.locationName ? located.locationName : race.city ?? located.locationName ?? 'the city'}`
         : zone
           ? zoneLabel(zone)
-          : travelLabelFor(nearby, circuitMins),
+          : approximate
+            ? pickUp ? `Hotel pick-up in ${cityName}` : `Across ${cityName}`
+            : travelLabelFor(nearby, circuitMins),
       destination,
       rating,
       reviewCount: reviewTotal,
       offers: group.map(toFeedOffer).sort((a, b) => (a.priceAmount ?? Infinity) - (b.priceAmount ?? Infinity)),
       category,
+      pickUp,
     } satisfies FeedCard;
   });
 
   // Recommended order; ties (e.g. no reviews yet) → nearest first. Then no
-  // venue twice near the top.
-  return diversify(cards.sort((a, b) =>
+  // venue twice near the top, and no more than two cards in a row from one site.
+  return mixSites(diversify(cards.sort((a, b) =>
     recommendedScore(b) - recommendedScore(a) ||
     TIER_ORDER[a.nearby.tier] - TIER_ORDER[b.nearby.tier] ||
-    (a.circuitMins ?? Infinity) - (b.circuitMins ?? Infinity)));
+    (a.circuitMins ?? Infinity) - (b.circuitMins ?? Infinity))));
 }
 
 /** Nearest-first order (the "Nearest" sort). */
