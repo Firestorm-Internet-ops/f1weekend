@@ -23,6 +23,11 @@ import { resolveRaceSlug } from '@/services/race.service';
 import Icon, { type IconName } from '@/components/ui/Icon';
 import PageByline from '@/components/race/PageByline';
 import { raceEventLd, webPageLd } from '@/lib/structured-data';
+import type { Session } from '@/types/race';
+import AnswerFirst from '@/components/race/AnswerFirst';
+import { answersFor } from '@/data/answers-2026';
+import { seoExperiment } from '@/data/seo-experiments';
+import { displayTitle } from '@/lib/providers/nearby-feed';
 
 interface Props {
   params: Promise<{ raceSlug: string }>;
@@ -36,6 +41,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     getRaceContent(raceSlug),
   ]);
   if (!race) return {};
+  // SEO experiment: the answer-first race gets a title built from the questions it answers.
+  if (seoExperiment(raceKey(raceSlug))?.variant === 'answer-first') {
+    return {
+      title: { absolute: `${race.name} ${race.season}: Start Times, Getting to ${race.circuitName.replace(/^Circuit of the Americas$/, 'COTA')} & Things to Do | F1 Weekend` },
+      description: `When the ${race.season} ${race.name} starts, where ${race.circuitName} is, how to get there, where to watch and where to stay in ${race.city}: short answers, then everything you can book around the sessions.`,
+      alternates: { canonical: `https://f1weekend.co/races/${raceKey(raceSlug)}` },
+    };
+  }
   return {
     title: { absolute: raceContent?.pageTitle ?? `${race.name} ${race.season}${race.venueNote ? ` at ${race.circuitName.replace(/ International Circuit$/, '')}, ${race.country}` : ''} Travel Guide | F1 Weekend` },
     description: raceContent?.pageDescription ?? `Your complete travel companion for the ${race.name} at ${race.circuitName}, ${race.city}. Schedule, experiences, and transport guide.`,
@@ -102,6 +115,15 @@ export default async function RaceLandingPage({ params }: Props) {
   const moved = !!race.venueMoved;
   const tzLabel = getTimezoneAbbr(race.timezone, new Date(`${race.raceDate}T12:00:00Z`));
   const nearCount = liveFeed?.cards.filter((c) => c.nearby.tier === 'near').length ?? 0;
+  // SEO experiment (src/data/seo-experiments.ts): answer-first races lead with direct answers.
+  const answers = seoExperiment(raceKey(raceSlug))?.variant === 'answer-first'
+    ? answersFor(raceKey(raceSlug), {
+        race,
+        sessions: (liveSessions as Session[]).filter((s) => ['practice', 'qualifying', 'sprint', 'race'].includes(s.sessionType)),
+        tzLabel,
+        picks: (liveFeed?.picks ?? []).map((p) => displayTitle(p.title, [race.city])),
+      })
+    : null;
   // Moved venue: the calendar's track image (F1's map) if set, else draw it from OpenStreetMap.
   const venueTrackImage = moved ? race.trackImage : undefined;
   const trackImageUrl = venueTrackImage && /^https:\/\//.test(venueTrackImage) ? venueTrackImage : undefined;
@@ -155,6 +177,8 @@ export default async function RaceLandingPage({ params }: Props) {
             ...(live ? [{ label: 'GetYourGuide, Viator and Tiqets listings' }] : []),
           ]}
         />
+
+        {answers && <AnswerFirst answers={answers} className="mb-12" />}
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {NAV_ITEMS.filter(item => item.href !== 'tips' || !!raceContent?.tipsContent).map(({ href, label, icon, desc }) => (
@@ -380,7 +404,8 @@ export default async function RaceLandingPage({ params }: Props) {
           </div>
         )}
 
-        <RaceFaq items={faqs} heading={`${race.name} ${race.season}: FAQ`} className="mt-12 pt-8 border-t border-[var(--border-subtle)]" />
+        {/* Answer-first pages already carry their questions (and FAQ schema) at the top. */}
+        {!answers && <RaceFaq items={faqs} heading={`${race.name} ${race.season}: FAQ`} className="mt-12 pt-8 border-t border-[var(--border-subtle)]" />}
       </div>
     </div>
   );
