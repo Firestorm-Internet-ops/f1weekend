@@ -61,7 +61,32 @@ export async function fetchNearbyOffers(race: Pick<Race, 'city' | 'circuitLat' |
   return usd.failed.length < first.failed.length ? { ...usd, currency: 'USD' } : { ...first, currency: local };
 }
 
+/** A list missing a site is only reused this long, then fetched again (not for FEED_TTL). */
+const PARTIAL_TTL_MS = 10 * 60 * 1000;
+const partialFeeds = new Map<string, { feed: NearbyFeed; until: number }>();
+
+/** Thrown inside the cache so a list missing a site isn't stored for 6 hours. */
+class PartialFeed extends Error {
+  constructor(readonly feed: NearbyFeed) {
+    super(`partial feed: ${feed.failed.join(', ')} failed`);
+  }
+}
+
 export async function getNearbyFeed(race: Race): Promise<NearbyFeed> {
+  const key = `nearby-feed:${race.slug}:${race.circuitLat},${race.circuitLng}:v10`;
+  const recent = partialFeeds.get(key);
+  if (recent && recent.until > Date.now()) return recent.feed;
+  try {
+    return await buildCachedFeed(race, key);
+  } catch (err) {
+    if (!(err instanceof PartialFeed)) throw err;
+    // Show what we have, try the missing site again in 10 minutes.
+    partialFeeds.set(key, { feed: err.feed, until: Date.now() + PARTIAL_TTL_MS });
+    return err.feed;
+  }
+}
+
+function buildCachedFeed(race: Race, key: string): Promise<NearbyFeed> {
   return unstable_cache(
     async (): Promise<NearbyFeed> => {
       const { offers, currency, failed } = await fetchNearbyOffers(race);
@@ -75,9 +100,11 @@ export async function getNearbyFeed(race: Race): Promise<NearbyFeed> {
       };
       const cards = buildNearbyFeed(offers, feedRace);
       const transfers = buildNearbyFeed(offers, feedRace, 'transfers').slice(0, 8);
-      return { cards, transfers, currency, fetchedAt: new Date().toISOString(), failed };
+      const feed = { cards, transfers, currency, fetchedAt: new Date().toISOString(), failed };
+      if (failed.length > 0) throw new PartialFeed(feed);
+      return feed;
     },
-    [`nearby-feed:${race.slug}:${race.circuitLat},${race.circuitLng}:v9`],
+    [key],
     { revalidate: FEED_TTL, tags: ['nearby-feed', `nearby-feed:${race.slug}`] }
   )();
 }

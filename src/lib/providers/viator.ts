@@ -18,10 +18,17 @@ function headers(): Record<string, string> {
   };
 }
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** POST with two retries on rate limits (429) and server errors, 1 s then 2 s apart. */
 async function post<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, { method: 'POST', headers: headers(), body: JSON.stringify(body) });
-  if (!res.ok) throw new Error(`Viator ${path} → HTTP ${res.status}: ${(await res.text()).slice(0, 300)}`);
-  return res.json() as Promise<T>;
+  for (let attempt = 0; ; attempt++) {
+    const res = await fetch(`${BASE}${path}`, { method: 'POST', headers: headers(), body: JSON.stringify(body) });
+    if (res.ok) return res.json() as Promise<T>;
+    const retryable = res.status === 429 || res.status >= 500;
+    if (!retryable || attempt >= 2) throw new Error(`Viator ${path} → HTTP ${res.status}: ${(await res.text()).slice(0, 300)}`);
+    await sleep(1000 * 2 ** attempt);
+  }
 }
 
 interface ViatorProduct {
@@ -154,8 +161,16 @@ export const viator: ProviderAdapter = {
     const currency = q.currency ?? 'EUR';
     const dests = await destinationsNear(q.lat, q.lng, q.radiusKm ?? 50);
     const byCode = new Map<string, NormalizedOffer>();
+    const errors: string[] = [];
     for (const d of dests) {
-      const products = await searchDestination(String(d.destinationId), perDestination, currency);
+      // One destination failing (e.g. Batam) mustn't drop Viator from the whole race.
+      let products: ViatorProduct[];
+      try {
+        products = await searchDestination(String(d.destinationId), perDestination, currency);
+      } catch (err) {
+        errors.push(`${d.name}: ${(err as Error).message.slice(0, 120)}`);
+        continue;
+      }
       for (const p of products) {
         if (byCode.has(p.productCode)) continue;
         const n = normalizeViator(p);
@@ -166,6 +181,8 @@ export const viator: ProviderAdapter = {
         byCode.set(p.productCode, n);
       }
     }
+    if (errors.length > 0 && errors.length === dests.length) throw new Error(`Viator: every destination failed. ${errors[0]}`);
+    if (errors.length > 0) console.warn(`[viator] ${errors.length}/${dests.length} destinations failed:`, errors.join(' | '));
     return [...byCode.values()];
   },
 };
