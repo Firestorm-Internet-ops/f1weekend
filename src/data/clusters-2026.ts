@@ -47,6 +47,8 @@ export interface ClusterPage {
     fill?: RegExp;
     /** Hide "Fits <session gap>" on these cards (their own dates matter more). */
     hideFits?: boolean;
+    /** Titles to leave out on this page (on top of NOT_FOR_PICKS). */
+    exclude?: RegExp;
     heading: string;
     description: string;
   };
@@ -64,6 +66,11 @@ export interface ClusterContext {
 
 const byType = (sessions: Session[], type: Session['sessionType']) =>
   sessions.find((s) => s.sessionType === type && !/sprint/i.test(s.name));
+
+/** Never picked on a cluster page: party and drinks tours, whatever they call themselves. */
+export const NOT_FOR_PICKS = /party|drinks|booze|pub crawl|bar crawl|bar hopping|open bar|tequila|mezcal|cantina/i;
+/** Picks need this many reviews: a 5.0 from five people isn't a recommendation. */
+export const MIN_PICK_REVIEWS = 10;
 
 // ─── Mexico City ──────────────────────────────────────────────────────────
 
@@ -153,7 +160,7 @@ function mexicoDayOfTheDead({ race, sessions }: ClusterContext): ClusterPage {
       // Day of the Dead itself; not mural or museum tours that only mention La Catrina.
       match: /^(?!.*(mural|museum)).*(day of the dead|d[ií]a de (los )?muertos|catrina|mixquic|ofrenda)/i,
       // Tours of the places on this page, but not party boats.
-      fill: /^(?!.*(party|drinks|booze)).*(xochimilco|coyoac[aá]n)/i,
+      fill: /xochimilco|coyoac[aá]n/i,
       hideFits: true,
       heading: 'Day of the Dead tours you can book',
       description: 'Tours and tickets from GetYourGuide, Viator and Tiqets; the price shown is the cheapest site for each.',
@@ -218,8 +225,9 @@ function mexicoWhereToStay({ race }: ClusterContext): ClusterPage {
       },
     ],
     feed: {
-      // Evening tours near where fans stay; no party or booze tours.
-      match: /^(?!.*(party|drinks|booze|pub crawl)).*(roma|condesa|food tour|taco|street food|walking tour|mezcal|lucha libre)/i,
+      // Evening tours near where fans stay (Xochimilco is an hour south of them).
+      match: /roma|condesa|food tour|taco|street food|walking tour|lucha libre/i,
+      exclude: /xochimilco/i,
       heading: 'Evenings in the city: food and walking tours',
       description: 'Well-reviewed tours near where most fans stay, from GetYourGuide, Viator and Tiqets.',
     },
