@@ -22,8 +22,8 @@ export interface SeoExperiment {
 /** By race key (URL /races/<key>). Races not listed get the standard page. */
 export const SEO_EXPERIMENTS: Record<string, SeoExperiment> = {
   singapore: { variant: 'control', hypothesis: 'Baseline: the standard race page, unchanged.' },
-  usa: { variant: 'answer-first', hypothesis: 'Pages that answer real search questions directly win snippets, AI citations and clicks.' },
-  mexico: { variant: 'topic-cluster', hypothesis: 'Several focused pages beat one page.' },
+  usa: { variant: 'answer-first', hypothesis: 'Pages that answer real search questions directly win snippets, AI citations and clicks.', liveFrom: '2026-09-30' },
+  mexico: { variant: 'topic-cluster', hypothesis: 'Several focused pages (Day of the Dead, where to stay, getting there, weather and packing) linked from the race page beat one page.' },
   brazil: { variant: 'unique-data', hypothesis: 'Original data earns rankings where copied text cannot.' },
   'las-vegas': { variant: 'expert-guide', hypothesis: 'Depth and trust signals (sources, author, last verified) help ranking.' },
   qatar: { variant: 'freshness', hypothesis: 'Frequently updated pages are recrawled and ranked sooner.' },

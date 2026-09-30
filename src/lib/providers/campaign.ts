@@ -7,6 +7,8 @@
 
 export const CAMPAIGN_PAGES = [
   'home', 'race', 'experiences', 'experience', 'map', 'schedule', 'getting-there', 'tips', 'itinerary', 'calendar', 'other',
+  // Topic-cluster pages (src/data/clusters-2026.ts).
+  'day-of-the-dead', 'where-to-stay', 'weather-what-to-pack',
 ] as const;
 export type CampaignPage = typeof CAMPAIGN_PAGES[number];
 
@@ -24,6 +26,7 @@ export function pageFromPath(path: string | null | undefined): CampaignPage {
   if (rest === 'experiences/map') return 'map';
   if (rest.startsWith('experiences/')) return 'experience';
   if (rest === 'schedule' || rest === 'getting-there' || rest === 'tips') return rest;
+  if (rest === 'day-of-the-dead' || rest === 'where-to-stay' || rest === 'weather-what-to-pack') return rest;
   return 'other';
 }
 
