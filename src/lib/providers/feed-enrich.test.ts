@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { destinationOf, diversify, editorialPicks, gapFitLabel, venueKey, weekendGaps, withGapLabels, zoneFor } from './feed-enrich';
+import { destinationOf, diversify, editorialPicks, gapFitLabel, mixSites, venueKey, weekendGaps, withGapLabels, zoneFor } from './feed-enrich';
 import type { FeedCard } from './nearby-feed';
 import type { Session } from '@/types/race';
 
@@ -95,4 +95,12 @@ test('editorial picks: three different kinds, well reviewed, fitting a gap', () 
     card({ title: 'KL Tower Observation Deck', category: 'attraction', reviewCount: 900 }),
   ], SEPANG);
   assert.deepEqual(editorialPicks(cards).map((c) => c.title), ['Batu Caves Half-Day Tour', 'Jalan Alor Food Walk', 'KL Tower Observation Deck']);
+});
+
+test('mixSites keeps the order but breaks runs of three from one site; a lone site is left alone', () => {
+  const o = (provider: 'getyourguide' | 'viator' | 'tiqets') => [{ provider, productId: '1', url: 'u', priceAmount: 1, priceCurrency: 'SGD', rating: 5, reviewCount: 1, freeCancellation: false, instantConfirmation: false }];
+  const list = ['g1', 'g2', 'g3', 'g4', 'v1', 'g5', 't1'].map((k) => card({ key: k, title: k, offers: o(k[0] === 'g' ? 'getyourguide' : k[0] === 'v' ? 'viator' : 'tiqets') }));
+  assert.deepEqual(mixSites(list).map((c) => c.key), ['g1', 'g2', 'v1', 'g3', 'g4', 't1', 'g5']);
+  const onlyOne = ['a', 'b', 'c', 'd'].map((k) => card({ key: k, title: k, offers: o('getyourguide') }));
+  assert.deepEqual(mixSites(onlyOne).map((c) => c.key), ['a', 'b', 'c', 'd']);
 });

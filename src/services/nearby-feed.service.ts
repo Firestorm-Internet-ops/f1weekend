@@ -77,7 +77,7 @@ export async function getNearbyFeed(race: Race): Promise<NearbyFeed> {
       const transfers = buildNearbyFeed(offers, feedRace, 'transfers').slice(0, 8);
       return { cards, transfers, currency, fetchedAt: new Date().toISOString(), failed };
     },
-    [`nearby-feed:${race.slug}:${race.circuitLat},${race.circuitLng}:v7`],
+    [`nearby-feed:${race.slug}:${race.circuitLat},${race.circuitLng}:v8`],
     { revalidate: FEED_TTL, tags: ['nearby-feed', `nearby-feed:${race.slug}`] }
   )();
 }

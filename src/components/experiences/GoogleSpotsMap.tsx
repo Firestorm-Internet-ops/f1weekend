@@ -20,6 +20,8 @@ export interface MapSpot {
   count?: number;
   /** Link shown in the pin's info window. */
   href?: string;
+  /** Tours without an exact spot (somewhere in the city): drawn as a pale area, not a pin. */
+  area?: boolean;
 }
 
 interface Props {
@@ -118,6 +120,29 @@ export default function GoogleSpotsMap({ spots, raceSlug, circuit, apiKey, heigh
           {spots.map((s) => {
             const n = s.count ?? 1;
             const selected = s.id === selectedId;
+            if (s.area) {
+              return (
+                <MarkerF
+                  key={s.id}
+                  position={{ lat: s.lat, lng: s.lng }}
+                  title={s.title}
+                  zIndex={selected ? 800 : 1}
+                  label={{ text: String(n), color: '#15151E', fontSize: '12px', fontWeight: '700' }}
+                  icon={{
+                    path: G.SymbolPath.CIRCLE,
+                    scale: 26,
+                    fillColor: TIER_STYLE[s.tier].color,
+                    fillOpacity: 0.18,
+                    strokeColor: selected ? '#15151E' : TIER_STYLE[s.tier].color,
+                    strokeWeight: selected ? 3 : 1.5,
+                  }}
+                  onClick={() => {
+                    setOpenId(s.id);
+                    onSelect?.(s.id);
+                  }}
+                />
+              );
+            }
             return (
               <MarkerF
                 key={s.id}
@@ -163,6 +188,12 @@ export default function GoogleSpotsMap({ spots, raceSlug, circuit, apiKey, heigh
           </span>
         ))}
         {bases.length > 0 && <span>🏨 Where fans stay</span>}
+        {spots.some((s) => s.area) && (
+          <span className="inline-flex items-center gap-1.5">
+            <span className="inline-block rounded-full border" style={{ width: 11, height: 11, borderColor: TIER_STYLE.city.color, background: `${TIER_STYLE.city.color}2e` }} />
+            Across the city (no exact spot)
+          </span>
+        )}
       </div>
     </div>
   );
