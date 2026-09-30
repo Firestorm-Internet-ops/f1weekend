@@ -1,6 +1,8 @@
 import { getAllRaces } from '@/services/race.service';
 import { hasLiveExperiences } from '@/data/calendar-2026';
 import { raceKey } from '@/lib/race-url';
+import { clusterTopics } from '@/data/clusters-2026';
+import { seoExperiment } from '@/data/seo-experiments';
 
 export const dynamic = 'force-dynamic';
 
@@ -71,6 +73,12 @@ export async function GET() {
         changefreq: route.changefreq,
         priority: route.priority,
       });
+    }
+    // Topic-cluster pages (SEO experiment), e.g. /races/mexico/day-of-the-dead.
+    if (seoExperiment(raceKey(race.slug))?.variant === 'topic-cluster' && !race.rolledFrom) {
+      for (const topic of clusterTopics(raceKey(race.slug))) {
+        addUrl({ loc: `${baseUrl}/races/${raceKey(race.slug)}/${topic}`, changefreq: 'weekly', priority: '0.7' });
+      }
     }
   }
 

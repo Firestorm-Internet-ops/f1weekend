@@ -32,4 +32,4 @@ network; those were left out.)
 ## Log
 | Week | Impr. | Clicks | Avg pos. | Queries | Booking clicks | AI citations | Notes |
 |---|---|---|---|---|---|---|---|
-| Live from: _(date merged to main)_ | | | | | | | |
+| Live from: 30 Sep 2026 (PR #34 merged to main) | | | | | | | |

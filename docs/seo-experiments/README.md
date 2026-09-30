@@ -11,7 +11,7 @@ from the technique. Config: `src/data/seo-experiments.ts`.
 |---|---|---|---|---|
 | Singapore | 9–11 Oct | `control` | Baseline: the standard page, unchanged | [singapore.md](singapore.md) |
 | Austin | 23–25 Oct | `answer-first` | Real search questions as headings with 40–60-word direct answers win snippets, AI citations and clicks | [usa.md](usa.md) |
-| Mexico City | 30 Oct–1 Nov | `topic-cluster` | Several focused pages beat one page | [mexico.md](mexico.md) |
+| Mexico City | 30 Oct–1 Nov | `topic-cluster` | Several focused pages (Day of the Dead, where to stay, getting there, weather & packing) beat one page | [mexico.md](mexico.md) |
 | São Paulo | 6–8 Nov | `unique-data` | Original data (prices across sites, travel times, gap fits) earns rankings | [brazil.md](brazil.md) |
 | Las Vegas | 19–21 Nov | `expert-guide` | Depth + trust (sources, author, last verified) helps | [las-vegas.md](las-vegas.md) |
 | Qatar | 27–29 Nov | `freshness` | Weekly-updated pages get recrawled and ranked sooner | [qatar.md](qatar.md) |
@@ -47,7 +47,7 @@ the host country where relevant).
 | Race | Variant | Live from | Days live | Impr. | Clicks | Share of demand | Avg pos. | Queries | Booking clicks | AI citations | Verdict |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | Singapore | control | | | | | | | | | | |
-| Austin | answer-first | | | | | | | | | | |
+| Austin | answer-first | 30 Sep | | | | | | | | | |
 | Mexico City | topic-cluster | | | | | | | | | | |
 | São Paulo | unique-data | | | | | | | | | | |
 | Las Vegas | expert-guide | | | | | | | | | | |

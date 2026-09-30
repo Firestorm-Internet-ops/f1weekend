@@ -28,6 +28,8 @@ import AnswerFirst from '@/components/race/AnswerFirst';
 import { answersFor } from '@/data/answers-2026';
 import { seoExperiment } from '@/data/seo-experiments';
 import { displayTitle } from '@/lib/providers/nearby-feed';
+import ClusterNav from '@/components/race/ClusterNav';
+import { clusterHub, clusterLinks } from '@/data/clusters-2026';
 
 interface Props {
   params: Promise<{ raceSlug: string }>;
@@ -49,6 +51,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       alternates: { canonical: `https://f1weekend.co/races/${raceKey(raceSlug)}` },
     };
   }
+  // SEO experiment: the topic-cluster race's title names the schedule and its lead page.
+  const hub = seoExperiment(raceKey(raceSlug))?.variant === 'topic-cluster' && !race.rolledFrom ? clusterHub(raceKey(raceSlug), race) : null;
+  if (hub) {
+    return {
+      title: { absolute: `${hub.title} | F1 Weekend` },
+      description: hub.description,
+      alternates: { canonical: `https://f1weekend.co/races/${raceKey(raceSlug)}` },
+    };
+  }
   return {
     title: { absolute: raceContent?.pageTitle ?? `${race.name} ${race.season}${race.venueNote ? ` at ${race.circuitName.replace(/ International Circuit$/, '')}, ${race.country}` : ''} Travel Guide | F1 Weekend` },
     description: raceContent?.pageDescription ?? `Your complete travel companion for the ${race.name} at ${race.circuitName}, ${race.city}. Schedule, experiences, and transport guide.`,
@@ -56,6 +67,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     ...(raceContent?.pageKeywords?.length && { keywords: raceContent.pageKeywords }),
   };
 }
+
+/** Where most fans stay, when it isn't simply the race's city (Sepang: the Bahrain GP moved to Malaysia). */
+const STAY_BASES: Record<string, string> = {
+  bahrain: 'Kuala Lumpur or Putrajaya',
+  qatar: 'Doha',
+  'abu-dhabi': 'Abu Dhabi city or on Yas Island',
+};
 
 const NAV_ITEMS: { href: string; label: string; icon: IconName; desc: string }[] = [
   { href: 'schedule', label: 'Weekend Schedule', icon: 'calendar', desc: 'All sessions, times & timetable' },
@@ -124,6 +142,8 @@ export default async function RaceLandingPage({ params }: Props) {
         picks: (liveFeed?.picks ?? []).map((p) => displayTitle(p.title, [race.city])),
       })
     : null;
+  // SEO experiment: topic-cluster races link to their focused pages from the top.
+  const cluster = seoExperiment(raceKey(raceSlug))?.variant === 'topic-cluster' && !race.rolledFrom ? clusterLinks(raceKey(raceSlug)) : null;
   // Moved venue: the calendar's track image (F1's map) if set, else draw it from OpenStreetMap.
   const venueTrackImage = moved ? race.trackImage : undefined;
   const trackImageUrl = venueTrackImage && /^https:\/\//.test(venueTrackImage) ? venueTrackImage : undefined;
@@ -179,6 +199,8 @@ export default async function RaceLandingPage({ params }: Props) {
         />
 
         {answers && <AnswerFirst answers={answers} className="mb-12" />}
+        {/* Getting There already has its own card below. */}
+        {cluster && <ClusterNav links={cluster.filter((l) => l.path !== 'getting-there')} raceKey={raceKey(raceSlug)} city={race.city} className="mb-12" />}
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {NAV_ITEMS.filter(item => item.href !== 'tips' || !!raceContent?.tipsContent).map(({ href, label, icon, desc }) => (
@@ -200,7 +222,8 @@ export default async function RaceLandingPage({ params }: Props) {
           <>
             <p className="text-[var(--text-secondary)] leading-relaxed mt-8">
               {moved && <>For {race.season} the {race.name} is held at {race.circuitName}, next to Kuala Lumpur International Airport, about 45 km south of central {race.city}. </>}
-              Round {race.round} runs {firstDateStr}–{sunStr}. Most fans stay in {race.city} or Putrajaya.
+              Round {race.round} runs {firstDateStr}–{sunStr}. Most fans stay in {STAY_BASES[raceKey(raceSlug)] ?? race.city}
+              {cluster?.some((l) => l.path === 'where-to-stay') ? <>: see <Link href={`/races/${raceKey(raceSlug)}/where-to-stay`} className="text-[var(--accent-red)] hover:underline">where to stay</Link>.</> : '.'}
               {liveFeed && liveFeed.cards.length > 0 && <> We list {liveFeed.cards.length} bookable experiences around the circuit{nearCount > 0 ? `, ${nearCount} of them within 30 minutes` : ''}, sorted by race-weekend travel time.</>}
             </p>
 

@@ -9,11 +9,15 @@ export interface BylineSource {
 }
 
 function when(iso: string): string {
+  // A bare day (YYYY-MM-DD), e.g. when facts were last checked: no time of day.
+  if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) {
+    return new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${iso}T12:00:00Z`));
+  }
   return new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: 'UTC' }).format(new Date(iso)) + ' UTC';
 }
 
 export default function PageByline({ updated, updatedLabel = 'Updated', sources, className = '' }: {
-  /** ISO time the page's data was last refreshed. */
+  /** ISO time the page's data was last refreshed, or a bare day (YYYY-MM-DD). */
   updated?: string | null;
   updatedLabel?: string;
   sources: BylineSource[];

@@ -1,6 +1,7 @@
 import { getAvailableRaces } from '@/services/race.service';
 import { isRaceOver } from '@/data/calendar-2026';
 import { raceKey } from '@/lib/race-url';
+import { clusterLinks } from '@/data/clusters-2026';
 
 export const revalidate = 3600;
 
@@ -25,6 +26,10 @@ export async function GET() {
       `  - [Session times](${SITE}/races/${raceKey(r.slug)}/schedule)`,
       `  - [Getting to the circuit](${SITE}/races/${raceKey(r.slug)}/getting-there)`,
       `  - [Things to do on race weekend](${SITE}/races/${raceKey(r.slug)}/experiences)`,
+      // Focused pages (topic cluster), apart from Getting There, listed above.
+      ...(r.rolledFrom ? [] : clusterLinks(raceKey(r.slug)) ?? [])
+        .filter((l) => l.path !== 'getting-there')
+        .map((l) => `  - [${l.label}](${SITE}/races/${raceKey(r.slug)}/${l.path}): ${l.desc}`),
     ].join('\n');
   };
 
