@@ -30,6 +30,9 @@ import { seoExperiment } from '@/data/seo-experiments';
 import { displayTitle } from '@/lib/providers/nearby-feed';
 import ClusterNav from '@/components/race/ClusterNav';
 import { clusterHub, clusterLinks } from '@/data/clusters-2026';
+import UniqueData from '@/components/race/UniqueData';
+import { uniqueDataFor } from '@/data/unique-data-2026';
+import { getCircuitHistory, getRaceDayWeather, getStandings, getWeekendForecast } from '@/services/race-stats.service';
 
 interface Props {
   params: Promise<{ raceSlug: string }>;
@@ -48,6 +51,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return {
       title: { absolute: `${race.name} ${race.season}: Start Times, Getting to ${race.circuitName.replace(/^Circuit of the Americas$/, 'COTA')} & Things to Do | F1 Weekend` },
       description: `When the ${race.season} ${race.name} starts, where ${race.circuitName} is, how to get there, where to watch and where to stay in ${race.city}: short answers, then everything you can book around the sessions.`,
+      alternates: { canonical: `https://f1weekend.co/races/${raceKey(raceSlug)}` },
+    };
+  }
+  // SEO experiment: unique-data races lead with their data in the title.
+  const unique = seoExperiment(raceKey(raceSlug))?.variant === 'unique-data' && !race.rolledFrom ? uniqueDataFor(raceKey(raceSlug)) : null;
+  if (unique) {
+    return {
+      title: { absolute: `${unique.title(race.season)} | F1 Weekend` },
+      description: unique.description(race.season),
       alternates: { canonical: `https://f1weekend.co/races/${raceKey(raceSlug)}` },
     };
   }
@@ -144,6 +156,18 @@ export default async function RaceLandingPage({ params }: Props) {
     : null;
   // SEO experiment: topic-cluster races link to their focused pages from the top.
   const cluster = seoExperiment(raceKey(raceSlug))?.variant === 'topic-cluster' && !race.rolledFrom ? clusterLinks(raceKey(raceSlug)) : null;
+  // SEO experiment: unique-data races get standings, circuit history, race-day weather and the forecast.
+  const unique = seoExperiment(raceKey(raceSlug))?.variant === 'unique-data' && !race.rolledFrom ? uniqueDataFor(raceKey(raceSlug)) : null;
+  const tz = race.timezone ?? 'UTC';
+  const [standings, history] = unique
+    ? await Promise.all([getStandings(race.season), getCircuitHistory(unique.circuitId, 10)])
+    : [null, null];
+  const [raceWeather, forecast] = unique
+    ? await Promise.all([
+        getRaceDayWeather(race.circuitLat, race.circuitLng, tz, (history?.wins ?? []).map((w) => ({ season: w.season, date: w.date }))),
+        getWeekendForecast(race.circuitLat, race.circuitLng, tz, race.startDate ?? race.raceDate, race.raceDate),
+      ])
+    : [null, null];
   // Moved venue: the calendar's track image (F1's map) if set, else draw it from OpenStreetMap.
   const venueTrackImage = moved ? race.trackImage : undefined;
   const trackImageUrl = venueTrackImage && /^https:\/\//.test(venueTrackImage) ? venueTrackImage : undefined;
@@ -191,7 +215,7 @@ export default async function RaceLandingPage({ params }: Props) {
           className="-mt-6 mb-8 max-w-2xl"
           updated={liveFeed?.fetchedAt}
           updatedLabel="Experiences and prices refreshed"
-          sources={[
+          sources={unique ? unique.sources : [
             { label: 'Formula 1 timetable (Jolpica F1 API)', url: 'https://api.jolpi.ca/ergast/f1/' },
             ...(race.venueMoved && raceKey(race.slug) === 'bahrain' ? [{ label: 'Sepang International Circuit', url: 'https://www.sepangcircuit.com' }] : []),
             ...(live ? [{ label: 'GetYourGuide, Viator and Tiqets listings' }] : []),
@@ -200,6 +224,19 @@ export default async function RaceLandingPage({ params }: Props) {
 
         {answers && <AnswerFirst answers={answers} className="mb-12" />}
         {/* Getting There already has its own card below. */}
+        {unique && (
+          <UniqueData
+            race={race}
+            config={unique}
+            cards={liveFeed?.cards ?? []}
+            sessions={(liveSessions as Session[]).filter((s) => ['practice', 'qualifying', 'sprint', 'race'].includes(s.sessionType))}
+            standings={standings}
+            history={history}
+            weather={raceWeather}
+            forecast={forecast}
+            className="mb-12"
+          />
+        )}
         {cluster && <ClusterNav links={cluster.filter((l) => l.path !== 'getting-there')} raceKey={raceKey(raceSlug)} city={race.city} className="mb-12" />}
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
