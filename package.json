@@ -22,7 +22,7 @@
     "patch:miami-schedule": "tsx --env-file=.env scripts/patch-miami-2026-schedule.ts",
     "audit:nearby": "tsx scripts/audit-nearby.ts",
     "test:nearby": "tsx --test src/lib/nearby.test.ts src/lib/distance-map.test.ts src/lib/content-corrections.test.ts",
-    "test:providers": "tsx --test src/lib/providers/providers.test.ts src/lib/providers/nearby-feed.test.ts src/lib/providers/feed-enrich.test.ts src/lib/providers/campaign.test.ts src/data/calendar-2026.test.ts src/lib/jolpica.test.ts src/lib/itinerary-feed.test.ts src/lib/next-season.test.ts src/lib/rollover.test.ts src/lib/map-groups.test.ts src/data/answers-2026.test.ts src/data/clusters-2026.test.ts src/lib/track-outline.test.ts",
+    "test:providers": "tsx --test src/lib/providers/providers.test.ts src/lib/providers/nearby-feed.test.ts src/lib/providers/feed-enrich.test.ts src/lib/providers/campaign.test.ts src/data/calendar-2026.test.ts src/lib/jolpica.test.ts src/lib/itinerary-feed.test.ts src/lib/next-season.test.ts src/lib/rollover.test.ts src/lib/map-groups.test.ts src/lib/unique-data.test.ts src/data/answers-2026.test.ts src/data/clusters-2026.test.ts src/lib/track-outline.test.ts",
     "db:sync-calendar": "tsx scripts/sync-calendar-2026.ts",
     "db:migrate-offers": "tsx scripts/migrate-add-experience-offers.ts",
     "offers:fetch": "tsx scripts/fetch-provider-offers.ts"
