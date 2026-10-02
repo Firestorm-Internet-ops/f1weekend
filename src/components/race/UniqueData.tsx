@@ -97,7 +97,7 @@ export default function UniqueData({ race, config, cards, sessions, standings, h
 
       {(standings || history) && (
         <section id="form-guide" aria-labelledby="form-heading" className="scroll-mt-24">
-          <h2 id="form-heading" className={h2}>Who is in form for {race.name}?</h2>
+          <h2 id="form-heading" className={h2}>Who is in form for the {race.name}?</h2>
           <p className="text-[var(--text-secondary)] leading-relaxed mb-4">
             History, not a prediction: the 2026 rules brought all-new cars, so past results at {where} say less than usual. Current form matters most.
           </p>
