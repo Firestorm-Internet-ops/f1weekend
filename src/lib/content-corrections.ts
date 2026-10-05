@@ -29,6 +29,12 @@ const RACE_FIXES: Record<string, Fix[]> = {
     // Althorp House is about 40 minutes from the circuit by car, not 15.
     { pattern: /(Althorp[^.!?]*?)\b15[- ]minutes?\b/gi, replacement: '$1about 40 minutes' },
   ],
+  'las-vegas-2026': [
+    // The stored lap record predates 2025: Verstappen's 1:33.365 (formula1.com 2025 fastest laps).
+    { pattern: /1:34\.876 \(Lando Norris, 2024\)/g, replacement: '1:33.365 (Max Verstappen, 2025)' },
+    // The venue has been called "Sphere" since 2023; "MSG Sphere" is the old name.
+    { pattern: /\bMSG Sphere\b/g, replacement: 'Sphere' },
+  ],
 };
 
 /** Removes sentences that mention DRS from a paragraph. */
