@@ -4,7 +4,7 @@
  * tours (price guide, session-gap planner), the F1 timetable, race-day
  * weather history (Open-Meteo) and results (Jolpica). Pure functions, tested.
  */
-import { gapFitLabel, weekendGaps } from '@/lib/providers/feed-enrich';
+import { gapFitLabel, mixSites, weekendGaps } from '@/lib/providers/feed-enrich';
 import { recommendedScore, type FeedCard, type FeedCategory } from '@/lib/providers/nearby-feed';
 import type { Session } from '@/types/race';
 
@@ -75,6 +75,31 @@ export function gapPlanner(cards: FeedCard[], sessions: Session[], perGap = 3): 
       return { label: g.label, count: list.length, top: list.slice(0, perGap) };
     })
     .filter((p) => p.count > 0);
+}
+
+/**
+ * Schedule page: for every free slot, the best tours that fit it (recommended
+ * order, booking sites mixed), each tour shown in one slot only. `count` is
+ * every tour that fits the slot, so a Saturday slot isn't empty just because
+ * its tours also fit Friday.
+ */
+export function gapPicks(cards: FeedCard[], sessions: Session[], perGap = 3): GapPlan[] {
+  if (sessions.length === 0) return [];
+  const ranked = mixSites([...cards].sort((a, b) => recommendedScore(b) - recommendedScore(a)));
+  const shown = new Set<string>();
+  const plans: GapPlan[] = [];
+  for (const g of weekendGaps(sessions)) {
+    const fits = ranked.filter((c) => gapFitLabel(c, [g]) !== null);
+    const top = fits.filter((c) => !shown.has(c.key)).slice(0, perGap);
+    top.forEach((c) => shown.add(c.key));
+    if (top.length > 0) plans.push({ label: g.label, count: fits.length, top });
+  }
+  return plans;
+}
+
+/** "Fits Fri before FP1 17:30:00" → "Fri before FP1 17:30". */
+export function gapHeading(label: string): string {
+  return label.replace(/^Fits /, '').replace(/(\d{1,2}:\d{2}):\d{2}/g, '$1');
 }
 
 // ─── Race-day weather history ─────────────────────────────────────

@@ -42,6 +42,12 @@ the host country where relevant).
 - Site-wide changes during the test (recrawl, disavow taking effect) lift every
   race; compare races with each other, not with the past.
 
+### Site-wide changes during the test (apply to every race, the control included)
+| Date | Change |
+|---|---|
+| 5 Oct 2026 | Sitemap with honest `<lastmod>`, upcoming races first; www → f1weekend.co (308) |
+| 5 Oct 2026 | Bookable picks near the top of every live race page; "What to book between sessions" (3 tours per free slot) on every live schedule page |
+
 ## Scorecard (filled in after each race)
 
 | Race | Variant | Live from | Days live | Impr. | Clicks | Share of demand | Avg pos. | Queries | Booking clicks | AI citations | Verdict |

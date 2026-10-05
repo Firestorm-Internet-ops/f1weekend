@@ -126,7 +126,7 @@ export default async function F12026Page() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }} />
 
       <div className="min-h-screen pt-24 pb-24 px-4">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-[70rem] mx-auto [&_p]:max-w-3xl">
 
           {/* Header */}
           <div className="mb-10">

@@ -6,7 +6,7 @@ import { notFound } from 'next/navigation';
 import { hasLiveExperiences, isRaceOver } from '@/data/calendar-2026';
 import { getSessionsByRace } from '@/services/race.service';
 import { getWeekendFeed } from '@/services/nearby-feed.service';
-import NearbyFeed from '@/components/experiences/NearbyFeed';
+import NearbyFeed, { FeedPicks } from '@/components/experiences/NearbyFeed';
 import WeekendGlance from '@/components/race/WeekendGlance';
 import TrackOutline from '@/components/race/TrackOutline';
 import { getTrackSvg } from '@/services/track.service';
@@ -178,7 +178,7 @@ export default async function RaceLandingPage({ params }: Props) {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(raceEventLd(race)) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(webPageLd(`/races/${raceKey(raceSlug)}`, `${race.name} ${race.season} travel guide`, liveFeed?.fetchedAt)) }} />
-      <div className={live ? 'max-w-5xl mx-auto' : 'max-w-3xl mx-auto'}>
+      <div className="max-w-[70rem] mx-auto [&_p]:max-w-3xl">
         <Breadcrumb items={[
           { label: 'Home', href: '/' },
           { label: race.name },
@@ -222,6 +222,10 @@ export default async function RaceLandingPage({ params }: Props) {
           ]}
         />
 
+        {/* The first bookable things, near the top (most visitors leave within seconds). */}
+        {liveFeed && liveFeed.picks.length > 0 && !isRaceOver(race, new Date()) && (
+          <FeedPicks picks={liveFeed.picks} raceSlug={raceSlug} cities={[race.city]} className="mb-12" />
+        )}
         {answers && <AnswerFirst answers={answers} className="mb-12" />}
         {/* Getting There already has its own card below. */}
         {unique && (
@@ -292,6 +296,8 @@ export default async function RaceLandingPage({ params }: Props) {
                   raceSlug={raceSlug}
                   circuit={{ lat: race.circuitLat, lng: race.circuitLng, name: race.circuitName }}
                   moreHref={`/races/${raceKey(raceSlug)}/experiences`}
+                  // Picks are already shown at the top of the page.
+                  excludeKeys={isRaceOver(race, new Date()) ? [] : liveFeed.picks.map((p) => p.key)}
                   mapsApiKey={process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ''}
             cities={[race.city]}
             lazyMap
