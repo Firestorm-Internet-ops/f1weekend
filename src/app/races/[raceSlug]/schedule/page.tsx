@@ -12,6 +12,10 @@ import { resolveRaceSlug } from '@/services/race.service';
 import PageByline from '@/components/race/PageByline';
 import { raceEventLd, webPageLd } from '@/lib/structured-data';
 import { timetableFor } from '@/data/timetables-2026';
+import { hasLiveExperiences, isRaceOver } from '@/data/calendar-2026';
+import { getWeekendFeed } from '@/services/nearby-feed.service';
+import { gapHeading, gapPicks } from '@/lib/unique-data';
+import { FeedPicks } from '@/components/experiences/NearbyFeed';
 
 export const revalidate = 3600; // 1 hour
 
@@ -77,6 +81,11 @@ export default async function SchedulePage({ params }: Props) {
     getWindowsByRace(race.id),
   ]);
   const schedule = scheduleFromSessions(storedSchedule, sessions);
+  // Live-feed races: under the timetable, the tours that fit each free slot, bookable right here
+  // (visitors keep this page open all weekend; it had no Book buttons).
+  const live = hasLiveExperiences(raceSlug) && !race.rolledFrom && !isRaceOver(race, new Date());
+  const feed = live ? await getWeekendFeed(race).catch(() => null) : null;
+  const gapPlans = feed ? gapPicks(feed.cards, sessions) : [];
 
 
   // Map IANA timezone to UTC offset string for schema
@@ -154,7 +163,36 @@ export default async function SchedulePage({ params }: Props) {
           raceDate={race.raceDate}
           timezone={race.timezone}
         />
-        {raceContent?.sessionGapCopy && raceContent.sessionGapCopy.length > 0 && (
+        {gapPlans.length > 0 && (
+          <section id="between-sessions" className="mt-12 lg:-mx-28 border-t border-[var(--border-subtle)] pt-8 scroll-mt-24" aria-labelledby="between-sessions-heading">
+            <h2 id="between-sessions-heading" className="font-display font-bold text-xl text-[var(--text-primary)] uppercase-heading mb-2">
+              What to book between sessions
+            </h2>
+            <p className="text-[var(--text-secondary)] text-sm leading-relaxed mb-8">
+              For each free slot of the weekend, the best tours that fit it, travel to and from {race.circuitName} included.
+            </p>
+            <div className="space-y-10">
+              {gapPlans.map((p, i) => (
+                <FeedPicks
+                  key={p.label}
+                  id={`gap-${i}`}
+                  picks={p.top}
+                  raceSlug={raceSlug}
+                  cities={[race.city]}
+                  heading={gapHeading(p.label)}
+                  description={`${p.count} tour${p.count === 1 ? '' : 's'} fit this slot. Our top ${p.top.length}:`}
+                />
+              ))}
+            </div>
+            <Link
+              href={`/races/${raceKey(raceSlug)}/experiences`}
+              className="inline-block mt-8 text-sm font-medium text-[var(--accent-strong)] hover:text-[var(--text-primary)] transition-colors"
+            >
+              See all {feed?.cards.length} {race.city} experiences →
+            </Link>
+          </section>
+        )}
+        {gapPlans.length === 0 && raceContent?.sessionGapCopy && raceContent.sessionGapCopy.length > 0 && (
           <section className="mt-12 border-t border-[var(--border-subtle)] pt-8">
             <h2 className="font-display font-bold text-xl text-[var(--text-primary)] uppercase-heading mb-4">
               Session Gap Planner

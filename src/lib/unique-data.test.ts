@@ -1,7 +1,7 @@
 // Run: npm run test:providers
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { gapPlanner, money, priceGuide, weatherSummary, winsByTeam } from './unique-data';
+import { gapHeading, gapPicks, gapPlanner, money, priceGuide, weatherSummary, winsByTeam } from './unique-data';
 import type { FeedCard } from './providers/nearby-feed';
 import type { Session } from '@/types/race';
 
@@ -68,4 +68,23 @@ test('gap planner: each tour counts once, in the first slot it fits; best three 
 test('money formats whole amounts in the tour currency', () => {
   assert.match(money(104.6, 'BRL'), /R\$\s?105/);
   assert.match(money(40, 'USD'), /US\$40|\$40/);
+});
+
+test('gap picks: every slot gets its own best tours, none repeated; count is all that fit', () => {
+  const S = (id: number, day: Session['dayOfWeek'], start: string, end: string, type: Session['sessionType']): Session =>
+    ({ id, raceId: 1, name: type, shortName: type, dayOfWeek: day, startTime: start, endTime: end, sessionType: type });
+  const sessions = [S(1, 'Friday', '17:30', '18:30', 'practice'), S(2, 'Saturday', '17:30', '18:30', 'practice'), S(3, 'Sunday', '20:00', '22:00', 'race')];
+  const cards = Array.from({ length: 10 }, (_, i) => card({ reviewCount: 1000 - i * 10 }));
+  const plans = gapPicks(cards, sessions, 3);
+  const keys = plans.flatMap((p) => p.top.map((c) => c.key));
+  assert.equal(new Set(keys).size, keys.length, 'no tour in two slots');
+  assert.ok(plans.some((p) => p.label.includes('Sat')), 'Saturday is not empty');
+  assert.ok(plans.every((p) => p.top.length <= 3 && p.count >= p.top.length));
+  assert.equal(plans[0].count, 10);
+  assert.deepEqual(gapPicks(cards, []), []);
+});
+
+test('gap heading drops "Fits" and seconds', () => {
+  assert.equal(gapHeading('Fits Fri before FP1 17:30:00'), 'Fri before FP1 17:30');
+  assert.equal(gapHeading('Fits Sat after Qualifying (ends 22:00)'), 'Sat after Qualifying (ends 22:00)');
 });
