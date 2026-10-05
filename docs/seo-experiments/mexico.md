@@ -51,4 +51,4 @@ Race-specific trip searches ("hotel near autódromo", "mexico gp weather",
 ## Log
 | Week | Impr. | Clicks | Avg pos. | Queries | Booking clicks | AI citations | Notes |
 |---|---|---|---|---|---|---|---|
-| Live from: _(date merged to main)_ | | | | | | | |
+| Live from: 30 Sep 2026 (PR #38 merged to main) | | | | | | | |
