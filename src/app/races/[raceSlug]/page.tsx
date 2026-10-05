@@ -178,7 +178,7 @@ export default async function RaceLandingPage({ params }: Props) {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(raceEventLd(race)) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(webPageLd(`/races/${raceKey(raceSlug)}`, `${race.name} ${race.season} travel guide`, liveFeed?.fetchedAt)) }} />
-      <div className={live ? 'max-w-5xl mx-auto' : 'max-w-3xl mx-auto'}>
+      <div className="max-w-[70rem] mx-auto [&_p]:max-w-3xl">
         <Breadcrumb items={[
           { label: 'Home', href: '/' },
           { label: race.name },

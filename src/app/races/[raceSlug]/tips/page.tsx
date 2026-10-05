@@ -113,7 +113,7 @@ export default async function TipsPage({ params }: Props) {
       {faqLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }} />}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
 
-      <div className="max-w-3xl mx-auto">
+      <div className="max-w-[70rem] mx-auto [&_p]:max-w-3xl">
         <Breadcrumb items={[
           { label: 'Home', href: '/' },
           { label: race.name, href: `/races/${raceKey(raceSlug)}` },
