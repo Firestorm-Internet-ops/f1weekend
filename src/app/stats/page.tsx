@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { headers } from 'next/headers';
 import Link from 'next/link';
 import { and, eq, gte } from 'drizzle-orm';
 import { getDb } from '@/lib/db';
@@ -30,15 +29,17 @@ const titleCase = (k: string) => k.replace(/(^|-)([a-z])/g, (_, d, c) => `${d ? 
  * /stats: who clicked "Check availability", from which page, race and site.
  * Production needs ?key=<STATS_KEY>; staging and local open without one.
  */
-export default async function StatsPage({ searchParams }: { searchParams: Promise<{ key?: string; days?: string }> }) {
-  const { key, days: daysParam } = await searchParams;
+export default async function StatsPage({ searchParams }: { searchParams: Promise<{ key?: string; days?: string; site?: string }> }) {
+  const { key, days: daysParam, site } = await searchParams;
   if (process.env.VERCEL_ENV === 'production' && (!process.env.STATS_KEY || key !== process.env.STATS_KEY)) notFound();
 
   const days = RANGES.find((d) => String(d) === daysParam) ?? 30;
   const to = new Date();
   const from = new Date(to.getTime() - (days - 1) * 86_400_000);
   from.setUTCHours(0, 0, 0, 0);
-  const host = (await headers()).get('host') ?? 'f1weekend.co';
+  // Staging shares the production database: always report on the live site
+  // (?site=localhost:3100 to see local test clicks).
+  const host = site || new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://f1weekend.co').host;
 
   let rows: ClickRow[] = [];
   let tours: TourClick[] = [];
@@ -70,7 +71,7 @@ export default async function StatsPage({ searchParams }: { searchParams: Promis
   const s = summarize(rows, host, from, to);
   const top = topTours(tours);
   const maxDay = Math.max(1, ...s.byDay.map((d) => d.n));
-  const keyParam = key ? `&key=${encodeURIComponent(key)}` : '';
+  const keyParam = (key ? `&key=${encodeURIComponent(key)}` : '') + (site ? `&site=${encodeURIComponent(site)}` : '');
 
   return (
     <div className="min-h-screen pt-24 pb-24 px-4">
@@ -78,7 +79,7 @@ export default async function StatsPage({ searchParams }: { searchParams: Promis
         <p className="text-xs font-medium uppercase-label text-[var(--accent-red)] mb-2">Private · not indexed</p>
         <h1 className="font-display font-black text-4xl text-[var(--text-primary)] uppercase-heading mb-2">Booking clicks</h1>
         <p className="text-sm text-[var(--text-secondary)] max-w-3xl mb-6">
-          Clicks on the red &ldquo;Check availability&rdquo; buttons on {host}, last {days} days (UTC). Bots and clicks from other sites (staging, local) are left out.
+          Clicks on the red &ldquo;Check availability&rdquo; buttons on {host}, last {days} days (UTC). Bots and test clicks from staging or local copies are left out.
           A click is someone going to the booking site; the booking itself shows in the GetYourGuide, Viator and Tiqets dashboards.
         </p>
 
@@ -97,7 +98,7 @@ export default async function StatsPage({ searchParams }: { searchParams: Promis
           <Stat label="Booking clicks" value={s.clicks} />
           <Stat label="People who clicked" value={s.people} />
           <Stat label="Bot clicks left out" value={s.bots} muted />
-          <Stat label="From staging / other sites" value={s.elsewhere} muted />
+          <Stat label="Test clicks (staging, local)" value={s.elsewhere} muted />
         </div>
 
         <section className="mb-10" aria-labelledby="per-day">
