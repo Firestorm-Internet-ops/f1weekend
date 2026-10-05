@@ -33,6 +33,11 @@ import { clusterHub, clusterLinks } from '@/data/clusters-2026';
 import UniqueData from '@/components/race/UniqueData';
 import { uniqueDataFor } from '@/data/unique-data-2026';
 import { getCircuitHistory, getRaceDayWeather, getStandings, getWeekendForecast } from '@/services/race-stats.service';
+import ExpertGuide from '@/components/race/ExpertGuide';
+import { expertGuideFor, guideSources } from '@/data/expert-guides-2026';
+import { authorBySlug, authorLd, authorPath } from '@/data/authors';
+import { recommendedScore, type FeedCard } from '@/lib/providers/nearby-feed';
+import { mixSites } from '@/lib/providers/feed-enrich';
 
 interface Props {
   params: Promise<{ raceSlug: string }>;
@@ -61,6 +66,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: { absolute: `${unique.title(race.season)} | F1 Weekend` },
       description: unique.description(race.season),
       alternates: { canonical: `https://f1weekend.co/races/${raceKey(raceSlug)}` },
+    };
+  }
+  // SEO experiment: the expert-guide race's title names what the guide covers.
+  const metaGuide = seoExperiment(raceKey(raceSlug))?.variant === 'expert-guide' && !race.rolledFrom ? expertGuideFor(raceKey(raceSlug)) : null;
+  if (metaGuide) {
+    return {
+      title: { absolute: `${metaGuide.title(race.season)} | F1 Weekend` },
+      description: metaGuide.description(race.season),
+      alternates: { canonical: `https://f1weekend.co/races/${raceKey(raceSlug)}` },
+      authors: authorBySlug(metaGuide.author) ? [{ name: authorBySlug(metaGuide.author)!.name, url: `https://f1weekend.co${authorPath(authorBySlug(metaGuide.author)!)}` }] : undefined,
     };
   }
   // SEO experiment: the topic-cluster race's title names the schedule and its lead page.
@@ -158,6 +173,32 @@ export default async function RaceLandingPage({ params }: Props) {
   const cluster = seoExperiment(raceKey(raceSlug))?.variant === 'topic-cluster' && !race.rolledFrom ? clusterLinks(raceKey(raceSlug)) : null;
   // SEO experiment: unique-data races get standings, circuit history, race-day weather and the forecast.
   const unique = seoExperiment(raceKey(raceSlug))?.variant === 'unique-data' && !race.rolledFrom ? uniqueDataFor(raceKey(raceSlug)) : null;
+  // SEO experiment: the expert-guide race gets a long, sourced guide by a named author.
+  const guide = seoExperiment(raceKey(raceSlug))?.variant === 'expert-guide' && !race.rolledFrom ? expertGuideFor(raceKey(raceSlug)) : null;
+  const guideAuthor = guide ? authorBySlug(guide.author) : null;
+  const pickKeys = new Set((liveFeed?.picks ?? []).map((p) => p.key));
+  const guideTours: Record<string, FeedCard[]> = {};
+  for (const sec of guide?.sections ?? []) {
+    if (!sec.tours || !liveFeed) continue;
+    const match = liveFeed.cards
+      .filter((c) => sec.tours!.test(c.title) && !sec.toursExclude?.test(c.title) && (c.durationHours ?? 0) <= (sec.toursMaxHours ?? Infinity)
+        && !pickKeys.has(c.key) && (c.rating ?? 0) >= 4 && c.reviewCount >= 10)
+      .sort((a, b) => recommendedScore(b) - recommendedScore(a));
+    guideTours[sec.id] = mixSites(match).slice(0, 3);
+  }
+  const articleLd = guide && guideAuthor ? {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: guide.headline,
+    description: guide.description(race.season),
+    author: authorLd(guideAuthor),
+    publisher: { '@type': 'Organization', name: 'F1 Weekend', url: 'https://f1weekend.co' },
+    datePublished: guide.published,
+    dateModified: guide.lastChecked,
+    mainEntityOfPage: `https://f1weekend.co/races/${raceKey(raceSlug)}`,
+    image: `https://f1weekend.co${guideAuthor.photo}`,
+    citation: guideSources(guide).flatMap((src) => (src.url ? [src.url] : [])),
+  } : null;
   const tz = race.timezone ?? 'UTC';
   const [standings, history] = unique
     ? await Promise.all([getStandings(race.season), getCircuitHistory(unique.circuitId, 10)])
@@ -211,11 +252,13 @@ export default async function RaceLandingPage({ params }: Props) {
             {race.venueNote}
           </p>
         )}
+        {articleLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleLd) }} />}
         <PageByline
           className="-mt-6 mb-8 max-w-2xl"
-          updated={liveFeed?.fetchedAt}
-          updatedLabel="Experiences and prices refreshed"
-          sources={unique ? unique.sources : [
+          author={guideAuthor ? { name: guideAuthor.name, href: authorPath(guideAuthor) } : undefined}
+          updated={guide ? guide.lastChecked : liveFeed?.fetchedAt}
+          updatedLabel={guide ? 'Facts last checked' : 'Experiences and prices refreshed'}
+          sources={guide ? [{ label: 'listed under each section of the guide below' }] : unique ? unique.sources : [
             { label: 'Formula 1 timetable (Jolpica F1 API)', url: 'https://api.jolpi.ca/ergast/f1/' },
             ...(race.venueMoved && raceKey(race.slug) === 'bahrain' ? [{ label: 'Sepang International Circuit', url: 'https://www.sepangcircuit.com' }] : []),
             ...(live ? [{ label: 'GetYourGuide, Viator and Tiqets listings' }] : []),
@@ -227,6 +270,9 @@ export default async function RaceLandingPage({ params }: Props) {
           <FeedPicks picks={liveFeed.picks} raceSlug={raceSlug} cities={[race.city]} className="mb-12" />
         )}
         {answers && <AnswerFirst answers={answers} className="mb-12" />}
+        {guide && guideAuthor && (
+          <ExpertGuide guide={guide} author={guideAuthor} raceSlug={raceSlug} city={race.city} tours={guideTours} className="mb-12" />
+        )}
         {/* Getting There already has its own card below. */}
         {unique && (
           <UniqueData
