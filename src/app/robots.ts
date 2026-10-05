@@ -8,7 +8,7 @@ export default function robots() {
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/api/', '/itinerary/'],
+        disallow: ['/api/', '/itinerary/', '/stats'],
       },
       {
         userAgent: 'AdsBot-Google',
