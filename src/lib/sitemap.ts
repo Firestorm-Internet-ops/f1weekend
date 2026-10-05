@@ -13,6 +13,8 @@ import { clusterTopics } from '@/data/clusters-2026';
 import { seoExperiment } from '@/data/seo-experiments';
 import { raceKey } from '@/lib/race-url';
 import type { Race } from '@/types/race';
+import { AUTHORS, authorPath } from '@/data/authors';
+import { EXPERT_GUIDES } from '@/data/expert-guides-2026';
 
 export interface SitemapEntry {
   loc: string;
@@ -66,6 +68,14 @@ export function sitemapEntries(
   const switched = calendarLastmod(races, now);
   for (const r of STATIC_ROUTES) {
     add({ loc: `${baseUrl}${r.path}`, changefreq: r.changefreq, priority: r.priority, lastmod: r.followsCalendar ? switched : undefined });
+  }
+
+  // Author pages of authors with a guide on the site; lastmod = their latest checked guide.
+  for (const a of Object.values(AUTHORS)) {
+    const checked = Object.entries(EXPERT_GUIDES)
+      .filter(([key, g]) => g.author === a.slug && seoExperiment(key)?.variant === 'expert-guide')
+      .map(([, g]) => g.lastChecked).sort();
+    if (checked.length) add({ loc: `${baseUrl}${authorPath(a)}`, changefreq: 'monthly', priority: '0.4', lastmod: checked[checked.length - 1] });
   }
 
   // Upcoming first (calendar order kept within each group).
