@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { and, eq, gte } from 'drizzle-orm';
 import { getDb } from '@/lib/db';
 import { affiliate_clicks, events } from '@/lib/db/schema';
-import { providerName } from '@/lib/providers/meta';
+import { providerName, toProviderId } from '@/lib/providers/meta';
 import { summarize, topTours, type ClickRow, type Count, type TourClick } from '@/lib/click-stats';
 
 export const dynamic = 'force-dynamic';
@@ -23,7 +23,7 @@ const PAGE_LABELS: Record<string, string> = {
 };
 
 const SITE_LABEL = (k: string) => (k === 'unknown' ? 'Unknown' : providerName(k));
-const titleCase = (k: string) => k.replace(/(^|-)([a-z])/g, (_, d, c) => `${d ? ' ' : ''}${c.toUpperCase()}`);
+const titleCase = (k: string) => (k === 'usa' ? 'USA' : k.replace(/(^|-)([a-z])/g, (_, d, c) => `${d ? ' ' : ''}${c.toUpperCase()}`));
 
 /**
  * /stats: who clicked "Check availability", from which page, race and site.
@@ -53,7 +53,8 @@ export default async function StatsPage({ searchParams }: { searchParams: Promis
       })
       .from(affiliate_clicks)
       .where(gte(affiliate_clicks.clicked_at, from));
-    rows = raw.map((r) => ({ ...r, clickedAt: new Date(r.clickedAt ?? 0) }));
+    // Older rows spell the site differently ("GetYourGuide", "gyg"): one key per site.
+    rows = raw.map((r) => ({ ...r, partner: toProviderId(r.partner), clickedAt: new Date(r.clickedAt ?? 0) }));
     try {
       const ev = await db
         .select({ createdAt: events.created_at, data: events.event_data })
