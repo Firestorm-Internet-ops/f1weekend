@@ -120,7 +120,7 @@ export default async function GettingTherePage({ params }: Props) {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(raceEventLd(race)) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(webPageLd(`/races/${raceKey(raceSlug)}/getting-there`, `Getting to ${race.circuitName}`)) }} />
       <div className="min-h-screen pt-24 pb-24 px-4">
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-[70rem] mx-auto [&_p]:max-w-3xl">
           <div className="mb-10">
             <Breadcrumb items={[
               { label: 'Home', href: '/' },
@@ -160,7 +160,7 @@ export default async function GettingTherePage({ params }: Props) {
         </div>
 
         {raceContent?.circuitMapSrc && (
-          <div className="mb-12 max-w-5xl mx-auto">
+          <div className="mb-12 max-w-[70rem] mx-auto">
             <CircuitMap
               src={raceContent.circuitMapSrc}
               alt={`${race.circuitName} — Track Map`}
@@ -171,7 +171,7 @@ export default async function GettingTherePage({ params }: Props) {
           </div>
         )}
 
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-[70rem] mx-auto [&_p]:max-w-3xl">
           {transport.length > 0 && (
             <section className="mb-12">
               <h2 className="font-display font-bold text-xl text-[var(--text-primary)] uppercase-heading mb-6">

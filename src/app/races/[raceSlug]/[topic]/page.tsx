@@ -97,7 +97,7 @@ export default async function ClusterTopicPage({ params }: Props) {
         <script key={i} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }} />
       ))}
 
-      <div className="max-w-3xl mx-auto">
+      <div className="max-w-[70rem] mx-auto [&_p]:max-w-3xl">
         <Breadcrumb items={[
           { label: 'Home', href: '/' },
           { label: race.name, href: `/races/${key}` },

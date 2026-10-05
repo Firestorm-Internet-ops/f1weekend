@@ -121,7 +121,7 @@ export default async function SchedulePage({ params }: Props) {
     <div className="min-h-screen">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(scheduleLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(webPageLd(`/races/${raceKey(raceSlug)}/schedule`, `${race.name} ${race.season} schedule`)) }} />
-      <section className="max-w-3xl mx-auto px-4 pt-24 pb-16">
+      <section className="max-w-6xl mx-auto [&_p]:max-w-3xl px-4 pt-24 pb-16">
         <Breadcrumb items={[
           { label: 'Home', href: '/' },
           { label: race.city, href: `/races/${raceKey(raceSlug)}` },
@@ -164,7 +164,7 @@ export default async function SchedulePage({ params }: Props) {
           timezone={race.timezone}
         />
         {gapPlans.length > 0 && (
-          <section id="between-sessions" className="mt-12 lg:-mx-28 border-t border-[var(--border-subtle)] pt-8 scroll-mt-24" aria-labelledby="between-sessions-heading">
+          <section id="between-sessions" className="mt-12 border-t border-[var(--border-subtle)] pt-8 scroll-mt-24" aria-labelledby="between-sessions-heading">
             <h2 id="between-sessions-heading" className="font-display font-bold text-xl text-[var(--text-primary)] uppercase-heading mb-2">
               What to book between sessions
             </h2>
