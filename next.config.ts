@@ -16,6 +16,13 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
+      // One host: www.f1weekend.co served the same pages as f1weekend.co (duplicates in search).
+      {
+        source: '/:path*',
+        has: [{ type: 'host', value: 'www.f1weekend.co' }],
+        destination: 'https://f1weekend.co/:path*',
+        permanent: true,
+      },
       // Race URLs dropped the year (/races/bahrain-2026/schedule → /races/bahrain/schedule):
       // one address per race that keeps its rankings from season to season.
       {
