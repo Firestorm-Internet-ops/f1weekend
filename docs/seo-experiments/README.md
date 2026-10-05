@@ -49,7 +49,7 @@ the host country where relevant).
 | Singapore | control | | | | | | | | | | |
 | Austin | answer-first | 30 Sep | | | | | | | | | |
 | Mexico City | topic-cluster | 30 Sep | | | | | | | | | |
-| São Paulo | unique-data | | | | | | | | | | |
+| São Paulo | unique-data | 5 Oct | | | | | | | | | |
 | Las Vegas | expert-guide | | | | | | | | | | |
 | Qatar | freshness | | | | | | | | | | |
 | Abu Dhabi | validation | | | | | | | | | | |

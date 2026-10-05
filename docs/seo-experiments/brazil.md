@@ -49,4 +49,4 @@ session-gap planner) earns rankings and AI citations that copied text cannot.
 ## Log
 | Week | Impr. | Clicks | Avg pos. | Queries | Booking clicks | AI citations | Notes |
 |---|---|---|---|---|---|---|---|
-| Live from: _(date merged to main)_ | | | | | | | |
+| Live from: 5 Oct 2026 (released to main with the sitemap update; baseline: 0 GSC clicks site-wide in the 30 days before) | | | | | | | |
