@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { fromReferer, isBot, summarize, topTours, type ClickRow } from './click-stats';
+import { fromReferer, isBot, recentClicks, summarize, topTours, type ClickRow } from './click-stats';
 
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/129 Safari/537.36';
 const row = (over: Partial<ClickRow>): ClickRow => ({
@@ -49,4 +49,20 @@ test('top tours: one row per product, most clicked first', () => {
   const c = (productId: string, t = '2026-10-04T10:00:00Z') => ({ clickedAt: new Date(t), provider: 'viator', race: 'singapore', productId, title: `Tour ${productId}` });
   const top = topTours([c('a'), c('b'), c('b'), c('c', '2026-10-05T10:00:00Z')]);
   assert.deepEqual(top.map((t) => [t.productId, t.n]), [['b', 2], ['c', 1], ['a', 1]]);
+});
+
+test('recent clicks: people on this site, newest first, with the tour when known', () => {
+  const list = recentClicks([
+    row({ clickedAt: new Date('2026-10-03T10:00:00Z'), experienceTitle: 'Night Safari' }),
+    row({ clickedAt: new Date('2026-10-04T10:00:00Z'), partner: 'viator', sessionId: 'abcdef123' }),
+    row({ clickedAt: new Date('2026-10-04T11:00:00Z'), userAgent: 'Googlebot/2.1' }),
+    row({ clickedAt: new Date('2026-10-04T12:00:00Z'), referer: 'https://staging.f1weekend.co/races/usa' }),
+  ], 'f1weekend.co', from, to, [
+    { clickedAt: new Date('2026-10-04T10:00:20Z'), provider: 'viator', race: 'singapore', productId: 'p1', title: 'Gardens by the Bay', sessionId: 'abcdef123' },
+  ]);
+  assert.equal(list.length, 2);
+  assert.equal(list[0].tour, 'Gardens by the Bay');
+  assert.equal(list[0].visitor, 'abcdef');
+  assert.equal(list[1].tour, 'Night Safari');
+  assert.equal(list[1].page, 'schedule');
 });
