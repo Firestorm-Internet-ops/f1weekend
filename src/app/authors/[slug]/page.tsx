@@ -4,8 +4,7 @@ import { notFound } from 'next/navigation';
 import AuthorBox from '@/components/AuthorBox';
 import Breadcrumb from '@/components/Breadcrumb';
 import { AUTHORS, authorBySlug, authorLd, authorPath } from '@/data/authors';
-import { EXPERT_GUIDES } from '@/data/expert-guides-2026';
-import { seoExperiment } from '@/data/seo-experiments';
+import { EXPERT_GUIDES, liveGuide } from '@/data/expert-guides-2026';
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -18,7 +17,7 @@ export function generateStaticParams() {
 /** Guides by this author that are on the site (their race runs the expert-guide test). */
 function guidesBy(slug: string) {
   return Object.entries(EXPERT_GUIDES)
-    .filter(([key, g]) => g.author === slug && seoExperiment(key)?.variant === 'expert-guide')
+    .filter(([key, g]) => g.author === slug && liveGuide(key) !== null)
     .map(([key, g]) => ({ key, headline: g.headline, lastChecked: g.lastChecked }));
 }
 
@@ -40,6 +39,8 @@ export default async function AuthorPage({ params }: Props) {
   const author = authorBySlug((await params).slug);
   if (!author) notFound();
   const guides = guidesBy(author.slug);
+  // No published guide yet: no author page on the live site.
+  if (guides.length === 0 && process.env.VERCEL_ENV === 'production') notFound();
   const ld = {
     '@context': 'https://schema.org',
     '@type': 'ProfilePage',

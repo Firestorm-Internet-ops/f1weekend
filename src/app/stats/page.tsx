@@ -1,11 +1,9 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { and, eq, gte } from 'drizzle-orm';
-import { getDb } from '@/lib/db';
-import { affiliate_clicks, events, experiences } from '@/lib/db/schema';
-import { providerName, toProviderId } from '@/lib/providers/meta';
-import { recentClicks, summarize, topTours, type ClickRow, type Count, type TourClick } from '@/lib/click-stats';
+import { providerName } from '@/lib/providers/meta';
+import { liveHost, loadClicks } from '@/services/click-stats.service';
+import { recentClicks, summarize, toursClicked, type Count } from '@/lib/click-stats';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,41 +37,14 @@ export default async function StatsPage({ searchParams }: { searchParams: Promis
   from.setUTCHours(0, 0, 0, 0);
   // Staging shares the production database: always report on the live site
   // (?site=localhost:3100 to see local test clicks).
-  const host = site || new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://f1weekend.co').host;
+  const host = site || liveHost();
 
-  let rows: ClickRow[] = [];
-  let tours: TourClick[] = [];
-  let error: string | null = null;
-  try {
-    const db = await getDb();
-    const raw = await db
-      .select({
-        clickedAt: affiliate_clicks.clicked_at, partner: affiliate_clicks.affiliate_partner, source: affiliate_clicks.source,
-        sessionId: affiliate_clicks.session_id, userAgent: affiliate_clicks.user_agent, referer: affiliate_clicks.referer,
-        experienceTitle: experiences.title,
-      })
-      .from(affiliate_clicks)
-      .leftJoin(experiences, eq(affiliate_clicks.experience_id, experiences.id))
-      .where(gte(affiliate_clicks.clicked_at, from));
-    // Older rows spell the site differently ("GetYourGuide", "gyg"): one key per site.
-    rows = raw.map((r) => ({ ...r, partner: toProviderId(r.partner), clickedAt: new Date(r.clickedAt ?? 0) }));
-    try {
-      const ev = await db
-        .select({ createdAt: events.created_at, data: events.event_data, sessionId: events.session_id })
-        .from(events)
-        .where(and(eq(events.event_type, 'book_click'), gte(events.created_at, from)));
-      tours = ev.flatMap((e) => {
-        const d = (typeof e.data === 'string' ? JSON.parse(e.data) : e.data) as Record<string, string> | null;
-        return d?.productId ? [{ clickedAt: new Date(e.createdAt ?? 0), provider: d.provider, race: d.race ?? null, productId: d.productId, title: d.title ?? d.productId, sessionId: e.sessionId }] : [];
-      });
-    } catch { /* events table not created yet: no clicks recorded per tour */ }
-  } catch (err) {
-    error = (err as Error).message;
-  }
+  const { rows, tours, error } = await loadClicks(from);
 
   const s = summarize(rows, host, from, to);
-  const top = topTours(tours);
-  const recent = recentClicks(rows, host, from, to, tours);
+  const counted = recentClicks(rows, host, from, to, tours, Infinity);
+  const recent = counted.slice(0, 100);
+  const top = toursClicked(counted);
   const maxDay = Math.max(1, ...s.byDay.map((d) => d.n));
   const keyParam = (key ? `&key=${encodeURIComponent(key)}` : '') + (site ? `&site=${encodeURIComponent(site)}` : '');
 
@@ -162,7 +133,7 @@ export default async function StatsPage({ searchParams }: { searchParams: Promis
 
         <section aria-labelledby="top-tours">
           <h2 id="top-tours" className="font-display font-bold text-lg text-[var(--text-primary)] mb-1">Most clicked tours</h2>
-          <p className="text-sm text-[var(--text-secondary)] mb-3">Recorded per tour from 5 Oct 2026, for races with live tours.</p>
+          <p className="text-sm text-[var(--text-secondary)] mb-3">Counted clicks only (people on the live site); the tour is recorded for experience-page clicks and, once released, for every click.</p>
           {top.length === 0 ? (
             <p className="text-sm text-[var(--text-muted)]">No tour clicks recorded yet.</p>
           ) : (
@@ -173,10 +144,10 @@ export default async function StatsPage({ searchParams }: { searchParams: Promis
                 </thead>
                 <tbody>
                   {top.map((t) => (
-                    <tr key={`${t.provider}:${t.productId}`} className="border-t border-[var(--border-subtle)]">
-                      <td className="px-3 py-2 text-[var(--text-primary)]">{t.title}</td>
+                    <tr key={`${t.site}:${t.tour}`} className="border-t border-[var(--border-subtle)]">
+                      <td className="px-3 py-2 text-[var(--text-primary)]">{t.tour}</td>
                       <td className="px-3 py-2 text-[var(--text-secondary)]">{t.race ? titleCase(t.race) : '—'}</td>
-                      <td className="px-3 py-2 text-[var(--text-secondary)]">{SITE_LABEL(t.provider)}</td>
+                      <td className="px-3 py-2 text-[var(--text-secondary)]">{SITE_LABEL(t.site)}</td>
                       <td className="px-3 py-2 text-right mono-data">{t.n}</td>
                     </tr>
                   ))}

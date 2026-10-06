@@ -6,6 +6,7 @@
  * gives the latest year that is.
  */
 import type { BylineSource } from '@/components/race/PageByline';
+import { seoExperiment } from '@/data/seo-experiments';
 
 export type GuideBlock =
   | { p: string }
@@ -28,6 +29,8 @@ export interface GuideSection {
 
 export interface ExpertGuide {
   author: string;
+  /** The author has read and approved the text. Until then the guide shows on staging only. */
+  approved: boolean;
   /** Day the facts were last checked (YYYY-MM-DD). */
   lastChecked: string;
   /** First published (YYYY-MM-DD). */
@@ -44,6 +47,7 @@ const LVGP = { label: 'Las Vegas Grand Prix (official)', url: 'https://www.f1las
 export const EXPERT_GUIDES: Record<string, ExpertGuide> = {
   'las-vegas': {
     author: 'jamshed-v-rajan',
+    approved: false,
     lastChecked: '2026-10-05',
     published: '2026-10-05',
     title: (season) => `F1 Las Vegas ${season}: Grand Prix Guide to the Track, Tickets, Hotels & Road Closures`,
@@ -240,6 +244,16 @@ export const EXPERT_GUIDES: Record<string, ExpertGuide> = {
 
 export function expertGuideFor(raceKey: string): ExpertGuide | null {
   return EXPERT_GUIDES[raceKey] ?? null;
+}
+
+/**
+ * The guide to show for a race: only on an expert-guide race, and in
+ * production only once the author has approved it (staging always shows it).
+ */
+export function liveGuide(raceKey: string, env = process.env.VERCEL_ENV): ExpertGuide | null {
+  const g = EXPERT_GUIDES[raceKey];
+  if (!g || seoExperiment(raceKey)?.variant !== 'expert-guide') return null;
+  return g.approved || env !== 'production' ? g : null;
 }
 
 /** Every source in a guide, once (for the page byline and the Article schema). */

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { EXPERT_GUIDES, guideSources, guideWords } from './expert-guides-2026';
+import { EXPERT_GUIDES, guideSources, guideWords, liveGuide } from './expert-guides-2026';
 import { authorBySlug } from './authors';
 import { seoExperiment } from './seo-experiments';
 
@@ -37,4 +37,12 @@ test('Las Vegas guide: the facts that matter are there', () => {
   assert.ok(day?.tours?.test('Grand Canyon West Rim Day Trip'), 'day trips section offers tours');
   assert.ok(day?.toursExclude?.test('Helicopter Night Flight over the Strip'), 'night tours clash with the evening sessions');
   assert.ok(day?.toursExclude?.test('Grand Canyon, Antelope Canyon, Horseshoe Bend'), 'too far for a race day');
+});
+
+test('an unapproved guide shows on staging but not on the live site', () => {
+  for (const [key, g] of Object.entries(EXPERT_GUIDES)) {
+    assert.ok(liveGuide(key, 'preview'), `${key} on staging`);
+    assert.equal(liveGuide(key, 'production') !== null, g.approved, `${key} in production`);
+  }
+  assert.equal(liveGuide('singapore', 'preview'), null);
 });

@@ -34,7 +34,7 @@ import UniqueData from '@/components/race/UniqueData';
 import { uniqueDataFor } from '@/data/unique-data-2026';
 import { getCircuitHistory, getRaceDayWeather, getStandings, getWeekendForecast } from '@/services/race-stats.service';
 import ExpertGuide from '@/components/race/ExpertGuide';
-import { expertGuideFor, guideSources } from '@/data/expert-guides-2026';
+import { guideSources, liveGuide } from '@/data/expert-guides-2026';
 import { authorBySlug, authorLd, authorPath } from '@/data/authors';
 import { recommendedScore, type FeedCard } from '@/lib/providers/nearby-feed';
 import { mixSites } from '@/lib/providers/feed-enrich';
@@ -69,7 +69,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     };
   }
   // SEO experiment: the expert-guide race's title names what the guide covers.
-  const metaGuide = seoExperiment(raceKey(raceSlug))?.variant === 'expert-guide' && !race.rolledFrom ? expertGuideFor(raceKey(raceSlug)) : null;
+  const metaGuide = race.rolledFrom ? null : liveGuide(raceKey(raceSlug));
   if (metaGuide) {
     return {
       title: { absolute: `${metaGuide.title(race.season)} | F1 Weekend` },
@@ -174,7 +174,7 @@ export default async function RaceLandingPage({ params }: Props) {
   // SEO experiment: unique-data races get standings, circuit history, race-day weather and the forecast.
   const unique = seoExperiment(raceKey(raceSlug))?.variant === 'unique-data' && !race.rolledFrom ? uniqueDataFor(raceKey(raceSlug)) : null;
   // SEO experiment: the expert-guide race gets a long, sourced guide by a named author.
-  const guide = seoExperiment(raceKey(raceSlug))?.variant === 'expert-guide' && !race.rolledFrom ? expertGuideFor(raceKey(raceSlug)) : null;
+  const guide = race.rolledFrom ? null : liveGuide(raceKey(raceSlug));
   const guideAuthor = guide ? authorBySlug(guide.author) : null;
   const pickKeys = new Set((liveFeed?.picks ?? []).map((p) => p.key));
   const guideTours: Record<string, FeedCard[]> = {};
