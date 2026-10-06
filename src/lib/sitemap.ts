@@ -14,7 +14,7 @@ import { seoExperiment } from '@/data/seo-experiments';
 import { raceKey } from '@/lib/race-url';
 import type { Race } from '@/types/race';
 import { AUTHORS, authorPath } from '@/data/authors';
-import { EXPERT_GUIDES } from '@/data/expert-guides-2026';
+import { EXPERT_GUIDES, liveGuide } from '@/data/expert-guides-2026';
 
 export interface SitemapEntry {
   loc: string;
@@ -73,7 +73,7 @@ export function sitemapEntries(
   // Author pages of authors with a guide on the site; lastmod = their latest checked guide.
   for (const a of Object.values(AUTHORS)) {
     const checked = Object.entries(EXPERT_GUIDES)
-      .filter(([key, g]) => g.author === a.slug && seoExperiment(key)?.variant === 'expert-guide')
+      .filter(([key, g]) => g.author === a.slug && liveGuide(key) !== null)
       .map(([, g]) => g.lastChecked).sort();
     if (checked.length) add({ loc: `${baseUrl}${authorPath(a)}`, changefreq: 'monthly', priority: '0.4', lastmod: checked[checked.length - 1] });
   }

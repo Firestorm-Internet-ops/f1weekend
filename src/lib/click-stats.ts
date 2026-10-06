@@ -28,6 +28,9 @@ export interface TourClick {
 /** Crawlers, link previews and scripts: not people. */
 const BOT = /bot\b|bot\/|crawl|spider|slurp|preview|facebookexternalhit|headless|curl\/|wget|python|axios|node-fetch|go-http|lighthouse|pingdom|uptime|monitor/i;
 
+/** Our own and test browsers (opened once with ?internal=1); see lib/analytics. */
+export const isInternalSession = (sessionId: string | null | undefined) => !!sessionId?.startsWith('internal-');
+
 export function isBot(userAgent: string | null): boolean {
   return !userAgent || BOT.test(userAgent);
 }
@@ -54,7 +57,7 @@ export interface ClickSummary {
   /** Distinct visitors who clicked (session ID; clicks without one count once each). */
   people: number;
   bots: number;
-  /** Clicks from other hosts (staging, local). */
+  /** Test clicks: from other hosts (staging, local) or internal browsers. */
   elsewhere: number;
   byDay: Count[];
   bySite: Count[];
@@ -88,7 +91,7 @@ export function summarize(rows: ClickRow[], host: string, from: Date, to: Date):
     if (r.clickedAt < from || r.clickedAt > to) continue;
     if (isBot(r.userAgent)) { bots++; continue; }
     const ref = fromReferer(r.referer);
-    if (ref.host && ref.host !== here) { elsewhere++; continue; }
+    if ((ref.host && ref.host !== here) || isInternalSession(r.sessionId)) { elsewhere++; continue; }
     kept.push({ ...r, ...ref });
   }
   const perDay = new Map(days(from, to).map((d) => [d, 0]));
@@ -114,6 +117,7 @@ export function summarize(rows: ClickRow[], host: string, from: Date, to: Date):
 export function topTours(clicks: TourClick[], limit = 20): (TourClick & { n: number })[] {
   const m = new Map<string, TourClick & { n: number }>();
   for (const c of clicks) {
+    if (isInternalSession(c.sessionId)) continue;
     const k = `${c.provider}:${c.productId}`;
     const e = m.get(k);
     if (e) e.n++;
@@ -144,7 +148,7 @@ export function recentClicks(rows: ClickRow[], host: string, from: Date, to: Dat
   return rows
     .filter((r) => r.clickedAt >= from && r.clickedAt <= to && !isBot(r.userAgent))
     .map((r) => ({ r, ref: fromReferer(r.referer) }))
-    .filter(({ ref }) => !ref.host || ref.host === here)
+    .filter(({ r, ref }) => (!ref.host || ref.host === here) && !isInternalSession(r.sessionId))
     .sort((a, b) => b.r.clickedAt.getTime() - a.r.clickedAt.getTime())
     .slice(0, limit)
     .map(({ r, ref }) => {
@@ -160,4 +164,71 @@ export function recentClicks(rows: ClickRow[], host: string, from: Date, to: Dat
         tour: r.experienceTitle ?? ev?.title ?? null,
       };
     });
+}
+
+// ─── Daily / weekly report ─────────────────────────────────────────
+
+export type ReportPeriod = 'daily' | 'weekly';
+
+/** The days a report covers (UTC): yesterday, or the 7 days up to yesterday, and the same length before it. */
+export function reportRange(period: ReportPeriod, now: Date) {
+  const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  const days = period === 'daily' ? 1 : 7;
+  const from = new Date(today - days * 86_400_000);
+  const to = new Date(today - 1);
+  const prevFrom = new Date(from.getTime() - days * 86_400_000);
+  const prevTo = new Date(from.getTime() - 1);
+  return { from, to, prevFrom, prevTo };
+}
+
+const SITE_NAMES: Record<string, string> = { getyourguide: 'GetYourGuide', viator: 'Viator', tiqets: 'Tiqets' };
+const day = (d: Date) => d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
+const cap = (k: string) => (k === 'usa' ? 'USA' : k.replace(/(^|-)([a-z])/g, (_, d, c) => `${d ? ' ' : ''}${c.toUpperCase()}`));
+const line = (counts: Count[], label: (k: string) => string = (k) => k) =>
+  counts.length ? counts.map((c) => `${label(c.key)} ${c.n}`).join(' · ') : 'none';
+
+/** Markdown report of booking clicks for a day or a week, compared with the period before. */
+export function clickReport(period: ReportPeriod, rows: ClickRow[], tours: TourClick[], host: string, now: Date, dashboardUrl: string): string {
+  const { from, to, prevFrom, prevTo } = reportRange(period, now);
+  const s = summarize(rows, host, from, to);
+  const prev = summarize(rows, host, prevFrom, prevTo);
+  const all = recentClicks(rows, host, from, to, tours, Infinity);
+  const list = all.slice(0, period === 'daily' ? 50 : 30);
+  const top = toursClicked(all, 10);
+  const diff = s.clicks - prev.clicks;
+  const when = period === 'daily' ? day(from) : `${day(from)} – ${day(to)}`;
+  const out = [
+    `## ${period === 'daily' ? 'Daily' : 'Weekly'} booking clicks: ${when}`,
+    '',
+    `**${s.clicks} click${s.clicks === 1 ? '' : 's'}** by **${s.people} ${s.people === 1 ? 'person' : 'people'}** on ${host} ` +
+      `(${period === 'daily' ? 'day' : 'week'} before: ${prev.clicks}, ${diff >= 0 ? '+' : ''}${diff}). ` +
+      `Left out: ${s.bots} bot and ${s.elsewhere} test click${s.elsewhere === 1 ? '' : 's'}.`,
+    '',
+    `- **Booking sites:** ${line(s.bySite, (k) => SITE_NAMES[k] ?? k)}`,
+    `- **Races:** ${line(s.byRace, cap)}`,
+    `- **Pages:** ${line(s.byPage, cap)}`,
+    `- **Placement:** ${line(s.byPlacement)}`,
+  ];
+  if (period === 'weekly' && top.length) {
+    out.push('', '**Most clicked tours**', '', ...top.map((t) => `- ${t.tour} (${SITE_NAMES[t.site] ?? t.site}${t.race ? `, ${cap(t.race)}` : ''}): ${t.n}`));
+  }
+  if (list.length) {
+    out.push('', '| When (UTC) | Tour | Site | Race | Page | Placement |', '|---|---|---|---|---|---|',
+      ...list.map((c) => `| ${c.at.toISOString().slice(0, 16).replace('T', ' ')} | ${(c.tour ?? 'not recorded').replace(/\|/g, '/')} | ${SITE_NAMES[c.site] ?? c.site} | ${c.race ? cap(c.race) : '—'} | ${cap(c.page)} | ${c.placement} |`));
+  }
+  out.push('', `A click is a visitor going to the booking site; bookings and commission show in the GetYourGuide, Viator and Tiqets dashboards (campaign IDs \`f1-<race>-<page>\`). Dashboard: ${dashboardUrl}`);
+  return out.join('\n');
+}
+
+/** Most clicked tours among counted clicks (people, this site, not internal), most first. */
+export function toursClicked(clicks: RecentClick[], limit = 20): { tour: string; site: string; race: string | null; n: number }[] {
+  const m = new Map<string, { tour: string; site: string; race: string | null; n: number }>();
+  for (const c of clicks) {
+    if (!c.tour) continue;
+    const k = `${c.site}:${c.tour}`;
+    const e = m.get(k);
+    if (e) e.n++;
+    else m.set(k, { tour: c.tour, site: c.site, race: c.race, n: 1 });
+  }
+  return [...m.values()].sort((a, b) => b.n - a.n || a.tour.localeCompare(b.tour)).slice(0, limit);
 }
