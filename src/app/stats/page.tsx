@@ -3,9 +3,9 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { and, eq, gte } from 'drizzle-orm';
 import { getDb } from '@/lib/db';
-import { affiliate_clicks, events } from '@/lib/db/schema';
+import { affiliate_clicks, events, experiences } from '@/lib/db/schema';
 import { providerName, toProviderId } from '@/lib/providers/meta';
-import { summarize, topTours, type ClickRow, type Count, type TourClick } from '@/lib/click-stats';
+import { recentClicks, summarize, topTours, type ClickRow, type Count, type TourClick } from '@/lib/click-stats';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,19 +50,21 @@ export default async function StatsPage({ searchParams }: { searchParams: Promis
       .select({
         clickedAt: affiliate_clicks.clicked_at, partner: affiliate_clicks.affiliate_partner, source: affiliate_clicks.source,
         sessionId: affiliate_clicks.session_id, userAgent: affiliate_clicks.user_agent, referer: affiliate_clicks.referer,
+        experienceTitle: experiences.title,
       })
       .from(affiliate_clicks)
+      .leftJoin(experiences, eq(affiliate_clicks.experience_id, experiences.id))
       .where(gte(affiliate_clicks.clicked_at, from));
     // Older rows spell the site differently ("GetYourGuide", "gyg"): one key per site.
     rows = raw.map((r) => ({ ...r, partner: toProviderId(r.partner), clickedAt: new Date(r.clickedAt ?? 0) }));
     try {
       const ev = await db
-        .select({ createdAt: events.created_at, data: events.event_data })
+        .select({ createdAt: events.created_at, data: events.event_data, sessionId: events.session_id })
         .from(events)
         .where(and(eq(events.event_type, 'book_click'), gte(events.created_at, from)));
       tours = ev.flatMap((e) => {
         const d = (typeof e.data === 'string' ? JSON.parse(e.data) : e.data) as Record<string, string> | null;
-        return d?.productId ? [{ clickedAt: new Date(e.createdAt ?? 0), provider: d.provider, race: d.race ?? null, productId: d.productId, title: d.title ?? d.productId }] : [];
+        return d?.productId ? [{ clickedAt: new Date(e.createdAt ?? 0), provider: d.provider, race: d.race ?? null, productId: d.productId, title: d.title ?? d.productId, sessionId: e.sessionId }] : [];
       });
     } catch { /* events table not created yet: no clicks recorded per tour */ }
   } catch (err) {
@@ -71,6 +73,7 @@ export default async function StatsPage({ searchParams }: { searchParams: Promis
 
   const s = summarize(rows, host, from, to);
   const top = topTours(tours);
+  const recent = recentClicks(rows, host, from, to, tours);
   const maxDay = Math.max(1, ...s.byDay.map((d) => d.n));
   const keyParam = (key ? `&key=${encodeURIComponent(key)}` : '') + (site ? `&site=${encodeURIComponent(site)}` : '');
 
@@ -126,6 +129,36 @@ export default async function StatsPage({ searchParams }: { searchParams: Promis
           <Breakdown title="By page" rows={s.byPage} label={(k) => PAGE_LABELS[k] ?? k} total={s.clicks} />
           <Breakdown title="By placement" rows={s.byPlacement} label={(k) => k} total={s.clicks} />
         </div>
+
+        <section className="mb-10" aria-labelledby="every-click">
+          <h2 id="every-click" className="font-display font-bold text-lg text-[var(--text-primary)] mb-1">Every click, newest first</h2>
+          <p className="text-sm text-[var(--text-secondary)] mb-3">
+            Time in UTC. &ldquo;Visitor&rdquo; is a short ID per browser, so you can see one person clicking several times.
+            The tour is known for experience-page clicks and, from 5 Oct 2026, for every click.
+          </p>
+          {recent.length === 0 ? <p className="text-sm text-[var(--text-muted)]">No clicks in this range.</p> : (
+            <div className="overflow-x-auto rounded-xl border border-[var(--border-subtle)]">
+              <table className="w-full text-sm">
+                <thead className="bg-[var(--bg-secondary)] text-left text-[var(--text-secondary)]">
+                  <tr>{['When (UTC)', 'Tour', 'Site', 'Race', 'Page', 'Placement', 'Visitor'].map((h) => <th key={h} className="px-3 py-2 font-medium whitespace-nowrap">{h}</th>)}</tr>
+                </thead>
+                <tbody>
+                  {recent.map((c, i) => (
+                    <tr key={i} className="border-t border-[var(--border-subtle)]">
+                      <td className="px-3 py-2 mono-data whitespace-nowrap text-[var(--text-secondary)]">{c.at.toISOString().slice(0, 16).replace('T', ' ')}</td>
+                      <td className="px-3 py-2 text-[var(--text-primary)]">{c.tour ?? <span className="text-[var(--text-muted)]">not recorded</span>}</td>
+                      <td className="px-3 py-2 text-[var(--text-secondary)]">{SITE_LABEL(c.site)}</td>
+                      <td className="px-3 py-2 text-[var(--text-secondary)]">{c.race ? titleCase(c.race) : '—'}</td>
+                      <td className="px-3 py-2 text-[var(--text-secondary)]">{PAGE_LABELS[c.page] ?? c.page}</td>
+                      <td className="px-3 py-2 text-[var(--text-secondary)]">{c.placement}</td>
+                      <td className="px-3 py-2 mono-data text-[var(--text-muted)]">{c.visitor ?? '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
 
         <section aria-labelledby="top-tours">
           <h2 id="top-tours" className="font-display font-bold text-lg text-[var(--text-primary)] mb-1">Most clicked tours</h2>

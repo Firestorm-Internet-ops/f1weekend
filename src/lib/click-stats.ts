@@ -12,6 +12,8 @@ export interface ClickRow {
   sessionId: string | null;
   userAgent: string | null;
   referer: string | null;
+  /** Title of the database experience clicked (/api/click), when there is one. */
+  experienceTitle?: string | null;
 }
 
 export interface TourClick {
@@ -20,6 +22,7 @@ export interface TourClick {
   race: string | null;
   productId: string;
   title: string;
+  sessionId?: string | null;
 }
 
 /** Crawlers, link previews and scripts: not people. */
@@ -117,4 +120,44 @@ export function topTours(clicks: TourClick[], limit = 20): (TourClick & { n: num
     else m.set(k, { ...c, n: 1 });
   }
   return [...m.values()].sort((a, b) => b.n - a.n || b.clickedAt.getTime() - a.clickedAt.getTime()).slice(0, limit);
+}
+
+export interface RecentClick {
+  at: Date;
+  site: string;
+  race: string | null;
+  page: string;
+  placement: string;
+  /** Short visitor id (first 6 characters of the session), to see repeat clickers. */
+  visitor: string | null;
+  /** The tour, when it was recorded (database experience, or a live-feed click from 5 Oct 2026). */
+  tour: string | null;
+}
+
+/**
+ * Every click by people on this site, newest first. The tour comes from the
+ * experience (database clicks) or the matching "book_click" event (same site
+ * and visitor, within a minute).
+ */
+export function recentClicks(rows: ClickRow[], host: string, from: Date, to: Date, tours: TourClick[] = [], limit = 100): RecentClick[] {
+  const here = bareHost(host);
+  return rows
+    .filter((r) => r.clickedAt >= from && r.clickedAt <= to && !isBot(r.userAgent))
+    .map((r) => ({ r, ref: fromReferer(r.referer) }))
+    .filter(({ ref }) => !ref.host || ref.host === here)
+    .sort((a, b) => b.r.clickedAt.getTime() - a.r.clickedAt.getTime())
+    .slice(0, limit)
+    .map(({ r, ref }) => {
+      const ev = tours.find((t) => t.provider === r.partner && (t.sessionId ?? null) === (r.sessionId ?? null)
+        && Math.abs(t.clickedAt.getTime() - r.clickedAt.getTime()) < 60_000);
+      return {
+        at: r.clickedAt,
+        site: r.partner ?? 'unknown',
+        race: ref.race,
+        page: ref.page,
+        placement: PLACEMENT[r.source ?? ''] ?? r.source ?? 'unknown',
+        visitor: r.sessionId ? r.sessionId.slice(0, 6) : null,
+        tour: r.experienceTitle ?? ev?.title ?? null,
+      };
+    });
 }
