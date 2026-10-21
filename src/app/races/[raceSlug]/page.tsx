@@ -27,6 +27,7 @@ import type { Session } from '@/types/race';
 import AnswerFirst from '@/components/race/AnswerFirst';
 import { answersFor } from '@/data/answers-2026';
 import { seoExperiment } from '@/data/seo-experiments';
+import LoopAnswers from '@/components/race/LoopAnswers';
 import { displayTitle } from '@/lib/providers/nearby-feed';
 import ClusterNav from '@/components/race/ClusterNav';
 import { clusterHub, clusterLinks } from '@/data/clusters-2026';
@@ -518,6 +519,7 @@ export default async function RaceLandingPage({ params }: Props) {
 
         {/* Answer-first pages already carry their questions (and FAQ schema) at the top. */}
         {!answers && <RaceFaq items={faqs} heading={`${race.name} ${race.season}: FAQ`} className="mt-12 pt-8 border-t border-[var(--border-subtle)]" />}
+        <LoopAnswers path={`/races/${raceKey(raceSlug)}`} />
       </div>
     </div>
   );

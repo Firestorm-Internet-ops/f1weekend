@@ -25,7 +25,10 @@
     "test:providers": "tsx --test src/lib/providers/providers.test.ts src/lib/providers/nearby-feed.test.ts src/lib/providers/feed-enrich.test.ts src/lib/providers/campaign.test.ts src/data/calendar-2026.test.ts src/lib/jolpica.test.ts src/lib/itinerary-feed.test.ts src/lib/next-season.test.ts src/lib/rollover.test.ts src/lib/map-groups.test.ts src/lib/unique-data.test.ts src/data/answers-2026.test.ts src/data/clusters-2026.test.ts src/lib/sitemap.test.ts src/lib/click-stats.test.ts src/data/expert-guides-2026.test.ts src/lib/track-outline.test.ts src/lib/home-intro.test.ts src/data/home-intros.test.ts",
     "db:sync-calendar": "tsx scripts/sync-calendar-2026.ts",
     "db:migrate-offers": "tsx scripts/migrate-add-experience-offers.ts",
-    "offers:fetch": "tsx scripts/fetch-provider-offers.ts"
+    "offers:fetch": "tsx scripts/fetch-provider-offers.ts",
+    "seo:loop": "tsx --env-file-if-exists=.env scripts/seo-loop.ts",
+    "seo:draft": "tsx --env-file-if-exists=.env scripts/seo-draft.ts",
+    "indexnow": "tsx --env-file-if-exists=.env scripts/indexnow.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
@@ -37,6 +40,7 @@
     "date-fns-tz": "^3.2.0",
     "dotenv": "^17.3.1",
     "drizzle-orm": "^0.45.1",
+    "google-auth-library": "^10.5.0",
     "ioredis": "^5.9.3",
     "marked": "^17.0.3",
     "mysql2": "^3.17.4",
