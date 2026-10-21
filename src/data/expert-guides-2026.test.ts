@@ -46,3 +46,10 @@ test('an unapproved guide shows on staging but not on the live site', () => {
   }
   assert.equal(liveGuide('singapore', 'preview'), null);
 });
+
+test('Las Vegas guide: approved by Jamshed V Rajan on 21 Oct 2026, live in production from that day', () => {
+  const g = liveGuide('las-vegas', 'production');
+  assert.ok(g);
+  assert.equal(g.author, 'jamshed-v-rajan');
+  assert.equal(g.published, '2026-10-21');
+});
