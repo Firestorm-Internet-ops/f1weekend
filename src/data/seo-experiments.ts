@@ -25,7 +25,7 @@ export const SEO_EXPERIMENTS: Record<string, SeoExperiment> = {
   usa: { variant: 'answer-first', hypothesis: 'Pages that answer real search questions directly win snippets, AI citations and clicks.', liveFrom: '2026-09-30' },
   mexico: { variant: 'topic-cluster', hypothesis: 'Several focused pages (Day of the Dead, where to stay, getting there, weather and packing) linked from the race page beat one page.', liveFrom: '2026-09-30' },
   brazil: { variant: 'unique-data', hypothesis: 'Original data (race-day weather history, form guide, travel times, tour price guide, session-gap planner) earns rankings where copied text cannot.', liveFrom: '2026-10-05' },
-  'las-vegas': { variant: 'expert-guide', hypothesis: 'Depth and trust signals (sources, author, last verified) help ranking.' },
+  'las-vegas': { variant: 'expert-guide', hypothesis: 'Depth and trust signals (sources, author, last verified) help ranking.', liveFrom: '2026-10-21' },
   qatar: { variant: 'freshness', hypothesis: 'Frequently updated pages are recrawled and ranked sooner.' },
   'abu-dhabi': { variant: 'validation', hypothesis: 'The two best techniques so far, combined, confirm the 2027 template.' },
 };

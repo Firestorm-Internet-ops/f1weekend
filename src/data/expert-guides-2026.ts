@@ -47,9 +47,9 @@ const LVGP = { label: 'Las Vegas Grand Prix (official)', url: 'https://www.f1las
 export const EXPERT_GUIDES: Record<string, ExpertGuide> = {
   'las-vegas': {
     author: 'jamshed-v-rajan',
-    approved: false,
+    approved: true, // by Jamshed V Rajan, 21 Oct 2026
     lastChecked: '2026-10-05',
-    published: '2026-10-05',
+    published: '2026-10-21',
     title: (season) => `F1 Las Vegas ${season}: Grand Prix Guide to the Track, Tickets, Hotels & Road Closures`,
     description: (season) => `The ${season} Las Vegas Grand Prix (19–21 Nov): session times, the Strip circuit, where to watch and ${season} ticket prices, road closures and the Monorail, where to stay, the weather and daytime trips. Researched and sourced.`,
     headline: 'Las Vegas Grand Prix 2026: the complete guide',
