@@ -61,3 +61,7 @@ the host country where relevant).
 | Abu Dhabi | validation | | | | | | | | | | |
 
 After Abu Dhabi: [2027-playbook.md](2027-playbook.md).
+
+## Weekly SEO loop
+
+The weekly SEO loop reads Search Console query/page data and opens or updates one GitHub issue per page with a ranking opportunity. Race pages in the autumn experiment remain blocked from drafts and published answers until **7 Dec 2026**. For an eligible page, run `npm run seo:draft -- --path <path>`; it saves unapproved answer drafts in `src/data/seo-loop-answers.json`. Approve a draft in a PR by setting `approved: true` and `approvedBy` to your author slug. Only named, approved answers appear on the page.

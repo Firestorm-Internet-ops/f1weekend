@@ -19,6 +19,7 @@ import { getNearbyFeed } from '@/services/nearby-feed.service';
 import ClusterNav from '@/components/race/ClusterNav';
 import { clusterLinks } from '@/data/clusters-2026';
 import { seoExperiment } from '@/data/seo-experiments';
+import LoopAnswers from '@/components/race/LoopAnswers';
 
 export const revalidate = 604800; // 1 week
 
@@ -287,6 +288,7 @@ export default async function GettingTherePage({ params }: Props) {
           {cluster && (
             <ClusterNav links={cluster} raceKey={raceKey(raceSlug)} city={race.city} current="getting-there" className="mt-12 pt-8 border-t border-[var(--border-subtle)]" />
           )}
+          <LoopAnswers path={`/races/${raceKey(raceSlug)}/getting-there`} />
         </div>
       </div>
     </>
