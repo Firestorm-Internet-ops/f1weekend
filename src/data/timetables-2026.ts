@@ -1,7 +1,8 @@
 /**
  * Full weekend timetables (local time) for races whose schedule isn't in the
  * database: the Bahrain GP at Sepang (stored sessions are for Sakhir) and the
- * United States GP (Jolpica only has the F1 sessions). Sources per race below.
+ * United States and Mexico City GPs (Jolpica only has the F1
+ * sessions). Sources per race below.
  * race.service turns the F1 sessions into Session rows; schedule.service
  * shows every entry on the schedule page.
  */
@@ -70,6 +71,34 @@ export const TIMETABLES_2026: Record<string, TimetableEntry[]> = {
     { day: 'Sunday', start: '13:30', end: '13:55', series: 'Formula 1', seriesKey: 'promoter', name: 'Pirelli Hot Laps' },
     { day: 'Sunday', start: '14:44', end: '14:46', series: 'Formula 1', seriesKey: 'promoter', name: 'National Anthem' },
     { day: 'Sunday', start: '15:00', end: '17:00', series: 'Formula 1', seriesKey: 'f1', name: 'Grand Prix (56 laps)', session: { type: 'race', shortName: 'RACE' } },
+  ],
+  // Mexico City GP, Autódromo Hermanos Rodríguez (CST, UTC−6; Mexico has no DST).
+  // Source: https://www.formula1.com/en/latest/article/formula-1-gran-premio-de-la-ciudad-de-mexico-2026.14b3wTWzNNLJ5Wd8cG7HCQ
+  // (checked 21 Oct 2026). Everything on the official timetable is in; it lists no
+  // F1 Academy, Thursday sessions, concerts or fan-zone events.
+  'mexico-2026': [
+    { day: 'Friday', start: '08:40', end: '09:15', series: 'GTM Super Copa', seriesKey: 'support', name: 'GTM Super Copa · Practice' },
+    { day: 'Friday', start: '09:40', end: '10:05', series: 'Masters Historic Racing', seriesKey: 'support', name: 'Masters Historic · Practice' },
+    { day: 'Friday', start: '10:30', end: '10:55', series: 'Formula 4 NACAM Championship', seriesKey: 'support', name: 'Formula 4 NACAM · Practice' },
+    { day: 'Friday', start: '11:00', end: '12:00', series: 'FIA', seriesKey: 'promoter', name: 'F1 Car Presentation' },
+    { day: 'Friday', start: '12:30', end: '13:30', series: 'Formula 1', seriesKey: 'f1', name: 'Practice 1', session: { type: 'practice', shortName: 'FP1' } },
+    { day: 'Friday', start: '14:00', end: '14:25', series: 'GTM Super Copa', seriesKey: 'support', name: 'GTM Super Copa · Qualifying' },
+    { day: 'Friday', start: '14:30', end: '15:30', series: 'Formula 1', seriesKey: 'press', name: "Teams' Press Conference" },
+    { day: 'Friday', start: '16:00', end: '17:00', series: 'Formula 1', seriesKey: 'f1', name: 'Practice 2', session: { type: 'practice', shortName: 'FP2' } },
+    { day: 'Friday', start: '17:30', end: '17:55', series: 'Masters Historic Racing', seriesKey: 'support', name: 'Masters Historic · Qualifying' },
+    { day: 'Saturday', start: '09:25', end: '09:50', series: 'Formula 4 NACAM Championship', seriesKey: 'support', name: 'Formula 4 NACAM · Qualifying' },
+    { day: 'Saturday', start: '10:15', end: '10:45', series: 'GTM Super Copa', seriesKey: 'support', name: 'GTM Super Copa · Race 1 (25 min)' },
+    { day: 'Saturday', start: '11:30', end: '12:30', series: 'Formula 1', seriesKey: 'f1', name: 'Practice 3', session: { type: 'practice', shortName: 'FP3' } },
+    { day: 'Saturday', start: '12:55', end: '13:25', series: 'Masters Historic Racing', seriesKey: 'support', name: 'Masters Historic · Race 1 (25 min)' },
+    { day: 'Saturday', start: '15:00', end: '16:00', series: 'Formula 1', seriesKey: 'f1', name: 'Qualifying', session: { type: 'qualifying', shortName: 'Q' } },
+    { day: 'Saturday', start: '16:00', end: '17:00', series: 'Formula 1', seriesKey: 'press', name: 'Press Conference' },
+    { day: 'Saturday', start: '16:45', end: '17:15', series: 'Formula 4 NACAM Championship', seriesKey: 'support', name: 'Formula 4 NACAM · Race 1 (25 min)' },
+    { day: 'Sunday', start: '09:15', end: '09:45', series: 'GTM Super Copa', seriesKey: 'support', name: 'GTM Super Copa · Race 2 (25 min)' },
+    { day: 'Sunday', start: '10:10', end: '10:40', series: 'Masters Historic Racing', seriesKey: 'support', name: 'Masters Historic · Race 2 (25 min)' },
+    { day: 'Sunday', start: '11:05', end: '11:35', series: 'Formula 4 NACAM Championship', seriesKey: 'support', name: 'Formula 4 NACAM · Race 2 (25 min)' },
+    { day: 'Sunday', start: '12:00', end: '12:30', series: 'Formula 1', seriesKey: 'promoter', name: "Drivers' Parade" },
+    { day: 'Sunday', start: '13:44', end: '13:46', series: 'Formula 1', seriesKey: 'promoter', name: 'National Anthem' },
+    { day: 'Sunday', start: '14:00', end: '16:00', series: 'Formula 1', seriesKey: 'f1', name: 'Grand Prix (71 laps)', session: { type: 'race', shortName: 'RACE' } },
   ],
 };
 

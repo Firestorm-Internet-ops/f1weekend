@@ -65,6 +65,28 @@ test('Austin timetable (COTA official schedule): F1 sessions match Jolpica, Thur
   }
 });
 
+const WEEKEND_ORDER = ['Thursday', 'Friday', 'Saturday', 'Sunday'];
+function assertOrdered(t: { day: string; start: string; end: string; name: string }[]) {
+  for (let i = 0; i < t.length; i++) {
+    assert.ok(t[i].end >= t[i].start, t[i].name);
+    if (i > 0) {
+      const a = t[i - 1], b = t[i];
+      assert.ok(WEEKEND_ORDER.indexOf(a.day) < WEEKEND_ORDER.indexOf(b.day) || (a.day === b.day && a.start <= b.start), `${a.name} before ${b.name}`);
+    }
+  }
+}
+
+test('Mexico City timetable (formula1.com official timetable): F1 sessions match Jolpica, support races present, in order', async () => {
+  const { timetableSessions, timetableFor } = await import('./timetables-2026');
+  // Jolpica UTC → Mexico City (UTC−6, no DST).
+  assert.deepEqual(timetableSessions('mexico-2026', 19).map((x) => `${x.shortName} ${x.dayOfWeek} ${x.startTime}`), [
+    'FP1 Friday 12:30', 'FP2 Friday 16:00', 'FP3 Saturday 11:30', 'Q Saturday 15:00', 'RACE Sunday 14:00',
+  ]);
+  const t = timetableFor('mexico-2026')!;
+  assert.ok(t.some((e) => e.seriesKey === 'support' && e.name.startsWith('Formula 4 NACAM')));
+  assertOrdered(t);
+});
+
 test('the next race switches when race day is over at the track, not in UTC', () => {
   // Sepang (UTC+8): race day 4 Oct ends at 16:00 UTC.
   assert.equal(nextCalendarRace(new Date('2026-10-04T15:59:00Z'))?.slug, 'bahrain-2026');
