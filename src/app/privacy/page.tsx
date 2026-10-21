@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
+export const dynamic = 'force-dynamic'; // see app/layout.tsx
+
 export const metadata: Metadata = {
   title: { absolute: 'Privacy Policy | F1 Weekend' },
   description: 'Privacy policy for the F1 Weekend app by Firestorm Internet.',

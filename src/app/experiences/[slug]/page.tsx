@@ -3,6 +3,8 @@ import { getExperienceBySlug } from '@/services/experience.service';
 import { getRaceById } from '@/services/race.service';
 import { raceKey } from '@/lib/race-url';
 
+export const dynamic = 'force-dynamic'; // see app/layout.tsx
+
 interface Props {
   params: Promise<{ slug: string }>;
 }

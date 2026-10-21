@@ -40,6 +40,8 @@ import { authorBySlug, authorLd, authorPath } from '@/data/authors';
 import { recommendedScore, type FeedCard } from '@/lib/providers/nearby-feed';
 import { mixSites } from '@/lib/providers/feed-enrich';
 
+export const revalidate = 3600; // 1 hour: next-race banners, forecast and standings
+
 interface Props {
   params: Promise<{ raceSlug: string }>;
 }

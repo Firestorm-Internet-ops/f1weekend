@@ -1,9 +1,8 @@
 import { notFound, permanentRedirect } from 'next/navigation';
-import { hasMovedVenue } from '@/data/calendar-2026';
 import type { Metadata } from 'next';
 import { marked } from 'marked';
-import { getExperienceBySlug, getExperiencesByRace, getSuggestedExperiences } from '@/services/experience.service';
-import { getRaceBySlug, getAvailableRaces } from '@/services/race.service';
+import { getExperienceBySlug, getSuggestedExperiences } from '@/services/experience.service';
+import { getRaceBySlug } from '@/services/race.service';
 import BookButton from '@/components/experiences/BookButton';
 import PhotoSlider from '@/components/experiences/PhotoSlider';
 import Breadcrumb from '@/components/Breadcrumb';
@@ -24,26 +23,15 @@ import { resolveRaceSlug } from '@/services/race.service';
 import Icon from '@/components/ui/Icon';
 
 export const revalidate = 86400; // 24 hours
-export const dynamicParams = true; // SSR fallback for new races not yet in generateStaticParams
+export const dynamicParams = true; // rendered on first visit, then cached
 
 interface Props {
   params: Promise<{ raceSlug: string; slug: string }>;
 }
 
-export async function generateStaticParams() {
-  try {
-    const availableRaces = await getAvailableRaces();
-    const results = await Promise.all(
-      availableRaces.filter((race) => !hasMovedVenue(race.slug)).map(async (race) => {
-        const raceSlug = raceKey(race.slug); // URLs use the key
-        const exps = await getExperiencesByRace(race.id);
-        return exps.map((e) => ({ raceSlug, slug: e.slug }));
-      })
-    );
-    return results.flat();
-  } catch {
-    return [];
-  }
+// Nothing prerendered at build: the build has no database (see app/layout.tsx).
+export function generateStaticParams() {
+  return [];
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
