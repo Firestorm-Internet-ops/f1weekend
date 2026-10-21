@@ -1,10 +1,9 @@
 [
   {
-    "id": "bel-dates-2026",
-    "q": "When is the 2026 Belgian Grand Prix?",
-    "a": "The 2026 Belgian Grand Prix runs from 17 to 19 July 2026 at Circuit de Spa-Francorchamps in Belgium. The track is 7.004 km long and sits in the Ardennes hills. It is in the village of Francorchamps, about 50 km south-east of the city of Liège.",
+    "id": "bel-where-is-spa",
+    "q": "Where is the Belgian Grand Prix held?",
+    "a": "The Belgian Grand Prix is held at Circuit de Spa-Francorchamps, in the village of Francorchamps in the Ardennes. The circuit is in the province of Liège, in the Wallonia region of Belgium, southeast of the town of Spa. The FIA lists it as 50 km south-east of the city of Liège.",
     "searches": [
-      "f1 spa place",
       "where is spa gp"
     ],
     "path": "/races/belgium/getting-there",
@@ -13,9 +12,9 @@
     "drafted": "2026-10-21"
   },
   {
-    "id": "bel-nearest-airport",
-    "q": "What is the closest airport to Circuit de Spa-Francorchamps?",
-    "a": "The nearest airport to the circuit is Liège Airport, which is 65 km away. Maastricht Aachen Airport in the Netherlands is the next closest at 70 km. Both airports give you a good base for reaching the Francorchamps area by hire car or taxi on race weekend.",
+    "id": "bel-closest-airport",
+    "q": "What is the closest airport to the Belgian Grand Prix?",
+    "a": "Liège Airport is the closest airport to Circuit de Spa-Francorchamps, 65 km away according to the FIA. Next is Maastricht Aachen Airport in the Netherlands, at 70 km. On race weekend, Spa Grand Prix also runs paid City Shuttle coaches to the circuit from cities including Brussels, Liège, Cologne and Maastricht.",
     "searches": [
       "closest airport to belgium grand prix"
     ],
@@ -25,25 +24,11 @@
     "drafted": "2026-10-21"
   },
   {
-    "id": "bel-getting-there-car",
-    "q": "How do I drive to Circuit de Spa-Francorchamps?",
-    "a": "Take the E40 motorway towards Liège, then switch to the E42 towards Verviers and leave at exit 10 for Francorchamps. From the UK, LeShuttle carries your car from Folkestone to Coquelles, next to Calais, in 35 minutes. The E40 starts at Calais and runs through Brussels and Liège.",
+    "id": "bel-drive-from-uk",
+    "q": "How do I drive to Spa-Francorchamps from the UK?",
+    "a": "From the UK, take LeShuttle (Eurotunnel) from Folkestone to Coquelles, next to Calais. The crossing takes 35 minutes. From Calais, follow the E40 motorway through Brussels towards Liège. Then take the E42 towards Verviers and leave at exit 10 for Francorchamps, the village where the circuit sits.",
     "searches": [
-      "driving to spa francorchamps from uk",
-      "where is spa gp"
-    ],
-    "path": "/races/belgium/getting-there",
-    "approved": false,
-    "approvedBy": null,
-    "drafted": "2026-10-21"
-  },
-  {
-    "id": "bel-getting-there-train",
-    "q": "Can I get to Spa-Francorchamps by public transport?",
-    "a": "The nearest train station is Verviers-Central. From there, TEC buses 294 and 395 run to the circuit, but they do not run on Sundays. On race weekends, Spa Grand Prix sells City Shuttle coach tickets from Brussels, Liège, Cologne, Maastricht, Lille, and Luxembourg direct to the circuit.",
-    "searches": [
-      "place f1 francorchamps",
-      "where is spa gp"
+      "driving to spa francorchamps from uk"
     ],
     "path": "/races/belgium/getting-there",
     "approved": false,
