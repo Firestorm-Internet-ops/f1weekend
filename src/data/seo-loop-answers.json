@@ -7,8 +7,8 @@
       "where is spa gp"
     ],
     "path": "/races/belgium/getting-there",
-    "approved": false,
-    "approvedBy": null,
+    "approved": true,
+    "approvedBy": "Deepak, 21 Oct 2026",
     "drafted": "2026-10-21"
   },
   {
@@ -19,8 +19,8 @@
       "closest airport to belgium grand prix"
     ],
     "path": "/races/belgium/getting-there",
-    "approved": false,
-    "approvedBy": null,
+    "approved": true,
+    "approvedBy": "Deepak, 21 Oct 2026",
     "drafted": "2026-10-21"
   },
   {
@@ -31,8 +31,8 @@
       "driving to spa francorchamps from uk"
     ],
     "path": "/races/belgium/getting-there",
-    "approved": false,
-    "approvedBy": null,
+    "approved": true,
+    "approvedBy": "Deepak, 21 Oct 2026",
     "drafted": "2026-10-21"
   }
 ]
