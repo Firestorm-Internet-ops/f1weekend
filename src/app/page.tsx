@@ -22,6 +22,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { raceKey } from '@/lib/race-url';
 import { splitIntro } from '@/lib/home-intro';
+import { homeIntro } from '@/data/home-intros';
 
 /** A /public image path if the file is actually there (added by hand); https URLs are used as they are. */
 function existingPublicFile(src: string | undefined): string | undefined {
@@ -169,7 +170,6 @@ export default async function HomePage() {
   // image, sessions and gap windows describe the old venue: don't show them.
   const venueMoved = !!race?.venueMoved;
   const raceContent = venueMoved ? null : storedContent;
-  const intro = raceContent?.homepageIntro ? splitIntro(raceContent.homepageIntro) : null;
   const live = hasLiveExperiences(activeRaceSlug);
   // Between seasons, until F1 publishes the next calendar, the last race stays active.
   const seasonOver = isRaceOver(race ?? { slug: activeRaceSlug, raceDate: '9999-12-31' }, new Date());
@@ -265,6 +265,11 @@ export default async function HomePage() {
   }
 
   const heroDateRange = formatRaceDates(race.raceDate, sessions.some(s => s.dayOfWeek === 'Thursday'));
+  // Intro written in code (src/data/home-intros.ts) wins over the stored one; it also
+  // covers a moved venue, since it's written for the circuit actually used.
+  const intro =
+    homeIntro(raceKey(activeRaceSlug), { season: race.season, dates: heroDateRange, circuit: race.circuitName, city: race.city }) ??
+    (raceContent?.homepageIntro ? splitIntro(raceContent.homepageIntro) : null);
   const expBasePath = `/races/${raceKey(activeRaceSlug)}/experiences`;
   // "02 – 04 OCT": first to last day of the weekend (calendar dates when known).
   const stripDates = (() => {
