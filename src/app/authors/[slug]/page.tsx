@@ -6,6 +6,8 @@ import Breadcrumb from '@/components/Breadcrumb';
 import { AUTHORS, authorBySlug, authorLd, authorPath } from '@/data/authors';
 import { EXPERT_GUIDES, liveGuide } from '@/data/expert-guides-2026';
 
+export const dynamic = 'force-dynamic'; // see app/layout.tsx
+
 interface Props {
   params: Promise<{ slug: string }>;
 }
