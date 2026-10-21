@@ -21,6 +21,7 @@ import { hasLiveExperiences, isRaceOver } from '@/data/calendar-2026';
 import fs from 'node:fs';
 import path from 'node:path';
 import { raceKey } from '@/lib/race-url';
+import { splitIntro } from '@/lib/home-intro';
 
 /** A /public image path if the file is actually there (added by hand); https URLs are used as they are. */
 function existingPublicFile(src: string | undefined): string | undefined {
@@ -168,6 +169,7 @@ export default async function HomePage() {
   // image, sessions and gap windows describe the old venue: don't show them.
   const venueMoved = !!race?.venueMoved;
   const raceContent = venueMoved ? null : storedContent;
+  const intro = raceContent?.homepageIntro ? splitIntro(raceContent.homepageIntro) : null;
   const live = hasLiveExperiences(activeRaceSlug);
   // Between seasons, until F1 publishes the next calendar, the last race stays active.
   const seasonOver = isRaceOver(race ?? { slug: activeRaceSlug, raceDate: '9999-12-31' }, new Date());
@@ -463,12 +465,12 @@ export default async function HomePage() {
       {/* ── SEO Intro Section ── */}
       <section className="max-w-6xl mx-auto px-4 py-10 border-b border-[var(--border-subtle)]">
         <div className="text-[var(--text-secondary)] text-base leading-relaxed max-w-4xl prose">
-          {raceContent?.homepageIntro ? (
+          {intro ? (
             <div className="space-y-4">
               <h2 className="font-display font-black text-2xl text-[var(--text-primary)] uppercase-heading">
-                {raceContent.homepageIntro.split('\n')[0]}
+                {intro.heading ?? `Plan Your ${race.city} F1 Weekend Around the Sessions`}
               </h2>
-              <p>{raceContent.homepageIntro.split('\n').slice(1).join('\n')}</p>
+              <p>{intro.body}</p>
             </div>
           ) : (
             <>
