@@ -20,6 +20,11 @@ import type { Race } from '@/types/race';
  */
 export const revalidate = 21600; // 6 h, like the experiences feed
 
+// Built on first visit, then cached (see races/[raceSlug]/layout.tsx).
+export function generateStaticParams() {
+  return [];
+}
+
 interface Props {
   params: Promise<{ raceSlug: string; topic: string }>;
 }
