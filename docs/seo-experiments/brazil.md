@@ -50,3 +50,4 @@ session-gap planner) earns rankings and AI citations that copied text cannot.
 | Week | Impr. | Clicks | Avg pos. | Queries | Booking clicks | AI citations | Notes |
 |---|---|---|---|---|---|---|---|
 | Live from: 5 Oct 2026 (released to main with the sitemap update; baseline: 0 GSC clicks site-wide in the 30 days before) | | | | | | | |
+| 21 Oct 2026 | | | | | | | Confound: /races/brazil/schedule now shows the full official F1 timetable (Porsche Carrera Cup Brazil, Porsche Sprint Challenge, F4 Brazil, historic cars parade, drivers' parade) instead of the 5 F1 sessions. A correctness fix; schedule page only. |
