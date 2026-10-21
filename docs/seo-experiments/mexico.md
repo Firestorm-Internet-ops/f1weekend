@@ -52,3 +52,4 @@ Race-specific trip searches ("hotel near autódromo", "mexico gp weather",
 | Week | Impr. | Clicks | Avg pos. | Queries | Booking clicks | AI citations | Notes |
 |---|---|---|---|---|---|---|---|
 | Live from: 30 Sep 2026 (PR #38 merged to main) | | | | | | | |
+| 21 Oct 2026 | | | | | | | Confound: /races/mexico/schedule now shows the full official F1 timetable (Formula 4 NACAM, GTM Super Copa, Masters Historic, car presentation, parade) instead of the 5 F1 sessions. A correctness fix; schedule page only. |
