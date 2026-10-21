@@ -4,7 +4,7 @@ import { useMemo, useState, useSyncExternalStore } from 'react';
 import GoogleSpotsMap, { type MapSpot } from '@/components/experiences/GoogleSpotsMap';
 import { TIER_STYLE } from '@/lib/constants/nearby-styles';
 import { providerName } from '@/lib/providers/meta';
-import { openFeedBooking, trackEvent } from '@/lib/analytics';
+import { openFeedBooking, trackEvent, type ClickSource } from '@/lib/analytics';
 import { FEED_CATEGORY_LABELS, byNearest, displayTitle, type FeedCard, type FeedCategory } from '@/lib/providers/nearby-feed';
 import { haversineKm, type NearbyTier } from '@/lib/nearby';
 import { mixSites } from '@/lib/providers/feed-enrich';
@@ -363,7 +363,7 @@ export function FeedPicks({ picks, raceSlug, cities = [], className = '', onPin,
       <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-3 sm:overflow-visible">
         {picks.map((c) => (
           <div key={c.key} className="snap-start shrink-0 w-[80%] sm:w-auto h-auto">
-            <FeedCardView card={c} raceSlug={raceSlug} cities={cities} onPin={() => onPin?.(c)} />
+            <FeedCardView card={c} raceSlug={raceSlug} cities={cities} onPin={() => onPin?.(c)} source="featured" />
           </div>
         ))}
       </div>
@@ -406,7 +406,7 @@ function MapPlaceholder({ height, counts, circuitName, onOpen }: { height: strin
   );
 }
 
-function FeedCardView({ card, raceSlug, cities, onPin }: { card: FeedCard; raceSlug: string; cities: string[]; onPin: () => void }) {
+function FeedCardView({ card, raceSlug, cities, onPin, source = 'feed' }: { card: FeedCard; raceSlug: string; cities: string[]; onPin: () => void; source?: ClickSource }) {
   const style = TIER_STYLE[card.nearby.tier];
   const [best, ...others] = card.offers;
   const dur = duration(card.durationHours);
@@ -488,7 +488,7 @@ function FeedCardView({ card, raceSlug, cities, onPin }: { card: FeedCard; raceS
                   {others.map((o, i) => (
                     <span key={`${o.provider}:${o.productId}`}>
                       {i > 0 && ' · '}
-                      <button onClick={() => openFeedBooking(raceSlug, o)} className="underline underline-offset-2 hover:text-[var(--text-primary)]">
+                      <button onClick={() => openFeedBooking(raceSlug, o, source)} className="underline underline-offset-2 hover:text-[var(--text-primary)]">
                         {providerName(o.provider)} {price(o.priceAmount, o.priceCurrency)}
                       </button>
                     </span>
@@ -496,7 +496,7 @@ function FeedCardView({ card, raceSlug, cities, onPin }: { card: FeedCard; raceS
                 </p>
               )}
               <button
-                onClick={() => openFeedBooking(raceSlug, best)}
+                onClick={() => openFeedBooking(raceSlug, best, source)}
                 className="w-full px-4 py-2.5 rounded-lg text-sm font-semibold bg-[var(--accent-red)] text-white hover:bg-[var(--accent-red-hover)] transition-colors"
               >
                 Check availability →

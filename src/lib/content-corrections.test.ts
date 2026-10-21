@@ -48,3 +48,9 @@ test('Sepang FAQs take session times from the timetable', async () => {
   assert.match(time.a, /Saturday 16:00/);
   assert.equal(codeFaqs('singapore-2026'), null);
 });
+
+test('Las Vegas: current lap record, the Sphere by its name', () => {
+  const meta = { circuit_facts: { 'Lap Record': '1:34.876 (Lando Norris, 2024)' } };
+  assert.deepEqual(correctContent('las-vegas-2026', meta), { circuit_facts: { 'Lap Record': '1:33.365 (Max Verstappen, 2025)' } });
+  assert.equal(correctContent('las-vegas-2026', 'The sections around the MSG Sphere are loud.'), 'The sections around the Sphere are loud.');
+});

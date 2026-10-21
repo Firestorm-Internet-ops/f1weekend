@@ -47,6 +47,24 @@ test('Sepang timetable: F1 sessions become FP1–FP3, Qualifying, Race in local 
   assert.equal(timetableFor('monaco-2026'), undefined);
 });
 
+test('Austin timetable (COTA official schedule): F1 sessions match Jolpica, Thursday included, in order', async () => {
+  const { timetableSessions, timetableFor } = await import('./timetables-2026');
+  assert.deepEqual(timetableSessions('usa-2026', 9).map((x) => `${x.shortName} ${x.dayOfWeek} ${x.startTime}`), [
+    'FP1 Friday 12:30', 'FP2 Friday 16:00', 'FP3 Saturday 12:30', 'Q Saturday 16:00', 'RACE Sunday 15:00',
+  ]);
+  const t = timetableFor('usa-2026')!;
+  assert.ok(t.some((e) => e.day === 'Thursday' && e.seriesKey === 'f1-academy'));
+  assert.ok(t.some((e) => e.seriesKey === 'porsche-cup'));
+  const order = ['Thursday', 'Friday', 'Saturday', 'Sunday'];
+  for (let i = 0; i < t.length; i++) {
+    assert.ok(t[i].end >= t[i].start, t[i].name);
+    if (i > 0) {
+      const a = t[i - 1], b = t[i];
+      assert.ok(order.indexOf(a.day) < order.indexOf(b.day) || (a.day === b.day && a.start <= b.start), `${a.name} before ${b.name}`);
+    }
+  }
+});
+
 test('the next race switches when race day is over at the track, not in UTC', () => {
   // Sepang (UTC+8): race day 4 Oct ends at 16:00 UTC.
   assert.equal(nextCalendarRace(new Date('2026-10-04T15:59:00Z'))?.slug, 'bahrain-2026');

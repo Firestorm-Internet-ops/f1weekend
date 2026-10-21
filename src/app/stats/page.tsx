@@ -1,0 +1,189 @@
+import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
+import Link from 'next/link';
+import { providerName } from '@/lib/providers/meta';
+import { liveHost, loadClicks } from '@/services/click-stats.service';
+import { recentClicks, summarize, toursClicked, type Count } from '@/lib/click-stats';
+
+export const dynamic = 'force-dynamic';
+
+export const metadata: Metadata = {
+  title: { absolute: 'Booking clicks | F1 Weekend' },
+  robots: { index: false, follow: false },
+};
+
+const RANGES = [7, 30, 90] as const;
+
+const PAGE_LABELS: Record<string, string> = {
+  home: 'Home', race: 'Race page', experiences: 'Experiences', experience: 'One experience', map: 'Map', schedule: 'Schedule',
+  'getting-there': 'Getting There', tips: 'Tips', itinerary: 'Itinerary', calendar: '2026 calendar', other: 'Other',
+  'day-of-the-dead': 'Day of the Dead', 'where-to-stay': 'Where to stay', 'weather-what-to-pack': 'Weather & packing', unknown: 'Unknown (no referrer)',
+};
+
+const SITE_LABEL = (k: string) => (k === 'unknown' ? 'Unknown' : providerName(k));
+const titleCase = (k: string) => (k === 'usa' ? 'USA' : k.replace(/(^|-)([a-z])/g, (_, d, c) => `${d ? ' ' : ''}${c.toUpperCase()}`));
+
+/**
+ * /stats: who clicked "Check availability", from which page, race and site.
+ * Production needs ?key=<STATS_KEY>; staging and local open without one.
+ */
+export default async function StatsPage({ searchParams }: { searchParams: Promise<{ key?: string; days?: string; site?: string }> }) {
+  const { key, days: daysParam, site } = await searchParams;
+  if (process.env.VERCEL_ENV === 'production' && (!process.env.STATS_KEY || key !== process.env.STATS_KEY)) notFound();
+
+  const days = RANGES.find((d) => String(d) === daysParam) ?? 30;
+  const to = new Date();
+  const from = new Date(to.getTime() - (days - 1) * 86_400_000);
+  from.setUTCHours(0, 0, 0, 0);
+  // Staging shares the production database: always report on the live site
+  // (?site=localhost:3100 to see local test clicks).
+  const host = site || liveHost();
+
+  const { rows, tours, error } = await loadClicks(from);
+
+  const s = summarize(rows, host, from, to);
+  const counted = recentClicks(rows, host, from, to, tours, Infinity);
+  const recent = counted.slice(0, 100);
+  const top = toursClicked(counted);
+  const maxDay = Math.max(1, ...s.byDay.map((d) => d.n));
+  const keyParam = (key ? `&key=${encodeURIComponent(key)}` : '') + (site ? `&site=${encodeURIComponent(site)}` : '');
+
+  return (
+    <div className="min-h-screen pt-24 pb-24 px-4">
+      <div className="max-w-[70rem] mx-auto">
+        <p className="text-xs font-medium uppercase-label text-[var(--accent-red)] mb-2">Private · not indexed</p>
+        <h1 className="font-display font-black text-4xl text-[var(--text-primary)] uppercase-heading mb-2">Booking clicks</h1>
+        <p className="text-sm text-[var(--text-secondary)] max-w-3xl mb-6">
+          Clicks on the red &ldquo;Check availability&rdquo; buttons on {host}, last {days} days (UTC). Bots and test clicks from staging or local copies are left out.
+          A click is someone going to the booking site; the booking itself shows in the GetYourGuide, Viator and Tiqets dashboards.
+        </p>
+
+        <nav className="flex gap-2 mb-8" aria-label="Range">
+          {RANGES.map((d) => (
+            <Link key={d} href={`/stats?days=${d}${keyParam}`}
+              className={`px-4 py-1.5 rounded-full text-sm ${d === days ? 'bg-[var(--accent-red)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}>
+              {d} days
+            </Link>
+          ))}
+        </nav>
+
+        {error && <p className="mb-8 rounded-xl border border-[var(--accent-red)] px-4 py-3 text-sm text-[var(--accent-red)]">Could not read the database: {error}</p>}
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+          <Stat label="Booking clicks" value={s.clicks} />
+          <Stat label="People who clicked" value={s.people} />
+          <Stat label="Bot clicks left out" value={s.bots} muted />
+          <Stat label="Test clicks (staging, local)" value={s.elsewhere} muted />
+        </div>
+
+        <section className="mb-10" aria-labelledby="per-day">
+          <h2 id="per-day" className="font-display font-bold text-lg text-[var(--text-primary)] mb-3">Clicks per day</h2>
+          <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] p-4 overflow-x-auto">
+            <div className="flex items-end gap-1 h-40 min-w-max">
+              {s.byDay.map((d) => (
+                <div key={d.key} className="flex flex-col items-center justify-end h-full w-6" title={`${d.key}: ${d.n}`}>
+                  {d.n > 0 && <span className="text-[10px] text-[var(--text-secondary)] mb-0.5">{d.n}</span>}
+                  <div className="w-4 rounded-t bg-[var(--accent-red)]" style={{ height: `${(d.n / maxDay) * 85}%`, minHeight: d.n ? 3 : 0 }} />
+                  <div className="w-4 h-px bg-[var(--border-subtle)]" />
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-between text-[11px] text-[var(--text-muted)] mt-1 min-w-max gap-8">
+              <span>{s.byDay[0]?.key}</span><span>{s.byDay[s.byDay.length - 1]?.key}</span>
+            </div>
+          </div>
+        </section>
+
+        <div className="grid md:grid-cols-2 gap-6 mb-10">
+          <Breakdown title="By booking site" rows={s.bySite} label={SITE_LABEL} total={s.clicks} />
+          <Breakdown title="By race" rows={s.byRace} label={titleCase} total={s.clicks} />
+          <Breakdown title="By page" rows={s.byPage} label={(k) => PAGE_LABELS[k] ?? k} total={s.clicks} />
+          <Breakdown title="By placement" rows={s.byPlacement} label={(k) => k} total={s.clicks} />
+        </div>
+
+        <section className="mb-10" aria-labelledby="every-click">
+          <h2 id="every-click" className="font-display font-bold text-lg text-[var(--text-primary)] mb-1">Every click, newest first</h2>
+          <p className="text-sm text-[var(--text-secondary)] mb-3">
+            Time in UTC. &ldquo;Visitor&rdquo; is a short ID per browser, so you can see one person clicking several times.
+            The tour is known for experience-page clicks and, from 5 Oct 2026, for every click.
+          </p>
+          {recent.length === 0 ? <p className="text-sm text-[var(--text-muted)]">No clicks in this range.</p> : (
+            <div className="overflow-x-auto rounded-xl border border-[var(--border-subtle)]">
+              <table className="w-full text-sm">
+                <thead className="bg-[var(--bg-secondary)] text-left text-[var(--text-secondary)]">
+                  <tr>{['When (UTC)', 'Tour', 'Site', 'Race', 'Page', 'Placement', 'Visitor'].map((h) => <th key={h} className="px-3 py-2 font-medium whitespace-nowrap">{h}</th>)}</tr>
+                </thead>
+                <tbody>
+                  {recent.map((c, i) => (
+                    <tr key={i} className="border-t border-[var(--border-subtle)]">
+                      <td className="px-3 py-2 mono-data whitespace-nowrap text-[var(--text-secondary)]">{c.at.toISOString().slice(0, 16).replace('T', ' ')}</td>
+                      <td className="px-3 py-2 text-[var(--text-primary)]">{c.tour ?? <span className="text-[var(--text-muted)]">not recorded</span>}</td>
+                      <td className="px-3 py-2 text-[var(--text-secondary)]">{SITE_LABEL(c.site)}</td>
+                      <td className="px-3 py-2 text-[var(--text-secondary)]">{c.race ? titleCase(c.race) : '—'}</td>
+                      <td className="px-3 py-2 text-[var(--text-secondary)]">{PAGE_LABELS[c.page] ?? c.page}</td>
+                      <td className="px-3 py-2 text-[var(--text-secondary)]">{c.placement}</td>
+                      <td className="px-3 py-2 mono-data text-[var(--text-muted)]">{c.visitor ?? '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+
+        <section aria-labelledby="top-tours">
+          <h2 id="top-tours" className="font-display font-bold text-lg text-[var(--text-primary)] mb-1">Most clicked tours</h2>
+          <p className="text-sm text-[var(--text-secondary)] mb-3">Counted clicks only (people on the live site); the tour is recorded for experience-page clicks and, once released, for every click.</p>
+          {top.length === 0 ? (
+            <p className="text-sm text-[var(--text-muted)]">No tour clicks recorded yet.</p>
+          ) : (
+            <div className="overflow-x-auto rounded-xl border border-[var(--border-subtle)]">
+              <table className="w-full text-sm">
+                <thead className="bg-[var(--bg-secondary)] text-left text-[var(--text-secondary)]">
+                  <tr><th className="px-3 py-2 font-medium">Tour</th><th className="px-3 py-2 font-medium">Race</th><th className="px-3 py-2 font-medium">Site</th><th className="px-3 py-2 font-medium text-right">Clicks</th></tr>
+                </thead>
+                <tbody>
+                  {top.map((t) => (
+                    <tr key={`${t.site}:${t.tour}`} className="border-t border-[var(--border-subtle)]">
+                      <td className="px-3 py-2 text-[var(--text-primary)]">{t.tour}</td>
+                      <td className="px-3 py-2 text-[var(--text-secondary)]">{t.race ? titleCase(t.race) : '—'}</td>
+                      <td className="px-3 py-2 text-[var(--text-secondary)]">{SITE_LABEL(t.site)}</td>
+                      <td className="px-3 py-2 text-right mono-data">{t.n}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      </div>
+    </div>
+  );
+}
+
+function Stat({ label, value, muted = false }: { label: string; value: number; muted?: boolean }) {
+  return (
+    <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] p-4">
+      <p className={`text-3xl font-bold mono-data ${muted ? 'text-[var(--text-secondary)]' : 'text-[var(--text-primary)]'}`}>{value.toLocaleString()}</p>
+      <p className="text-sm text-[var(--text-secondary)] mt-1">{label}</p>
+    </div>
+  );
+}
+
+function Breakdown({ title, rows, label, total }: { title: string; rows: Count[]; label: (k: string) => string; total: number }) {
+  return (
+    <section className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] p-4">
+      <h2 className="font-display font-bold text-base text-[var(--text-primary)] mb-3">{title}</h2>
+      {rows.length === 0 ? <p className="text-sm text-[var(--text-muted)]">No clicks yet.</p> : (
+        <ul className="space-y-2">
+          {rows.map((r) => (
+            <li key={r.key} className="text-sm">
+              <div className="flex justify-between gap-3"><span className="text-[var(--text-primary)]">{label(r.key)}</span><span className="mono-data text-[var(--text-secondary)]">{r.n} · {Math.round((r.n / Math.max(1, total)) * 100)}%</span></div>
+              <div className="h-1.5 rounded-full bg-[var(--bg-tertiary)] mt-1"><div className="h-1.5 rounded-full bg-[var(--accent-red)]" style={{ width: `${(r.n / Math.max(1, total)) * 100}%` }} /></div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}

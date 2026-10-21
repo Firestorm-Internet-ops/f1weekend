@@ -16,16 +16,22 @@ function when(iso: string): string {
   return new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: 'UTC' }).format(new Date(iso)) + ' UTC';
 }
 
-export default function PageByline({ updated, updatedLabel = 'Updated', sources, className = '' }: {
+export default function PageByline({ updated, updatedLabel = 'Updated', sources, className = '', author }: {
   /** ISO time the page's data was last refreshed, or a bare day (YYYY-MM-DD). */
   updated?: string | null;
   updatedLabel?: string;
   sources: BylineSource[];
   className?: string;
+  /** A named author instead of "the F1 Weekend team". */
+  author?: { name: string; href: string };
 }) {
   return (
     <p className={`text-xs text-[var(--text-secondary)] leading-relaxed ${className}`}>
-      By the <a href="/about" className="underline underline-offset-2 hover:text-[var(--text-primary)]">F1 Weekend team</a>
+      {author ? (
+        <>By <a href={author.href} rel="author" className="underline underline-offset-2 hover:text-[var(--text-primary)]">{author.name}</a></>
+      ) : (
+        <>By the <a href="/about" className="underline underline-offset-2 hover:text-[var(--text-primary)]">F1 Weekend team</a></>
+      )}
       {updated && <> · {updatedLabel} <time dateTime={updated}>{when(updated)}</time></>}
       {sources.length > 0 && (
         <>

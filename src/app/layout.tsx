@@ -7,6 +7,7 @@ import { getActiveRaceSlug } from "@/lib/activeRace";
 import { getRacesWithExperiences } from "@/services/race.service";
 import { Analytics } from "@vercel/analytics/react";
 import Script from "next/script";
+import InternalFlag from "@/components/InternalFlag";
 
 const titilliumWeb = Titillium_Web({
   variable: "--font-titillium-web",
@@ -115,6 +116,7 @@ export default async function RootLayout({
         <main>{children}</main>
         <Footer />
         <Analytics />
+        <InternalFlag />
       </body>
     </html>
   );

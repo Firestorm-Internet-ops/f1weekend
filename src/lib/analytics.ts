@@ -16,6 +16,28 @@ declare global {
 }
 
 export const SESSION_KEY = 'pitlane-session';
+/** Set by visiting any page with ?internal=1 (cleared with ?internal=0): our own and test browsers. */
+export const INTERNAL_KEY = 'f1w-internal';
+/** Session IDs of internal browsers start with this, so reports can leave their clicks out. */
+export const INTERNAL_PREFIX = 'internal-';
+
+export function isInternal(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    return localStorage.getItem(INTERNAL_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+/** Reads ?internal=1 / ?internal=0 from the address and remembers it in this browser. */
+export function rememberInternalFlag(search: string): void {
+  const v = new URLSearchParams(search).get('internal');
+  try {
+    if (v === '1') localStorage.setItem(INTERNAL_KEY, '1');
+    else if (v === '0') localStorage.removeItem(INTERNAL_KEY);
+  } catch { /* storage blocked */ }
+}
 
 export function getSessionId(): string {
   if (typeof window === 'undefined') return '';
@@ -25,14 +47,14 @@ export function getSessionId(): string {
       id = Math.random().toString(36).slice(2) + Date.now().toString(36);
       localStorage.setItem(SESSION_KEY, id);
     }
-    return id;
+    return isInternal() ? `${INTERNAL_PREFIX}${id}`.slice(0, 64) : id;
   } catch {
     return '';
   }
 }
 
 export function trackEvent(name: string, props: EventProps = {}): void {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined' || isInternal()) return;
   try { window.AhrefsAnalytics?.sendEvent(name, props); } catch {}
   try { window.gtag?.('event', name, props); } catch {}
   try { track(name, props); } catch {}

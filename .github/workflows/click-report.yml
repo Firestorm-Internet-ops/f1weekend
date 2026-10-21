@@ -1,0 +1,40 @@
+# Posts the booking-clicks report to the "Booking clicks report" issue:
+# yesterday's clicks every morning at 09:00 IST, plus the week's on Mondays.
+# GitHub emails new comments to everyone subscribed to the issue.
+# The report comes from staging, which reads the live site's database.
+name: click-report
+
+on:
+  schedule:
+    - cron: '30 3 * * *' # 03:30 UTC = 09:00 IST
+  workflow_dispatch:
+    inputs:
+      period:
+        description: daily or weekly
+        default: daily
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Post the report
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PERIOD: ${{ inputs.period }}
+        run: |
+          set -euo pipefail
+          TITLE="Booking clicks report"
+          ISSUE=$(gh issue list -R "$REPO" --state open --search "\"$TITLE\" in:title" --json number,title -q ".[] | select(.title == \"$TITLE\") | .number" | head -1)
+          if [ -z "$ISSUE" ]; then
+            ISSUE=$(gh issue create -R "$REPO" --title "$TITLE" --body "Daily (09:00 IST) and weekly (Mondays) booking-click reports for f1weekend.co, posted by the click-report workflow. Click **Subscribe** on this issue to get them by email. Dashboard: https://staging.f1weekend.co/stats" | grep -o '[0-9]*$')
+          fi
+          if [ -n "$PERIOD" ]; then PERIODS="$PERIOD"; elif [ "$(date -u +%u)" = 1 ]; then PERIODS="weekly daily"; else PERIODS="daily"; fi
+          for P in $PERIODS; do
+            curl -fsS --retry 3 "https://staging.f1weekend.co/api/stats-report?period=$P" -o report.md
+            gh issue comment "$ISSUE" -R "$REPO" --body-file report.md
+          done

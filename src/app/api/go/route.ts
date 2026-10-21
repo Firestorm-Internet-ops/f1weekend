@@ -28,7 +28,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL(race ? `/races/${raceKey(race.slug)}/experiences` : '/experiences', req.url), 302);
   }
 
-  const campaign = campaignId(race.slug, resolveCampaignPage(params.get('page'), req.headers.get('referer'), source));
+  const page = resolveCampaignPage(params.get('page'), req.headers.get('referer'), source);
+  const campaign = campaignId(race.slug, page);
   const url = buildAffiliateUrl(found.offer.provider, found.offer.url, { experienceId: null, productId, source, campaign });
   await logClick(req, {
     experienceId: null,
@@ -37,6 +38,7 @@ export async function GET(req: NextRequest) {
     source,
     sessionId: params.get('sid')?.slice(0, 64) || null,
     itineraryId: null,
+    detail: { race: raceKey(race.slug), productId, title: found.card.title, page },
   });
 
   const res = NextResponse.redirect(url, 302);
