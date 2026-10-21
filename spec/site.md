@@ -4,7 +4,7 @@
 
 Every Monday, read f1weekend.co's Google Search Console data, find the searches where a page already shows up but is not winning, and open or update one GitHub issue per page with what to fix. From an issue, a command drafts short answer blocks for that page with Claude, checks them against a QA gate (made-up numbers, length, reading level, AI tells) and saves them as unapproved drafts; a person approves them by editing the JSON in a PR, and only then do they show on the page.
 
-Out of scope: auto-publishing anything (every draft needs a named approver); Google's Indexing API (it is only for job postings and livestreams); GA4 (access is still pending; booking clicks come from our own `affiliate_clicks` table instead); the homepage and other non-race pages as draft targets (they get issues, not drafts); FAQ schema for the new answers; Linear; changing any page of a race in the autumn SEO experiment before 7 Dec 2026.
+Out of scope: auto-publishing anything (every draft needs a named approver); Google's Indexing API (it is only for job postings and livestreams); GA4 (the service account can read property `properties/525764756` since 21 Oct, but booking clicks come from our own `affiliate_clicks` table, which is more exact); Bing Webmaster Tools data (a later version); the homepage and other non-race pages as draft targets (they get issues, not drafts); FAQ schema for the new answers; Linear; changing any page of a race in the autumn SEO experiment before 7 Dec 2026.
 
 Test command: `npx tsx --test tests/seo-loop/*.test.ts`
 
@@ -12,7 +12,7 @@ Setup command: `npm ci --no-audit --no-fund`
 
 Preview: none. The only UI is one answer block (step 9). Its show/hide rule is unit-tested in `tests/seo-loop/publish.test.ts`; the page itself needs the database and Redis, so it is checked on staging.f1weekend.co after the PR into `staging`, not in a local preview.
 
-Regression check (must stay green, run it before every commit): `npm run test:providers` (107 tests on 21 Oct 2026).
+Regression check (must stay green, run it before every commit): `npm run test:providers` (142 tests on 21 Oct 2026).
 
 ## Context the builder needs
 
@@ -146,7 +146,7 @@ Regression check (must stay green, run it before every commit): `npm run test:pr
 ## Done means
 
 1. `npx tsx --test tests/seo-loop/*.test.ts`: every test passes, none skipped, none edited.
-2. `npm run test:providers`: still 107 passing.
+2. `npm run test:providers`: still 142 passing.
 3. `npx tsc --noEmit` and `npm run lint` clean for the new and changed files.
 4. `npm run build` succeeds.
 5. Live check of step 9b, run locally with the key in `.env`: `npx tsx --env-file=.env -e "import('./src/lib/google-auth.ts').then(async m => { const { fetchSearchRows, searchWindow } = await import('./src/lib/gsc.ts'); const rows = await fetchSearchRows({ siteUrl: 'https://f1weekend.co/', ...searchWindow(new Date()), accessToken: await m.searchConsoleToken() }); console.log(rows.length) })"` prints a number above 0.
