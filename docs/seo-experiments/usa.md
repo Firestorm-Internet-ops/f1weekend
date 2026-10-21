@@ -33,3 +33,4 @@ network; those were left out.)
 | Week | Impr. | Clicks | Avg pos. | Queries | Booking clicks | AI citations | Notes |
 |---|---|---|---|---|---|---|---|
 | Live from: 30 Sep 2026 (PR #34 merged to main) | | | | | | | |
+| 21 Oct 2026 | | | | | | | Confound: /races/usa/schedule now shows the full COTA timetable (F1 Academy, Porsche Carrera Cup, Masters Historic, hot laps, parade) instead of the 5 F1 sessions. A correctness fix 2 days before the race; schedule page only. |
