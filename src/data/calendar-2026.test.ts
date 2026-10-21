@@ -87,6 +87,18 @@ test('Mexico City timetable (formula1.com official timetable): F1 sessions match
   assertOrdered(t);
 });
 
+test('São Paulo timetable (formula1.com official timetable): F1 sessions match Jolpica, support races present, in order', async () => {
+  const { timetableSessions, timetableFor } = await import('./timetables-2026');
+  // Jolpica UTC → São Paulo (UTC−3, no DST).
+  assert.deepEqual(timetableSessions('brazil-2026', 20).map((x) => `${x.shortName} ${x.dayOfWeek} ${x.startTime}`), [
+    'FP1 Friday 12:30', 'FP2 Friday 16:00', 'FP3 Saturday 11:30', 'Q Saturday 15:00', 'RACE Sunday 14:00',
+  ]);
+  const t = timetableFor('brazil-2026')!;
+  assert.ok(t.some((e) => e.seriesKey === 'porsche-cup'));
+  assert.ok(t.some((e) => e.seriesKey === 'support' && e.name.startsWith('F4 Brazil')));
+  assertOrdered(t);
+});
+
 test('the next race switches when race day is over at the track, not in UTC', () => {
   // Sepang (UTC+8): race day 4 Oct ends at 16:00 UTC.
   assert.equal(nextCalendarRace(new Date('2026-10-04T15:59:00Z'))?.slug, 'bahrain-2026');

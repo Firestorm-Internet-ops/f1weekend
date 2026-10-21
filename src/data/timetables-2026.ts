@@ -1,7 +1,7 @@
 /**
  * Full weekend timetables (local time) for races whose schedule isn't in the
  * database: the Bahrain GP at Sepang (stored sessions are for Sakhir) and the
- * United States and Mexico City GPs (Jolpica only has the F1
+ * United States, Mexico City and São Paulo GPs (Jolpica only has the F1
  * sessions). Sources per race below.
  * race.service turns the F1 sessions into Session rows; schedule.service
  * shows every entry on the schedule page.
@@ -96,6 +96,34 @@ export const TIMETABLES_2026: Record<string, TimetableEntry[]> = {
     { day: 'Sunday', start: '09:15', end: '09:45', series: 'GTM Super Copa', seriesKey: 'support', name: 'GTM Super Copa · Race 2 (25 min)' },
     { day: 'Sunday', start: '10:10', end: '10:40', series: 'Masters Historic Racing', seriesKey: 'support', name: 'Masters Historic · Race 2 (25 min)' },
     { day: 'Sunday', start: '11:05', end: '11:35', series: 'Formula 4 NACAM Championship', seriesKey: 'support', name: 'Formula 4 NACAM · Race 2 (25 min)' },
+    { day: 'Sunday', start: '12:00', end: '12:30', series: 'Formula 1', seriesKey: 'promoter', name: "Drivers' Parade" },
+    { day: 'Sunday', start: '13:44', end: '13:46', series: 'Formula 1', seriesKey: 'promoter', name: 'National Anthem' },
+    { day: 'Sunday', start: '14:00', end: '16:00', series: 'Formula 1', seriesKey: 'f1', name: 'Grand Prix (71 laps)', session: { type: 'race', shortName: 'RACE' } },
+  ],
+  // São Paulo GP, Autódromo José Carlos Pace, Interlagos (BRT, UTC−3; Brazil has no DST).
+  // Source: https://www.formula1.com/en/latest/article/formula-1-msc-cruises-grande-premio-de-sao-paulo-2026.3nFWRAkowAY3uUyvw6O0eJ
+  // (checked 21 Oct 2026). Everything on the official timetable is in; it lists no
+  // Thursday sessions, concerts or fan-zone events. Race lengths are as published
+  // ("25 Mins +1 Lap" etc.).
+  'brazil-2026': [
+    { day: 'Friday', start: '10:05', end: '10:45', series: 'F4 Brazilian Championship', seriesKey: 'support', name: 'F4 Brazil · Practice' },
+    { day: 'Friday', start: '11:00', end: '12:00', series: 'FIA', seriesKey: 'promoter', name: 'F1 Car Presentation' },
+    { day: 'Friday', start: '11:30', end: '12:00', series: 'Promoter', seriesKey: 'promoter', name: 'Historic Cars Parade' },
+    { day: 'Friday', start: '12:30', end: '13:30', series: 'Formula 1', seriesKey: 'f1', name: 'Practice 1', session: { type: 'practice', shortName: 'FP1' } },
+    { day: 'Friday', start: '14:00', end: '14:30', series: 'Porsche Sprint Challenge Brazil', seriesKey: 'porsche-cup', name: 'Porsche Sprint Challenge · Race 1 (25 min + 1 lap)' },
+    { day: 'Friday', start: '14:30', end: '15:30', series: 'Formula 1', seriesKey: 'press', name: "Teams' Press Conference" },
+    { day: 'Friday', start: '15:00', end: '15:30', series: 'Porsche Carrera Cup Brazil', seriesKey: 'porsche-cup', name: 'Porsche Carrera Cup · Qualifying' },
+    { day: 'Friday', start: '16:00', end: '17:00', series: 'Formula 1', seriesKey: 'f1', name: 'Practice 2', session: { type: 'practice', shortName: 'FP2' } },
+    { day: 'Friday', start: '17:30', end: '17:50', series: 'F4 Brazilian Championship', seriesKey: 'support', name: 'F4 Brazil · Qualifying' },
+    { day: 'Saturday', start: '10:10', end: '10:45', series: 'F4 Brazilian Championship', seriesKey: 'support', name: 'F4 Brazil · Race 1 (30 min + 1 lap)' },
+    { day: 'Saturday', start: '11:30', end: '12:30', series: 'Formula 1', seriesKey: 'f1', name: 'Practice 3', session: { type: 'practice', shortName: 'FP3' } },
+    { day: 'Saturday', start: '13:25', end: '14:00', series: 'Porsche Carrera Cup Brazil', seriesKey: 'porsche-cup', name: 'Porsche Carrera Cup · Race 1 (25 min + 1 lap)' },
+    { day: 'Saturday', start: '15:00', end: '16:00', series: 'Formula 1', seriesKey: 'f1', name: 'Qualifying', session: { type: 'qualifying', shortName: 'Q' } },
+    { day: 'Saturday', start: '16:00', end: '17:00', series: 'Formula 1', seriesKey: 'press', name: 'Press Conference' },
+    { day: 'Saturday', start: '16:40', end: '17:15', series: 'F4 Brazilian Championship', seriesKey: 'support', name: 'F4 Brazil · Race 2 (30 min + 1 lap)' },
+    { day: 'Sunday', start: '08:50', end: '09:15', series: 'F4 Brazilian Championship', seriesKey: 'support', name: 'F4 Brazil · Race 3 (20 min + 1 lap)' },
+    { day: 'Sunday', start: '09:45', end: '10:15', series: 'Porsche Sprint Challenge Brazil', seriesKey: 'porsche-cup', name: 'Porsche Sprint Challenge · Race 2 (25 min + 1 lap)' },
+    { day: 'Sunday', start: '10:45', end: '11:15', series: 'Porsche Carrera Cup Brazil', seriesKey: 'porsche-cup', name: 'Porsche Carrera Cup · Race 2 (25 min + 1 lap)' },
     { day: 'Sunday', start: '12:00', end: '12:30', series: 'Formula 1', seriesKey: 'promoter', name: "Drivers' Parade" },
     { day: 'Sunday', start: '13:44', end: '13:46', series: 'Formula 1', seriesKey: 'promoter', name: 'National Anthem' },
     { day: 'Sunday', start: '14:00', end: '16:00', series: 'Formula 1', seriesKey: 'f1', name: 'Grand Prix (71 laps)', session: { type: 'race', shortName: 'RACE' } },
