@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 
+export const dynamic = 'force-dynamic'; // see app/layout.tsx
+
 export const metadata: Metadata = {
   title: { absolute: 'Contact | F1 Weekend' },
   description: 'Get in touch with the F1 Weekend team at Firestorm Internet. Email, phone, and address for the Australian Grand Prix 2026 travel app.',

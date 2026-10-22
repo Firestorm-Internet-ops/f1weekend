@@ -30,7 +30,10 @@ const jetbrainsMono = JetBrains_Mono({
   display: "swap",
 });
 
-export const dynamic = 'force-dynamic';
+// No site-wide force-dynamic: it overrode every page's `revalidate`, so race pages
+// were rebuilt on each visit (~1 s to first byte) and never cached. The layout reads
+// the database, so pages Next would prerender at build (no DB there) opt out with
+// their own force-dynamic; race pages render on first visit and are then cached.
 
 // Staging and local visits must not show up in production analytics.
 const isProduction = process.env.VERCEL_ENV === 'production';
