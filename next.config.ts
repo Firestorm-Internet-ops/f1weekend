@@ -44,6 +44,15 @@ const nextConfig: NextConfig = {
           ...(process.env.VERCEL_ENV === 'preview' ? [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }] : []),
         ],
       },
+      // The homepage stays force-dynamic (a static route would be prerendered at build,
+      // and the build has no DB), so Next sends Cache-Control: no-store. Vercel's CDN
+      // reads this header instead: fresh for 1 hour, then served stale while it refreshes.
+      {
+        source: '/',
+        headers: [
+          { key: 'Vercel-CDN-Cache-Control', value: 'max-age=3600, stale-while-revalidate=86400' },
+        ],
+      },
       {
         source: '/experiences/:slug',
         headers: [
